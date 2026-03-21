@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=ZCOOL+KuaiLe&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-cute-ko: "Gaegu", cursive;
+  --font-cute-zh: "ZCOOL KuaiLe", cursive;
+  
+  @keyframes rain {
+    0% { transform: translateY(0); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+}
+
+.animate-rain {
+  animation: rain linear infinite;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

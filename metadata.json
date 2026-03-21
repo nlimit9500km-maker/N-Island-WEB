@@ -1,0 +1,5 @@
+{
+  "name": "MacBook Style Personal Site",
+  "description": "A personal website mimicking macOS/iOS desktop interface with draggable windows and iOS-style icons.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"]
+}
