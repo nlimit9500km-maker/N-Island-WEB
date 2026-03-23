@@ -167,11 +167,11 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
       </div>
       <div className="space-y-10">
         {[
-          { text: "", song: "i'm sorry", artist: "Versutus", date: "02-28", cover: "https://picsum.photos/seed/song1/100/100" },
-          { text: "永恒序曲。Fix On。又一次的循环中，依旧动容。", song: "Tunnel", artist: "宋旼琦", date: "2025-10-19", cover: "https://picsum.photos/seed/song2/100/100" },
-          { text: "一些伤痛正在被抚平，那些无畏并不需要有解的时刻得到了远方的宽慰。", song: "年少的我们永远轻狂", artist: "Crispy脆乐团", date: "2024-04-15", cover: "https://picsum.photos/seed/song3/100/100" },
-          { text: "百转千回，一梦华胥。", song: "潮汐池 feat.丁文斌 of Foget And For...", artist: "Nerve Passenger (神经旅人) /Forget And Forgive", date: "2023-08-06", cover: "https://picsum.photos/seed/song4/100/100" },
-          { text: "轻盈又笨重地驶向遥远的天际。", song: "轻轨", artist: "液蓝BLUE LIQUID", date: "2023-05-03", cover: "https://picsum.photos/seed/song5/100/100" }
+          { text: "", song: "i'm sorry", artist: "Versutus", date: "02-28", cover: "https://p3.music.126.net/-OgjjO_arHqtpUX1xFt5Tg==/109951168143613156.jpg" },
+          { text: "永恒序曲。Fix On。又一次的循环中，依旧动容。", song: "Tunnel", artist: "宋旼琦", date: "2025-10-19", cover: "https://p3.music.126.net/olf_R6JoatZc97VhVxQuhA==/109951172055224267.jpg" },
+          { text: "一些伤痛正在被抚平，那些无畏并不需要有解的时刻得到了远方的宽慰。", song: "年少的我们永远轻狂", artist: "Crispy脆乐团", date: "2024-04-15", cover: "https://p3.music.126.net/SnDOvPQ0dLyf9-BvskgMNQ==/109951169479244432.jpg" },
+          { text: "百转千回，一梦华胥。", song: "潮汐池 feat.丁文斌 of Foget And For...", artist: "Nerve Passenger (神经旅人) /Forget And Forgive", date: "2023-08-06", cover: "https://p3.music.126.net/bTCecZ4NUTfkIOx_wcNf2g==/109951168831714933.jpg" },
+          { text: "轻盈又笨重地驶向遥远的天际。", song: "轻轨", artist: "液蓝BLUE LIQUID", date: "2023-05-03", cover: "https://p3.music.126.net/4Drcf3rTpQ0d9wnFB9QgOA==/109951168558920760.jpg" }
         ].map((event, i) => (
           <div key={i} className="flex gap-4 pb-8 border-b border-gray-100 last:border-0">
             <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg" alt="Avatar" className="w-12 h-12 rounded-full mt-1" referrerPolicy="no-referrer" />
@@ -656,7 +656,7 @@ const DynamicIsland = ({ hasOpenWindows }: { hasOpenWindows?: boolean }) => {
         {showIsland && (
           <motion.div 
             layout
-            style={{ x, y, borderRadius: 9999 }}
+            style={{ x, y, borderRadius: 24, top: 'auto', bottom: 'calc(100vh - 88px)' }}
             drag={hasOpenWindows && !isLocked}
             dragControls={dragControls}
             dragListener={false}
@@ -666,11 +666,11 @@ const DynamicIsland = ({ hasOpenWindows }: { hasOpenWindows?: boolean }) => {
             animate={{ y: 0, opacity: 1, filter: "blur(0px)", scale: 1 }}
             exit={{ y: -20, opacity: 0, filter: "blur(10px)", scale: 1.1 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute top-12 left-16 z-[9999]"
+            className="absolute left-16 z-[9999]"
           >
             <motion.div 
               layout
-              className={`${currentTheme.bg} backdrop-blur-md ${currentTheme.text} rounded-full flex items-center justify-center h-10 px-4 py-1 shadow-lg min-w-[120px] max-w-[400px] transition-colors duration-500`}
+              className={`${currentTheme.bg} backdrop-blur-md ${currentTheme.text} rounded-3xl flex items-center justify-center min-h-[40px] px-4 py-2 shadow-lg min-w-[120px] max-w-[600px] transition-colors duration-500`}
             >
               
               {/* Drag Handle */}
@@ -759,7 +759,7 @@ const DynamicIsland = ({ hasOpenWindows }: { hasOpenWindows?: boolean }) => {
               </motion.button>
 
               {/* Lyrics */}
-              <motion.div layout className="flex flex-col justify-center overflow-hidden whitespace-nowrap pr-2">
+              <motion.div layout className="flex flex-col justify-center overflow-hidden pr-2">
                 <AnimatePresence mode="wait">
                   <motion.div 
                     key={activeIndex}
@@ -767,10 +767,12 @@ const DynamicIsland = ({ hasOpenWindows }: { hasOpenWindows?: boolean }) => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 15 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="font-medium drop-shadow-sm truncate tracking-wide transition-all duration-300"
+                    className="font-medium drop-shadow-sm tracking-wide transition-all duration-300 text-center"
                     style={{ fontSize: `${displayLyricSize}px` }}
                   >
-                    {currentLyric || songName}
+                    {(currentLyric || songName).split('\n').map((line, i) => (
+                      <div key={i} className={i > 0 ? "text-[0.85em] opacity-80 mt-0.5" : ""}>{line}</div>
+                    ))}
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
@@ -817,10 +819,12 @@ const DynamicIsland = ({ hasOpenWindows }: { hasOpenWindows?: boolean }) => {
               />
             </div>
 
-            <div className="mb-6 p-4 bg-black/5 rounded-xl flex items-center justify-center overflow-hidden">
-               <span className="font-medium truncate" style={{ fontSize: `${tempLyricSize}px` }}>
-                 {currentLyric || songName || "歌词预览"}
-               </span>
+            <div className="mb-6 p-4 bg-black/5 rounded-xl flex flex-col items-center justify-center overflow-hidden text-center">
+               {(currentLyric || songName || "歌词预览").split('\n').map((line, i) => (
+                 <div key={i} className={`font-medium ${i > 0 ? "text-[0.85em] opacity-80 mt-0.5" : ""}`} style={{ fontSize: `${tempLyricSize}px` }}>
+                   {line}
+                 </div>
+               ))}
             </div>
 
             <div className="flex justify-end gap-3">
@@ -876,6 +880,7 @@ const SONGS = [
     cover: "https://p2.music.126.net/hBfYXsGBIf0JoCn8c61cQQ==/109951172092165022.jpg",
     src: "https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvYy84M2MxZTEzYzA5OGQxODU2L0lRRFR6a0pONFN5cFFLbjBYVVFmYlhGbkFTblYxT1lWV1hLRVJFY2FOcVgxdDJrP2U9SnRsb09h.mp3",
     lyrics: [
+      { time: 0, text: "作词 : Gummy B\n作曲 : Gummy B" },
       { time: 24.32, text: "I think it’s time" },
       { time: 27.14, text: "I think it’s time to say goodbye" },
       { time: 36.41, text: "愿你不再" },
@@ -949,9 +954,196 @@ const SONGS = [
     name: "Tunnel",
     singer: "宋旼琦",
     cover: "https://p3.music.126.net/olf_R6JoatZc97VhVxQuhA==/109951172055224267.jpg",
-    src: "https://m701.music.126.net/20260322214913/189fd9dbef3e2ce8d2ccc1df274c38b1/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/62754213424/5c4e/1be3/0973/012f99a8853962e5bf42cf37d4426070.mp3",
+    src: "https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvYy84M2MxZTEzYzA5OGQxODU2L0lRRFFIbFBoa1E3MlFiVWNKUk5OUmVBYUFmVlByMC1YdWMyd0xMSWYxNlVDTEVZP2U9Y3ZvZFdT.mp3",
     lyrics: [
-      { time: 0, text: "正在获取歌词..." }
+      { time: 0, text: "作词 : 宋旼琦" },
+      { time: 1, text: "作曲 : 宋旼琦/Long Drive/QUAIMO" },
+      { time: 2, text: "编曲 : 宋旼琦/Long Drive" },
+      { time: 6.14, text: "바람에 흘려보냈어\n让风儿带走了一切" },
+      { time: 9.68, text: "사진, 작은 마음까지도\n照片 甚至微小的思念" },
+      { time: 12.88, text: "한 글자도 보기 어려워서\n因为每一个字都难以直视" },
+      { time: 16.24, text: "다 떠나보냈어\n所以我让它们全部远去" },
+      { time: 19.32, text: "" },
+      { time: 19.54, text: "혼자 남겨진다는 게\n独自被留下这种滋味" },
+      { time: 22.95, text: "해도 적응이 안 되나 봐\n无论如何都无法习惯吧" },
+      { time: 26.20, text: "소중하다는 건 과연\n所谓珍贵究竟" },
+      { time: 28.57, text: "나한테 무슨 의미일까?\n对我而言有何意义呢" },
+      { time: 33.00, text: "" },
+      { time: 35.06, text: "I gotta get outta f***ing love\n我必须摆脱这该死的爱恋" },
+      { time: 38.65, text: "Everything I said was a lie\n我说的每句话都是谎言" },
+      { time: 41.79, text: "이대로 모든 게 전부\n难道说这一切就这么" },
+      { time: 45.24, text: "" },
+      { time: 47.11, text: "다 지울 수 있는 기억들일까?\n全部都是可以抹去的记忆吗" },
+      { time: 50.52, text: "한 번씩 습관처럼 떠올라\n时不时地像习惯一样浮现" },
+      { time: 53.74, text: "아침부터 밤까지 이 시간이\n从清晨到黑夜 这段时光" },
+      { time: 57.12, text: "왜 이렇게 마음이 허전할까\n为何会如此令人心头空虚呢" },
+      { time: 60.47, text: "" },
+      { time: 60.73, text: "Uh uh uh uh 이 시간이\nUh uh uh uh 这段时光" },
+      { time: 63.92, text: "Uh uh uh uh 허전할까\nUh uh uh uh 会空虚吗" },
+      { time: 67.14, text: "Uh uh uh uh 이 시간이\nUh uh uh uh 这段时光" },
+      { time: 70.43, text: "Uh uh uh uh 허전할까\nUh uh uh uh 会空虚吗" },
+      { time: 73.80, text: "" },
+      { time: 73.97, text: "잊어도 봤어 잃어도 봤어\n试着忘记过 也试着失去过" },
+      { time: 75.55, text: "끝에 공허한 마음\n结局是这片虚无的心境" },
+      { time: 77.22, text: "며칠을 알코올에 담겨\n连着好几天沉浸在酒精里" },
+      { time: 78.21, text: "흐릿해진 시간과의 싸움\n与模糊不清的时光进行搏斗" },
+      { time: 80.68, text: "" },
+      { time: 80.70, text: "됐어 잘 가\n算了 走好" },
+      { time: 82.26, text: "쿨하게 보냈다\n假装洒脱地放手了" },
+      { time: 83.82, text: "하면서 끝자락에\n却在最后的边缘" },
+      { time: 85.08, text: "지긋이 앉아있는 조각\n静静坐着那片残存的碎片" },
+      { time: 86.60, text: "" },
+      { time: 86.81, text: "비워지겠지 아마도\n会慢慢清空的吧 或许" },
+      { time: 89.24, text: "또다시 채워지겠지 아파도\n会再次被填满吧 即使心痛" },
+      { time: 92.66, text: "현실을 마주보겠지 나라도\n我也会勇敢面对现实的 至少是我" },
+      { time: 96.60, text: "꿈이었을 거야 마음도\n那一切不过是南柯一梦吧 心意也是" },
+      { time: 100.45, text: "" },
+      { time: 101.83, text: "I gotta get outta f***ing love\n我必须摆脱这该死的爱恋" },
+      { time: 105.20, text: "Everything I said was a lie\n我说的每句话都是谎言" },
+      { time: 108.76, text: "이대로 모든 게 전부\n难道说这一切就这么" },
+      { time: 111.87, text: "" },
+      { time: 113.40, text: "다 지울 수 있는 기억들일까?\n全部都是可以抹去的记忆吗" },
+      { time: 117.04, text: "한 번씩 습관처럼 떠올라\n时不时地像习惯一样浮现" },
+      { time: 120.42, text: "아침부터 밤까지 이 시간이\n从清晨到黑夜 这段时光" },
+      { time: 123.72, text: "왜 이렇게 마음이 허전할까\n为何会如此令人心头空虚呢" },
+      { time: 126.60, text: "" },
+      { time: 127.05, text: "Uh uh uh uh 이 시간이\nUh uh uh uh 这段时光" },
+      { time: 130.17, text: "Uh uh uh uh 허전할까\nUh uh uh uh 会空虚吗" },
+      { time: 133.41, text: "Uh uh uh uh 이 시간이\nUh uh uh uh 这段时光" },
+      { time: 136.98, text: "Uh uh uh uh 허전할까\nUh uh uh uh 会空虚吗" },
+      { time: 999, text: "" }
+    ]
+  },
+  {
+    name: "NO PAIN",
+    singer: "Silica Gel",
+    cover: "https://p2.music.126.net/tOnKfdS9B2mhwfy9qKap1Q==/109951172481636354.jpg",
+    src: "https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvYy84M2MxZTEzYzA5OGQxODU2L0lRQjNiNkVKU2hPX1NKb1VMVThPYkdVb0FjMEY5YUNXX3JSUnhhRVNwS2VFRlRnP2U9ZWcxOTVz.mp3",
+    lyrics: [
+      { time: 0, text: "作词 : Silica Gel\n作曲 : Silica Gel\n编曲 : Silica Gel" },
+      { time: 23.72, text: "내가 만든 집에서\n在我亲手筑造的家中" },
+      { time: 26.77, text: "모두 함께 노래를 합시다\n大家一起 来放声歌唱吧" },
+      { time: 33.38, text: "소외됐던 사람들\n被疏远冷落的人们" },
+      { time: 36.93, text: "모두 함께 노래를 합시다\n一同齐聚 来纵声高歌吧" },
+      { time: 43.65, text: "우리만의 따뜻한 불\n只属于我们的温暖火苗" },
+      { time: 48.24, text: "영원한 꿈 영혼과 삶\n永恒的梦 灵魂 和人生" },
+      { time: 55.00, text: "난 오늘 떠날 거라 생각을 했어\n我本以为 会在今天就此离开" },
+      { time: 65.58, text: "날 미워하지 마\n请不要讨厌我" },
+      { time: 74.96, text: "No pain no fail" },
+      { time: 77.82, text: "음악 없는 세상\n没有音乐的世界" },
+      { time: 80.52, text: "Nowhere no fear" },
+      { time: 82.99, text: "바다 같은 색깔\n大海一般的颜色" },
+      { time: 85.72, text: "No cap no cry" },
+      { time: 88.10, text: "이미 죽은 사람 아냐 사실\n其实 并非一具冰冷死尸" },
+      { time: 115.55, text: "태양에 맡겨 뒀던 가족과\n曾托付给太阳的家人" },
+      { time: 121.03, text: "모든 분들의 사랑\n和所有人的爱" },
+      { time: 125.50, text: "밤안개 짙어진 뒤\n在夜雾渐浓后" },
+      { time: 128.99, text: "훔치려고 모인 자경단\n为偷盗 而聚首的居民自卫队" },
+      { time: 136.44, text: "난\n我" },
+      { time: 138.53, text: "난 오늘 떠날 거라고 생각했어\n我本以为 会在今天就此离开" },
+      { time: 147.17, text: "날 미워하지 마\n请不要讨厌我" },
+      { time: 156.41, text: "No pain no fail" },
+      { time: 159.31, text: "음악 없는 세상\n没有音乐的世界" },
+      { time: 161.99, text: "Nowhere no fear" },
+      { time: 164.53, text: "바다 같은 색깔\n大海一般的颜色" },
+      { time: 167.15, text: "No cap no cry" },
+      { time: 169.72, text: "이미 죽은 사람 아냐\n其实 并非一具冰冷死尸" },
+      { time: 177.16, text: "No pain no fail" },
+      { time: 179.88, text: "음악 없는 세상\n没有音乐的世界" },
+      { time: 182.42, text: "Nowhere no fear" },
+      { time: 184.90, text: "바다 같은 색깔\n大海一般的颜色" },
+      { time: 187.46, text: "No cap no cry" },
+      { time: 190.16, text: "이미 죽은 사람 아냐 사실\n其实 并非一具冰冷死尸" },
+      { time: 999, text: "" }
+    ]
+  },
+  {
+    name: "Blessing",
+    singer: "福梦",
+    cover: "https://p2.music.126.net/ROg_0J9P9z6blyY4kimnoA==/109951169954519480.jpg",
+    src: "https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvYy84M2MxZTEzYzA5OGQxODU2L0lRQU5IdGJNYVNCN1NZNmlfZjVNUHJuY0FUTndwSFB0cTlXNG5QQ3RoN0pEbEc4P2U9eTFPdnRk.mp3",
+    lyrics: [
+      { time: 0, text: "作词 : 陈王晧/李浩玮\n作曲 : 陈王晧/李浩玮" },
+      { time: 12.23, text: "被留下的人都在哭泣" },
+      { time: 14.48, text: "明明什么都愿意抛弃" },
+      { time: 16.93, text: "却还在这里 我还在这里" },
+      { time: 22.14, text: "倘若 狂风吹走的是我" },
+      { time: 24.48, text: "也许 你就能重新拥有" },
+      { time: 26.87, text: "却还在这里 还站在原地" },
+      { time: 32.19, text: "把拼图 一 片 一 片 拼起来" },
+      { time: 37.44, text: "找回曾经的 痛与爱" },
+      { time: 41.87, text: "就放声哭了吧 好吗？" },
+      { time: 46.43, text: "每一朵花都在为我们伴舞" },
+      { time: 51.41, text: "手轻放在地上 逐渐的 填满" },
+      { time: 56.62, text: "你苦涩的疤痕" },
+      { time: 59.80, text: "治愈了空洞的世界" },
+      { time: 67.15, text: "手上生命线的分岔" },
+      { time: 70.07, text: "是无法预测的动荡" },
+      { time: 72.65, text: "心悬在这里 还无从下笔" },
+      { time: 77.81, text: "在那参天大树阴影下" },
+      { time: 80.05, text: "像只蝼蚁却有着牵挂" },
+      { time: 82.59, text: "多么渺小 多么无力" },
+      { time: 87.92, text: "苦难的种子被深深埋下" },
+      { time: 92.79, text: "生命在黑暗中萌芽" },
+      { time: 97.10, text: "就放声哭了吧 好吗？" },
+      { time: 101.94, text: "每一朵花都在为我们伴舞" },
+      { time: 107.17, text: "手轻放在地上 逐渐的 填满" },
+      { time: 112.08, text: "你苦涩的疤痕" },
+      { time: 115.43, text: "治愈了空洞的世界" },
+      { time: 137.45, text: "就放声哭了吧 好吗？" },
+      { time: 142.65, text: "每一朵花都在为我们伴舞" },
+      { time: 147.41, text: "手轻放在地上 逐渐的 填满" },
+      { time: 152.62, text: "你苦涩的疤痕" },
+      { time: 155.80, text: "治愈了空洞的世界" }
+    ]
+  },
+  {
+    name: "letters from god",
+    singer: "nobody likes you pat",
+    cover: "https://p2.music.126.net/5NCG08qMlA5SHjnu3m99qg==/109951167937905668.jpg",
+    src: "https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvYy84M2MxZTEzYzA5OGQxODU2L0lRQmVsMGFQaTl0MFJibVRZajgyT3ljVkFhcTB2elJzYkF6a3RWbUVsaEJTUGhvP2U9Vmp4ME9P.mp3",
+    lyrics: [
+      { time: 0, text: "作词 : nobody likes you pat\n作曲 : nobody likes you pat" },
+      { time: 3.64, text: "I know that you're broken\n我知晓你内心深处的脆弱" },
+      { time: 17.91, text: "I know that you're scared\n我知道你或许会害怕" },
+      { time: 20.90, text: "That you won't live up to who you thought you'd be\n所以你不愿意再去为了理想的自己再进一步" },
+      { time: 27.14, text: "I know you've lost hope and\n你或许已经绝望" },
+      { time: 31.40, text: "I know you don't care\n我知道你也不在乎" },
+      { time: 34.90, text: "About anything right now, especially me\n不在乎当下的一切，尤其是我(God)" },
+      { time: 41.14, text: "But I love you when you don't love me\n但孩子你要知道 你不在乎我时我依然爱着你" },
+      { time: 51.65, text: "I see you when you can't see clearly\n当你对前路迷茫时我仍注视着你" },
+      { time: 58.64, text: "That I'm close to you when you feel far away\n当你感觉你我之间疏离时 我依然在侧" },
+      { time: 65.65, text: "I hope that you understand\n我希望你能明白" },
+      { time: 69.39, text: "I'll stay with you even when the world ends\n我会一直陪伴着你 哪怕是世界末日" },
+      { time: 74.40, text: "Another shooting\n枪击案一件又一件" },
+      { time: 81.64, text: "Another forest fire\n森林火灾一桩又一桩" },
+      { time: 84.65, text: "It's so hard for anyone to see the good\n又有谁觉得这些事情是好事呢" },
+      { time: 90.65, text: "You said \"What are you doing?\n你问我：“你为什么甩手不做点什么？" },
+      { time: 94.65, text: "Will I be alright?\"\n我，还能好好的吗？”" },
+      { time: 98.15, text: "Let me hold you like the father that you never had would\n孩子，让我像父亲那般给予你不曾有过的怀抱吧" },
+      { time: 105.15, text: "'Cause I love you when you don't love me\n只因，你不爱我时 我依然爱你" },
+      { time: 111.90, text: "And I see you when you can't see clearly\n当你看不清前路时 我还是在注视着你 期待着你" },
+      { time: 118.40, text: "That I'm close to you when you feel far away\n你说我们之间太过遥远 可是孩子 我们心灵的距离是如此之近" },
+      { time: 125.65, text: "I hope that you understand\n我希望你能明白" },
+      { time: 132.40, text: "I'm sure you've heard it said\n我知道你或许已经听腻了我的这些话" },
+      { time: 134.65, text: "So many times before\n在数不清多少日子的以前" },
+      { time: 138.14, text: "And maybe 'cause of that\n或许也是因为如此" },
+      { time: 141.15, text: "It has no meaning anymore\n让你感觉余生空无意义" },
+      { time: 144.90, text: "But sometimes simple truths\n但孩子啊，有时候" },
+      { time: 148.14, text: "Are the ones you need to know\n你只需明白一个简单的事实" },
+      { time: 151.66, text: "I'll never let you go\n我依然陪伴着你啊" },
+      { time: 156.90, text: "I'll never let you go\n绝不会放开手" },
+      { time: 162.90, text: "I'll never let you go\n不会让你感到绝望" },
+      { time: 176.14, text: "I'll never let you go\n不会让你空度余生" },
+      { time: 189.40, text: "I'll never, never\n绝不" },
+      { time: 198.60, text: "I'll never, never\n绝对不" },
+      { time: 205.09, text: "I'll never, never let you go\n绝对不会放开你的手" },
+      { time: 218.35, text: "'Cause I love you when you don't love me\n只因，你不爱我时 我依然爱你" },
+      { time: 224.85, text: "And I see you when you don't see clearly\n当你看不清前路时 我还是在注视着你 期待着你" },
+      { time: 231.10, text: "That I'm close to you when you feel far away\n你说我们之间太过遥远 可是孩子 我们心灵的距离是如此之近" },
+      { time: 238.34, text: "I hope that you understand\n我希望你能明白" },
+      { time: 242.35, text: "I'll stay with you even when the world ends\n我将一直陪伴着你 哪怕是世界末日" },
+      { time: 999, text: "" }
     ]
   }
 ];
@@ -1050,7 +1242,7 @@ const NansPlaylistWidget = () => {
   };
 
   return (
-    <div className="w-[330px] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/20 bg-white/10 backdrop-blur-xl p-4 hover:bg-white/20 transition-all duration-300 group flex flex-col gap-3">
+    <div className={`w-[330px] rounded-2xl relative shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/20 bg-white/10 backdrop-blur-xl p-4 hover:bg-white/20 transition-all duration-300 group flex flex-col gap-3 ${isPlaylistOpen ? 'z-[100]' : 'z-10'}`}>
       {/* Playlist Modal */}
       <AnimatePresence>
         {isPlaylistOpen && (
@@ -1058,7 +1250,7 @@ const NansPlaylistWidget = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute top-12 right-4 w-64 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/40 p-3 z-50 text-gray-800"
+            className="absolute top-12 right-4 w-64 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/40 p-3 z-[100] text-gray-800"
           >
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">播放列表</h4>
@@ -1066,7 +1258,7 @@ const NansPlaylistWidget = () => {
                 <X className="w-3 h-3" />
               </button>
             </div>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 max-h-[184px] overflow-y-auto pr-1 glass-scrollbar">
               {SONGS.map((song, idx) => (
                 <div 
                   key={idx}
@@ -1120,19 +1312,21 @@ const NansPlaylistWidget = () => {
           <div className="truncate text-xs text-white/70 mb-2">{currentSong.singer}</div>
           
           {/* Lyrics (2 lines) */}
-          <div className="h-8 overflow-hidden relative" style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)' }}>
+          <div className="h-10 overflow-hidden relative" style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)' }}>
             <motion.div 
-              className="absolute w-full flex flex-col gap-1"
-              animate={{ y: -(activeIndex * 20) }}
+              className="absolute w-full flex flex-col gap-2"
+              style={{ paddingTop: '4px' }}
+              animate={{ y: -(activeIndex * 40) }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
             >
               {currentSong.lyrics.map((lyric, idx) => (
                 <div 
                   key={idx} 
-                  className={`h-4 text-[11px] truncate transition-colors duration-300 ${idx === activeIndex ? 'text-white font-medium drop-shadow-md' : 'text-white/40'}`}
-                  style={{ lineHeight: '16px' }}
+                  className={`h-8 flex flex-col justify-center text-[11px] transition-colors duration-300 ${idx === activeIndex ? 'text-white font-medium drop-shadow-md' : 'text-white/40'}`}
                 >
-                  {lyric.text}
+                  {lyric.text.split('\n').map((line, i) => (
+                    <div key={i} className="truncate leading-[16px]">{line}</div>
+                  ))}
                 </div>
               ))}
             </motion.div>
@@ -1637,12 +1831,12 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center relative font-sans text-gray-900">
+    <div className="h-screen w-screen overflow-hidden bg-[url('https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9ZG1ia3pD.png')] bg-cover bg-center relative font-sans text-gray-900">
       <DynamicIsland hasOpenWindows={windows.length > 0} />
       <TopBar />
       
       {/* Left Column: Time & Music */}
-      <div className="absolute top-24 left-16 flex flex-col gap-8 z-0">
+      <div className="absolute top-24 left-16 flex flex-col gap-8">
         <LockScreenWidget />
         <NansPlaylistWidget />
         <GameControllerWidget />
