@@ -101,50 +101,220 @@ const TopBar = () => {
   );
 };
 
-const AboutContent = () => (
-  <div className="flex h-full bg-white/60 backdrop-blur-3xl">
-    <div className="w-48 bg-white/40 border-r border-black/5 p-4 flex flex-col gap-2 hidden sm:flex">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">个人资料</div>
-      <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-500/10 text-blue-600 rounded-md cursor-pointer">
-        <User className="w-4 h-4" />
-        <span className="text-sm font-medium">基本信息</span>
+const BasicInfo = () => (
+  <div className="max-w-2xl mx-auto">
+    <div className="flex items-center gap-6 mb-8">
+      <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 p-1 shadow-lg shrink-0">
+        <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+          <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        </div>
       </div>
-      <div className="flex items-center gap-2 px-2 py-1.5 text-gray-600 hover:bg-black/5 rounded-md cursor-pointer">
-        <Lightbulb className="w-4 h-4" />
-        <span className="text-sm font-medium">技能栈</span>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">你好，我是开发者</h1>
+        <p className="text-gray-500 mt-2 text-lg">前端工程师 / 设计爱好者 / 终身学习者</p>
       </div>
     </div>
-    <div className="flex-1 p-8 overflow-auto">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-6 mb-8">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 p-1 shadow-lg shrink-0">
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-              <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">你好，我是开发者</h1>
-            <p className="text-gray-500 mt-2 text-lg">前端工程师 / 设计爱好者 / 终身学习者</p>
-          </div>
-        </div>
-        <div className="space-y-6 text-gray-600 leading-relaxed">
-          <p className="text-lg">欢迎来到我的个人数字空间。这里不仅是我的作品集，更是我记录生活、分享灵感的地方。我致力于创造美观、易用且充满细节的数字体验。</p>
-          
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">核心技能</h2>
-            <div className="flex flex-wrap gap-2">
-              {['React', 'TypeScript', 'Tailwind CSS', 'Next.js', 'Framer Motion', 'UI/UX Design'].map(skill => (
-                <span key={skill} className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium shadow-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
+    <div className="space-y-6 text-gray-600 leading-relaxed">
+      <p className="text-lg">欢迎来到我的个人数字空间。这里不仅是我的作品集，更是我记录生活、分享灵感的地方。我致力于创造美观、易用且充满细节的数字体验。</p>
+      
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">核心技能</h2>
+        <div className="flex flex-wrap gap-2">
+          {['React', 'TypeScript', 'Tailwind CSS', 'Next.js', 'Framer Motion', 'UI/UX Design'].map(skill => (
+            <span key={skill} className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium shadow-sm">
+              {skill}
+            </span>
+          ))}
         </div>
       </div>
     </div>
   </div>
 );
+
+const XiaohongshuHomepage = () => {
+  return (
+    <div 
+      className="max-w-3xl mx-auto min-h-full p-6 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323205927_74_2-imagetourl.cloud-1774346276006-57l8o2.png")' }}
+    >
+      {/* Header */}
+      <div className="relative">
+        <div className="flex items-center justify-between mb-6">
+          <div className="w-8 h-8" />
+          <div className="flex gap-4">
+            <div className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white">▤</div>
+            <div className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white">↗</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 mb-6">
+          <div className="relative">
+            <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg" referrerPolicy="no-referrer" />
+            <div className="absolute bottom-0 right-0 w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white">+</div>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              o-NAN-o
+            </h2>
+            <p className="text-sm text-gray-500">小红书号: NotANumberO_</p>
+            <p className="text-sm text-gray-500">IP属地: 江西 ⓘ</p>
+          </div>
+          <div className="ml-auto">
+            <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border-2 border-gray-700 shadow-lg flex items-center justify-center relative">
+              <svg width="80" height="80" viewBox="0 0 100 100" className="stroke-gray-700" fill="none" strokeWidth="3">
+                {/* Number 23 at 1 o'clock position */}
+                <text x="64" y="26" fill="currentColor" stroke="none" fontSize="14" fontWeight="bold" className="fill-gray-700">23</text>
+                {/* Hour hand pointing to 23 (1:00 position) - shortened to not touch */}
+                <line x1="50" y1="50" x2="62" y2="29" strokeLinecap="round" />
+                {/* Center dot */}
+                <circle cx="50" cy="50" r="2" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="relative overflow-hidden rounded-2xl border border-white/30 p-6 my-4 w-full text-white text-sm shadow-xl"
+          style={{ 
+            backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323173509_69_2-imagetourl.cloud-1774346286709-l8y0gi.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative z-10 space-y-1">
+            <p>“时间是带走我的河流。”</p>
+            <p>LIFE & ME:colorful or off-white.</p>
+          </div>
+        </div>
+
+        {/* Static Danmaku Section */}
+        <div className="relative h-[450px] mt-8 w-full overflow-hidden">
+          {/* Central 502 Bad Gateway Window Pattern */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-52 bg-white/40 backdrop-blur-sm border border-gray-400/40 rounded-lg shadow-2xl overflow-hidden opacity-50 transform scale-100 transition-all duration-700">
+              <div className="bg-gray-400/20 px-3 py-1.5 border-b border-gray-400/30 flex justify-between items-center">
+                <span className="text-[9px] font-mono text-gray-500 tracking-widest uppercase">System Error</span>
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-gray-400/30"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400/30"></div>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col items-center gap-2">
+                <h1 className="text-base font-bold text-gray-600 font-mono tracking-tighter">502 Bad Gateway</h1>
+                <div className="w-12 h-[1px] bg-gray-400/40 my-1"></div>
+                <p className="text-[9px] text-gray-400 font-mono italic">-.Wellcome 2 THE ISLAND.-</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Item 1: The Anchor */}
+          <div 
+            className="absolute top-[12%] left-1/2 -translate-x-1/2 px-6 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-900 text-sm font-medium shadow-xl transform hover:scale-110 transition-all duration-500 cursor-default z-30"
+          >
+            无棘莺落
+          </div>
+
+          {/* Item 2: Top Right */}
+          <div 
+            className="absolute top-[8%] right-[8%] px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-tr-3xl rounded-bl-3xl rounded-tl-md rounded-br-md text-gray-700 text-xs font-medium shadow-sm transform rotate-3 hover:rotate-0 transition-all cursor-default z-10"
+          >
+            未命名诗集
+          </div>
+
+          {/* Item 3: Top Left */}
+          <div 
+            className="absolute top-[5%] left-[10%] px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-700 text-xs font-medium shadow-sm transform -rotate-6 hover:rotate-0 transition-all cursor-default z-10"
+          >
+            NANO
+          </div>
+
+          {/* Item 4: Mid Right */}
+          <div 
+            className="absolute top-[34%] right-[4%] px-5 py-2.5 bg-white/35 backdrop-blur-lg border border-white/45 rounded-tr-3xl rounded-bl-3xl rounded-tl-md rounded-br-md text-gray-800 text-[10.75px] font-medium shadow-lg transform rotate-[10deg] hover:scale-110 hover:rotate-[5deg] transition-all duration-500 cursor-default z-20"
+          >
+            iStagNANt_flight
+          </div>
+
+          {/* Item 5: Mid Left */}
+          <div 
+            className="absolute top-[30%] left-[5%] px-4 py-2 bg-white/30 backdrop-blur-md border border-white/40 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-800 text-xs font-medium shadow-md transform rotate-2 hover:scale-105 transition-all cursor-default z-10"
+          >
+            INFP-t
+          </div>
+
+          {/* Item 6: Mid Right Lower */}
+          <div 
+            className="absolute top-[55%] right-[5%] px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-tr-3xl rounded-bl-3xl rounded-tl-md rounded-br-md text-gray-700 text-xs font-medium shadow-sm transform rotate-12 hover:rotate-0 transition-all cursor-default z-10"
+          >
+            双鱼座
+          </div>
+
+          {/* Item 7: Mid Left Lower */}
+          <div 
+            className="absolute top-[60%] left-[15%] px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-700 text-xs font-medium shadow-sm transform -rotate-12 hover:rotate-0 transition-all cursor-default z-10"
+          >
+            狗狗教
+          </div>
+
+          {/* Item 8: Bottom Right */}
+          <div 
+            className="absolute bottom-[20%] right-[18%] px-5 py-2.5 bg-white/40 backdrop-blur-lg border border-white/50 rounded-tr-3xl rounded-bl-3xl rounded-tl-md rounded-br-md text-gray-800 text-xs font-medium shadow-lg transform -rotate-3 hover:scale-110 transition-all cursor-default z-20"
+          >
+            耳机重度依赖症
+          </div>
+
+          {/* Item 9: Bottom Left */}
+          <div 
+            className="absolute bottom-[15%] left-[8%] px-5 py-2.5 bg-white/40 backdrop-blur-lg border border-white/50 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-800 text-xs font-medium shadow-lg transform rotate-6 hover:scale-110 transition-all cursor-default z-20"
+          >
+            我有文艺病
+          </div>
+
+          {/* Item 10: Bottom Center-ish */}
+          <div 
+            className="absolute bottom-[5%] left-[48%] -translate-x-1/2 px-5 py-2.5 bg-white/40 backdrop-blur-lg border border-white/50 rounded-tl-3xl rounded-br-3xl rounded-tr-md rounded-bl-md text-gray-800 text-xs font-medium shadow-lg transform hover:scale-110 transition-all cursor-default z-20"
+          >
+            离开文字就无法运行.exe
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AboutContent = () => {
+  const [activeView, setActiveView] = useState<'basic' | 'icity'>('basic');
+  
+  return (
+    <div className="flex h-full bg-white/60 backdrop-blur-3xl">
+      <div className="w-48 bg-white/40 border-r border-black/5 p-4 flex flex-col gap-2 hidden sm:flex">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">个人资料</div>
+        <div 
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer ${activeView === 'basic' ? 'bg-blue-500/10 text-blue-600' : 'text-gray-600 hover:bg-black/5'}`}
+          onClick={() => setActiveView('basic')}
+        >
+          <User className="w-4 h-4" />
+          <span className="text-sm font-medium">基本信息</span>
+        </div>
+        <div 
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer ${activeView === 'icity' ? 'bg-blue-500/10 text-blue-600' : 'text-gray-600 hover:bg-black/5'}`}
+          onClick={() => setActiveView('icity')}
+        >
+          <User className="w-4 h-4" />
+          <span className="text-sm font-medium">个人主页</span>
+        </div>
+        <div className="flex items-center gap-2 px-2 py-1.5 text-gray-600 hover:bg-black/5 rounded-md cursor-pointer">
+          <Lightbulb className="w-4 h-4" />
+          <span className="text-sm font-medium">技能栈</span>
+        </div>
+      </div>
+      <div className="flex-1 p-8 overflow-auto">
+        {activeView === 'basic' ? <BasicInfo /> : <XiaohongshuHomepage />}
+      </div>
+    </div>
+  );
+};
 
 const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
   <div className="h-full w-full bg-[#f5f5f5] p-6 overflow-auto">
@@ -1148,6 +1318,98 @@ const SONGS = [
   }
 ];
 
+const ReminderModal = ({ onClose }: { onClose: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.95 }}
+    className="absolute inset-0 z-[110] bg-[#fffdf5]/98 backdrop-blur-xl rounded-2xl p-5 flex flex-col items-center justify-center overflow-hidden border border-white/40 shadow-2xl"
+    onClick={(e) => e.stopPropagation()}
+  >
+    <button onClick={onClose} className="absolute top-3 right-3 p-1.5 hover:bg-black/5 rounded-full transition-colors z-20">
+      <X className="w-4 h-4 text-gray-400" />
+    </button>
+    
+    <div className="relative flex flex-col items-center w-full max-w-[200px]">
+      {/* Speech Bubble - Compact and Centered */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 0.1, type: "spring", damping: 15 }}
+        className="relative mb-1 w-full"
+      >
+        <div className="bg-white border-[1.5px] border-gray-800/50 rounded-[1.2rem] p-2 shadow-[1px_1px_0px_rgba(0,0,0,0.05)] relative z-10">
+          <p className="text-gray-800 font-cute-zh text-[11px] leading-[1.3] whitespace-pre-line text-center tracking-tight">
+            {`我优中选优的人生曲
+其实还有更贴切的
+但是还是希望基调是温暖的
+从而能够为每一个你鼓劲
+故此 这样一个Playlist就诞生了
+✌️(o^_^o)`}
+          </p>
+          {/* Bubble Tail - Centered */}
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b-[1.5px] border-r-[1.5px] border-gray-800/50 rotate-[35deg] rounded-br-sm"></div>
+        </div>
+      </motion.div>
+
+      {/* Cuter Fluffy Puppy SVG with New Kaomoji Face */}
+      <div className="w-16 h-16 relative">
+        <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-sm">
+          {/* Fluffy Body */}
+          <path 
+            d="M60,140 Q40,180 100,185 Q160,180 140,140 Q130,110 100,115 Q70,110 60,140" 
+            fill="#ffffff" 
+            stroke="#4b5563" 
+            strokeWidth="4" 
+            strokeLinecap="round"
+          />
+          {/* Fluffy Head */}
+          <path 
+            d="M65,85 Q55,40 100,35 Q145,40 135,85 Q130,120 100,120 Q70,120 65,85" 
+            fill="#ffffff" 
+            stroke="#4b5563" 
+            strokeWidth="4" 
+            strokeLinecap="round"
+          />
+          {/* Droopy Fluffy Ears */}
+          <path 
+            d="M68,55 Q45,45 48,95 Q50,110 65,100" 
+            fill="#ffffff" 
+            stroke="#4b5563" 
+            strokeWidth="4" 
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path 
+            d="M132,55 Q155,45 152,95 Q150,110 135,100" 
+            fill="#ffffff" 
+            stroke="#4b5563" 
+            strokeWidth="4" 
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          
+          {/* New Kaomoji Face */}
+          <text 
+            x="100" 
+            y="85" 
+            textAnchor="middle" 
+            className="fill-gray-700 font-sans font-bold text-[32px] select-none"
+          >
+            ・ᴥ -
+          </text>
+
+          {/* Little Paws */}
+          <circle cx="85" cy="175" r="8" fill="#ffffff" stroke="#4b5563" strokeWidth="3" />
+          <circle cx="115" cy="175" r="8" fill="#ffffff" stroke="#4b5563" strokeWidth="3" />
+          {/* Tiny Tail */}
+          <path d="M145,155 Q165,145 158,165" fill="none" stroke="#4b5563" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+      </div>
+    </div>
+  </motion.div>
+);
+
 const NansPlaylistWidget = () => {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const currentSong = SONGS[currentSongIndex];
@@ -1158,6 +1420,7 @@ const NansPlaylistWidget = () => {
   const audioRef = React.useRef<HTMLAudioElement>(null);
   const [hasError, setHasError] = useState(false);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
   
   const togglePlaylist = () => setIsPlaylistOpen(!isPlaylistOpen);
   
@@ -1282,13 +1545,18 @@ const NansPlaylistWidget = () => {
         )}
       </AnimatePresence>
 
+      {/* Reminder Modal */}
+      <AnimatePresence>
+        {isReminderOpen && <ReminderModal onClose={() => setIsReminderOpen(false)} />}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <Music className="w-4 h-4 text-white/90" />
           <span className="text-xs font-bold text-white/90 tracking-wider">NAN's ♡ Playlist</span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95" title="提醒">
+          <button onClick={() => setIsReminderOpen(true)} className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95" title="提醒">
             <Bell className="w-3.5 h-3.5" />
           </button>
           <button onClick={togglePlaylist} className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95" title="歌单播放列表">
@@ -1298,6 +1566,7 @@ const NansPlaylistWidget = () => {
       </div>
 
       <div className="flex gap-4 items-center">
+
         {/* Cover */}
         <div className={`w-16 h-16 rounded-full overflow-hidden shadow-md border-2 border-white/20 shrink-0 ${isPlaying ? 'animate-[spin_10s_linear_infinite]' : ''}`} style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}>
           <img src={currentSong.cover || null} alt="cover" className="w-full h-full object-cover" referrerPolicy="no-referrer" />

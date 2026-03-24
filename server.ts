@@ -8,15 +8,25 @@ async function startServer() {
 
   app.get("/api/playlist", async (req, res) => {
     try {
-      const response = await fetch("https://music.163.com/api/v3/playlist/detail?id=6607728164", {
+      // Try a different endpoint
+      const response = await fetch("https://music.163.com/api/playlist/detail?id=6607728164", {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           "Referer": "https://music.163.com/"
         }
       });
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Failed to fetch playlist: Expected JSON, got", contentType, text);
+        return res.status(500).json({ error: "Failed to fetch playlist: Expected JSON", details: text });
+      }
+
       const data = await response.json();
       res.json(data);
     } catch (error) {
+      console.error("Error fetching playlist:", error);
       res.status(500).json({ error: String(error) });
     }
   });
