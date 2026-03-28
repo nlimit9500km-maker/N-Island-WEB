@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls, useMotionValue, animate } from 'motion/react';
-import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare } from 'lucide-react';
+import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu } from 'lucide-react';
 import * as mm from 'music-metadata-browser';
+import { DogGame } from './components/DogGame';
 
 // --- Components ---
 
@@ -379,6 +380,8 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
 
 const MusicContent = () => {
   const [view, setView] = useState<'library' | 'events'>('library');
+  const [activeTab, setActiveTab] = useState<'love_songs' | 'recent'>('love_songs');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   if (view === 'events') {
     return <NetEaseEventContent onBack={() => setView('library')} />;
@@ -411,80 +414,702 @@ const MusicContent = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-pink-500/10 text-pink-600 rounded-md cursor-pointer">
+            <div 
+              onClick={() => setActiveTab('love_songs')}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${activeTab === 'love_songs' ? 'bg-pink-500/10 text-pink-600' : 'text-gray-600 hover:bg-black/5'}`}
+            >
               <Music className="w-4 h-4" />
               <span className="text-sm font-medium">LOVE Songs</span>
             </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 text-gray-600 hover:bg-black/5 rounded-md cursor-pointer">
+            <div 
+              onClick={() => setActiveTab('recent')}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${activeTab === 'recent' ? 'bg-pink-500/10 text-pink-600' : 'text-gray-600 hover:bg-black/5'}`}
+            >
               <Coffee className="w-4 h-4" />
               <span className="text-sm font-medium">最最</span>
             </div>
           </div>
         </div>
         <div className="flex-1 p-8 overflow-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">最近在听</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="flex items-center gap-4 p-3 bg-white/50 rounded-xl shadow-sm hover:shadow-md hover:bg-white/80 transition-all cursor-pointer group border border-white/40">
-                <div className="w-16 h-16 rounded-lg overflow-hidden shadow-sm relative shrink-0">
-                  <img src={`https://picsum.photos/seed/album${i}/200/200`} alt="Album cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                      <ChevronRight className="w-5 h-5 text-white ml-0.5" />
+          {activeTab === 'love_songs' ? (
+            <div className="w-full h-full flex flex-col">
+              <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">LOVE Songs</h1>
+                <button 
+                  onClick={() => setRefreshKey(prev => prev + 1)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/60 hover:bg-white/90 text-gray-700 rounded-full shadow-sm border border-black/5 transition-all"
+                  title="刷新内容"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="text-sm font-medium">刷新</span>
+                </button>
+              </div>
+              <div className="flex-1 w-full bg-black/5 rounded-2xl overflow-hidden shadow-sm border border-white/40">
+                <iframe 
+                  key={refreshKey}
+                  src={`https://open.spotify.com/embed/playlist/4GVGnwkGf7CAZRazy1ObVe?si=GQxjbLsTQP6bLDujYg600g&t=${refreshKey}`}
+                  width="100%" 
+                  height="100%" 
+                  frameBorder="0" 
+                  allowFullScreen={true} 
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                  loading="lazy"
+                  className="w-full h-full min-h-[600px]"
+                ></iframe>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">最近在听</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="flex items-center gap-4 p-3 bg-white/50 rounded-xl shadow-sm hover:shadow-md hover:bg-white/80 transition-all cursor-pointer group border border-white/40">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden shadow-sm relative shrink-0">
+                      <img src={`https://picsum.photos/seed/album${i}/200/200`} alt="Album cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                          <ChevronRight className="w-5 h-5 text-white ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800 line-clamp-1">氛围音乐合集 {i}</h3>
+                      <p className="text-sm text-gray-500">独立音乐人</p>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 line-clamp-1">氛围音乐合集 {i}</h3>
-                  <p className="text-sm text-gray-500">独立音乐人</p>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const LifeContent = () => (
-  <div className="h-full bg-white/60 backdrop-blur-3xl p-8 overflow-auto">
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">生活碎片</h1>
-      
-      {/* Folder Sections */}
-      <div className="grid grid-cols-3 gap-6 mb-12">
-        {[
-          { name: '日记簿', icon: '📖' },
-          { name: '影音集', icon: '🎬' },
-          { name: 'photo', icon: '📸' }
-        ].map((folder) => (
-          <div key={folder.name} className="flex flex-col items-center gap-3 p-6 bg-white/70 rounded-2xl border border-white/40 shadow-sm hover:shadow-md hover:bg-white/90 transition-all cursor-pointer group">
-            <div className="text-4xl group-hover:scale-110 transition-transform duration-300">{folder.icon}</div>
-            <span className="text-sm font-semibold text-gray-700">{folder.name}</span>
-          </div>
-        ))}
-      </div>
+const BookOfAnswers = ({ type, onClose }: { type: string, onClose: () => void }) => {
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
 
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => {
-          const height = i % 3 === 0 ? 'h-80' : i % 2 === 0 ? 'h-64' : 'h-48';
-          return (
-            <div key={i} className="break-inside-avoid bg-white/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-white/40 group cursor-pointer">
-              <div className={`w-full ${height} relative overflow-hidden`}>
-                <img src={`https://picsum.photos/seed/life${i}/600/800`} alt="Life moment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
+  const answers = {
+    YESTERDAY: [
+      "放下执念，让它随风而去。", "那是一堂必经的课。", "你已经做得很好了。", 
+      "原谅过去，也原谅自己。", "它成就了现在的你。", "珍藏回忆，但要继续前行。",
+      "不要再沉溺其中了。", "一切都已成定局。", "遗憾也是一种美。", "时间会冲淡一切。", 
+      "不必频频回头。", "旧梦已醒，无需再续。", "那只是沿途的风景。", 
+      "错过的就让它错过吧。", "把回忆装进盒子里。", "有些事，记在心里就好。",
+      "过去的就让它过去吧。", "感谢曾经的相遇。", "那是你成长的养料。", "挥别错的，才能和对的相逢。",
+      "昨日之日不可留。", "让往事清零。", "原谅那个曾经笨拙的自己。", "所有的失去，都会以另一种方式归来。", 
+      "不要用昨天的尺，量今天的衣。", "那段经历，是你独一无二的勋章。", "把悲伤留在昨天。", "一切过往，皆为序章。", 
+      "它只是一段记忆，不再具有伤害你的力量。", "学会和解，是成长的必修课。", "有些答案，时间已经给出了。", 
+      "不要让昨天的雨，淋湿今天的衣裳。", "回头看，轻舟已过万重山。", "感谢那段时光，让你变得坚强。", 
+      "旧的篇章已经翻过。", "把遗憾化作前行的动力。", "那些眼泪，浇灌了今天的你。", "过去的你，也曾闪闪发光。", 
+      "不要苛责过去的自己，当时你已尽力。", "把故事留在风中。"
+    ],
+    TODAY: [
+      "立刻行动起来。", "深呼吸，感受当下。", "专注于眼前的事情。", 
+      "今天你拥有改变的力量。", "拥抱未知与混乱。", "一步一个脚印地走。",
+      "相信你的直觉。", "让今天变得有意义。", "做你现在能做的。", "享受这一刻的宁静。", 
+      "不要把今天浪费在犹豫上。", "去见你想见的人。", "吃顿好的，犒劳自己。", 
+      "今天是个好日子。", "行动胜于空想。", "感受微风，感受阳光。", 
+      "把手头的事情做好。", "给自己一个微笑。", "倾听内心的声音。", "现在就是最好的时机。",
+      "去创造属于今天的美好。", "别想太多，做就是了。", "今天也是限量版的一天。", "把注意力拉回此时此刻。", 
+      "去拥抱今天的阳光。", "做一件让自己开心的事。", "不要为尚未发生的事焦虑。", "今天，你才是主角。", 
+      "去尝试一个新事物。", "对身边的人说声谢谢。", "给自己放个小假。", "今天适合勇敢。", 
+      "去流汗，去奔跑。", "把今天过得热气腾腾。", "不要等待，现在就出发。", "去感受生活中的小确幸。", 
+      "今天，请善待自己。", "去完成那个搁置已久的计划。", "把今天当成生命的第一天。", "去爱，去感受，去生活。"
+    ],
+    TOMORROW: [
+      "未来充满无限可能。", "静观其变。", "做好准备迎接挑战。", 
+      "担忧改变不了什么。", "相信过程，顺其自然。", "一个新的开始在等你。",
+      "耐心是关键。", "一切都会水到渠成。", "好戏还在后头。", "保持期待。", 
+      "一切皆有可能。", "不要预支明天的烦恼。", "车到山前必有路。", 
+      "明天又是新的一天。", "做好准备，迎接惊喜。", "顺其自然，静待花开。", 
+      "你的未来由你创造。", "勇敢地迈出下一步。", "星光不问赶路人。", "时间会给你答案。",
+      "明天会更好。", "去迎接未知的冒险。", "把期待拉满。", "明天，去见想见的人。", 
+      "去创造属于你的奇迹。", "不要害怕未知的明天。", "明天，又是充满希望的一天。", "去迎接新的曙光。", 
+      "把梦想照进现实。", "明天，去挑战不可能。", "去书写新的篇章。", "明天，去拥抱更广阔的世界。", 
+      "去追逐你的星辰大海。", "明天，去成为更好的自己。", "去期待那些不期而遇的美好。", "明天，去开启新的旅程。", 
+      "去相信，美好的事情即将发生。", "明天，去绽放你的光芒。", "去迎接生命中的每一个明天。", "明天，去创造无限可能。"
+    ]
+  };
+
+  const handleAsk = () => {
+    setIsThinking(true);
+    setAnswer(null);
+    setTimeout(() => {
+      const list = answers[type as keyof typeof answers] || answers.TODAY;
+      const randomAnswer = list[Math.floor(Math.random() * list.length)];
+      setAnswer(randomAnswer);
+      setIsThinking(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="absolute inset-0 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] flex flex-col z-40 shadow-2xl">
+      {/* Win98 Title Bar */}
+      <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 flex justify-between items-center select-none">
+        <div className="flex items-center gap-2">
+          <span className="text-sm leading-none">📖</span>
+          <span className="text-white text-xs font-bold tracking-wide">Book of Answers: {type}</span>
+        </div>
+        <button 
+          onClick={onClose}
+          className="w-4 h-4 bg-[#c0c0c0] border-t border-l border-white border-b border-r border-[#808080] flex items-center justify-center text-black font-bold text-xs focus:outline-none active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white"
+        >
+          ×
+        </button>
+      </div>
+      {/* Menu Bar */}
+      <div className="flex gap-3 px-2 py-1 text-xs text-black border-b border-[#808080] shadow-[0_1px_0_white]">
+        <span>File</span><span>Action</span><span>Help</span>
+      </div>
+      {/* Content Area */}
+      <div className="flex-1 bg-[#f0ebd8] border-t-2 border-l-2 border-[#808080] border-b-2 border-r-2 border-white m-1 p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+        {/* Vintage Paper Texture Overlay */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cream-paper.png")' }}></div>
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #5c4033 1px, transparent 1px)', backgroundSize: '15px 15px' }}></div>
+        
+        <h2 className="text-3xl font-serif font-bold text-[#3e2723] mb-3 drop-shadow-sm z-10 tracking-widest">
+          {type === 'YESTERDAY' ? '旧笺余墨' : type === 'TODAY' ? '此页正书' : '空章待序'}
+        </h2>
+        <p className="text-xs text-[#5d4037] mb-8 font-serif text-center max-w-[80%] z-10 italic">
+          在心中默念关于{type === 'YESTERDAY' ? '昨天' : type === 'TODAY' ? '今天' : '明天'}的问题，然后翻开答案之书。
+        </p>
+
+        <div className="relative w-56 h-72 mb-8 z-10" style={{ perspective: '1200px' }}>
+          <motion.div 
+            className="w-full h-full relative cursor-pointer"
+            style={{ transformStyle: 'preserve-3d' }}
+            animate={{ rotateY: answer ? 180 : 0, scale: isThinking ? [1, 1.02, 1] : 1 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            onClick={!isThinking && !answer ? handleAsk : undefined}
+          >
+            {/* Book Front */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#4e342e] to-[#3e2723] rounded-r-2xl border-l-[12px] border-[#261410] shadow-[10px_10px_20px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-4 border-2 border-[#5d4037] overflow-hidden" style={{ backfaceVisibility: 'hidden' }}>
+              <div className="absolute inset-2 border border-[#795548]/30 rounded-r-xl pointer-events-none"></div>
+              <div className="w-12 h-12 border-2 border-[#d7ccc8]/40 rounded-full flex items-center justify-center mb-1 mt-3 shadow-inner bg-[#3e2723]/50">
+                <span className="text-[#d7ccc8] text-xl font-serif drop-shadow-md">?</span>
               </div>
-              <div className="p-4">
-                <p className="text-gray-700 text-sm font-medium">记录生活的美好瞬间，发现平凡中的不平凡。</p>
-                <p className="text-gray-400 text-xs mt-2 font-mono">2026.03.{10 + i}</p>
+              <span className="text-[#d7ccc8]/80 font-serif text-xs tracking-[0.2em] uppercase text-center w-full px-2 break-words leading-relaxed">The Book</span>
+            </div>
+            {/* Book Back / Inside */}
+            <div className="absolute inset-0 bg-[#fdfbf7] rounded-l-2xl border-r-[12px] border-[#e0e0e0] shadow-[inset_15px_0_20px_-10px_rgba(0,0,0,0.15),-5px_5px_15px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center p-6 text-center overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+              {/* Page styling lines */}
+              <div className="absolute left-4 top-0 bottom-0 w-[1px] bg-red-800/20"></div>
+              <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ backgroundImage: 'linear-gradient(transparent 95%, #e0e0e0 100%)', backgroundSize: '100% 1.5rem' }}></div>
+              
+              <div className="relative z-10 w-full flex items-center justify-center">
+                {isThinking ? (
+                  <span className="text-[#8d6e63] font-serif italic text-base animate-pulse">正在寻找答案...</span>
+                ) : (
+                  <span className="text-[#2c1810] font-serif text-lg leading-relaxed font-bold drop-shadow-sm break-words">{answer}</span>
+                )}
               </div>
             </div>
-          );
-        })}
+          </motion.div>
+        </div>
+
+        {answer ? (
+          <button 
+            onClick={() => setAnswer(null)}
+            className="px-8 py-2.5 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] text-sm font-bold active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white z-10 text-black shadow-sm hover:bg-[#d0d0d0] transition-colors"
+          >
+            再问一次
+          </button>
+        ) : (
+          <button 
+            onClick={handleAsk}
+            disabled={isThinking}
+            className="px-8 py-2.5 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] text-sm font-bold active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white disabled:opacity-50 z-10 text-black shadow-sm hover:bg-[#d0d0d0] transition-colors"
+          >
+            {isThinking ? '翻阅中...' : '寻求答案'}
+          </button>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+const LifeContent = () => {
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [openWindow, setOpenWindow] = useState<string | null>(null);
+  const [isComputerOn, setIsComputerOn] = useState(false);
+  const recentBooks = [
+    { title: '倒影映射出的你/我/他', author: 'NotANumberO_', progress: 23, cover: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222226_25_569-imagetourl.cloud-1774683345038-ekf9il.png' },
+    { title: '发现平凡中的不平凡', author: 'NotANumberO_', progress: 12, cover: 'https://picsum.photos/seed/k2/300/450' },
+    { title: '春日漫步随笔', author: 'NotANumberO_', progress: 100, cover: 'https://picsum.photos/seed/k3/300/450' },
+  ];
+
+  const collections = [
+    { title: '日记簿', count: 4 },
+    { title: '影音集', count: 12 },
+    { title: 'photo', count: 36 },
+  ];
+
+  return (
+    <div className="h-full bg-[#fcfcfc] text-[#333] font-sans overflow-hidden flex flex-col border-x border-gray-100">
+      {/* Bilibili Style Header */}
+      <div className="bg-white border-b border-gray-100 flex flex-col shrink-0 z-20 pt-3 pb-1 shadow-sm">
+        {/* Top Row: Avatar, Search, Icons */}
+        <div className="flex items-center justify-between px-4 h-10 gap-4 mb-2 relative">
+          {/* Avatar */}
+          <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100 cursor-pointer">
+            <img 
+              src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774681518731-ajx7b8.jpg" 
+              alt="avatar" 
+              className="w-full h-full object-cover" 
+              referrerPolicy="no-referrer" 
+            />
+          </div>
+          
+          {/* Search Bar */}
+          <div className="flex-1 h-8 bg-[#F1F2F3] rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-[#E3E5E7] transition-colors mr-10 group">
+            <Search className="w-4 h-4 text-[#99A2AA] group-hover:text-[#FB7299] transition-colors" />
+            <span className="text-[13px] text-[#99A2AA] truncate group-hover:text-[#FB7299] transition-colors">CLICK HERE TO SEARCH</span>
+          </div>
+          
+          {/* Right Menu Icon with Gradient Mask */}
+          <div className="absolute right-0 top-0 h-full bg-gradient-to-l from-white via-white to-transparent w-16 flex items-center justify-end pr-4">
+            <Menu className="w-5 h-5 text-[#757A81] cursor-pointer hover:text-[#FB7299] transition-colors" />
+          </div>
+        </div>
+
+        {/* Bottom Row: Channel Tags & Scrolling Pixel Art Text */}
+        <div className="h-10 bg-white border-t border-gray-100 flex items-center overflow-hidden relative">
+          {/* Channel Tags */}
+          <div className="flex items-center px-4 gap-6 h-full shrink-0 border-r border-gray-100/50 mr-2 bg-white z-10">
+            <div 
+              className="relative h-full flex items-center cursor-pointer group"
+              onClick={() => setActiveTab('diary')}
+            >
+              <span className={`text-[15px] font-medium transition-colors ${activeTab === 'diary' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>日记簿</span>
+              {activeTab === 'diary' && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#FB7299] rounded-full"></div>
+              )}
+            </div>
+            <div 
+              className="relative h-full flex items-center cursor-pointer group"
+              onClick={() => setActiveTab('media')}
+            >
+              <span className={`text-[15px] font-medium transition-colors ${activeTab === 'media' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>影音集</span>
+              {activeTab === 'media' && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#FB7299] rounded-full"></div>
+              )}
+            </div>
+            <div 
+              className="relative h-full flex items-center cursor-pointer group"
+              onClick={() => setActiveTab('photo')}
+            >
+              <span className={`text-[15px] font-medium transition-colors ${activeTab === 'photo' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>photo</span>
+              {activeTab === 'photo' && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#FB7299] rounded-full"></div>
+              )}
+            </div>
+          </div>
+
+          {/* Scrolling Text Area */}
+          <div className="flex-1 h-full flex items-center overflow-hidden relative">
+            <div className="whitespace-nowrap animate-marquee-once flex items-center">
+              <span className="text-[16px] text-[#FB7299] tracking-wider px-4 glitch-text" data-text="春天会复活，种下的花朵会重生。">
+                春天会复活，种下的花朵会重生。
+              </span>
+            </div>
+          </div>
+          
+          <style dangerouslySetInnerHTML={{ __html: `
+            @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+            
+            .glitch-text {
+              font-family: 'DotGothic16', sans-serif;
+              position: relative;
+              display: inline-block;
+              /* Combined glitch and dissipation animation */
+              animation: main-glitch 8s step-end infinite, pixel-dissipate 4s step-end infinite;
+            }
+            
+            /* Glitch Layers for "Broken" effect */
+            .glitch-text::before,
+            .glitch-text::after {
+              content: attr(data-text);
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: transparent;
+              display: block; /* Always display to ensure immediate effect */
+              pointer-events: none;
+            }
+            
+            .glitch-text::before {
+              left: 2px;
+              text-shadow: -2px 0 #ff00c1;
+              clip-path: inset(10% 0 80% 0);
+              animation: glitch-layer-1 5s step-end infinite;
+              opacity: 0.7;
+            }
+            
+            .glitch-text::after {
+              left: -2px;
+              text-shadow: 2px 0 #00fff9;
+              clip-path: inset(70% 0 10% 0);
+              animation: glitch-layer-2 7s step-end infinite;
+              opacity: 0.7;
+            }
+            
+            @keyframes main-glitch {
+              0% { transform: translate(0); opacity: 1; }
+              5% { transform: translate(2px, -1px); opacity: 0.9; }
+              10% { transform: translate(-1px, 2px); opacity: 1; }
+              15% { transform: translate(0); opacity: 0.8; }
+              20% { transform: translate(-2px, -2px); opacity: 1; }
+              25% { transform: translate(0); opacity: 1; }
+              40% { transform: translate(3px, 1px); opacity: 0.7; }
+              45% { transform: translate(0); opacity: 1; }
+              60% { transform: translate(-3px, -1px); opacity: 0.8; }
+              65% { transform: translate(0); opacity: 1; }
+              80% { transform: translate(1px, 3px); opacity: 0.9; }
+              85% { transform: translate(0); opacity: 1; }
+              92% { transform: translate(5px, -2px); opacity: 0.6; }
+              94% { transform: translate(-5px, 2px); opacity: 0.4; }
+              96% { transform: translate(2px, 5px); opacity: 0.2; }
+              98% { transform: translate(-2px, -5px); opacity: 1; }
+            }
+            
+            @keyframes pixel-dissipate {
+              0%, 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+              10% { clip-path: polygon(0 0, 40% 0, 40% 20%, 60% 20%, 60% 0, 100% 0, 100% 100%, 0 100%); }
+              20% { clip-path: polygon(0 0, 100% 0, 100% 40%, 80% 40%, 80% 60%, 100% 60%, 100% 100%, 0 100%); }
+              30% { clip-path: polygon(0 0, 100% 0, 100% 100%, 20% 100%, 20% 80%, 40% 80%, 40% 100%, 0 100%); }
+              40% { clip-path: polygon(0 20%, 20% 20%, 20% 0, 100% 0, 100% 100%, 0 100%); }
+              50% { clip-path: polygon(0 0, 70% 0, 70% 30%, 80% 30%, 80% 0, 100% 0, 100% 100%, 0 100%); }
+              60% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 60%, 20% 60%, 20% 40%, 0 40%); }
+              70% { clip-path: polygon(0 0, 30% 0, 30% 40%, 50% 40%, 50% 0, 100% 0, 100% 100%, 0 100%); }
+              80% { clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 70%, 90% 90%, 100% 90%, 100% 100%, 0 100%); }
+              90% { clip-path: polygon(0 0, 100% 0, 100% 100%, 10% 100%, 10% 10%, 0 10%); }
+            }
+            
+            @keyframes glitch-layer-1 {
+              0% { clip-path: inset(20% 0 50% 0); transform: translateX(-5px); }
+              20% { clip-path: inset(80% 0 10% 0); transform: translateX(5px); }
+              40% { clip-path: inset(40% 0 40% 0); transform: translateX(-3px); }
+              60% { clip-path: inset(10% 0 80% 0); transform: translateX(3px); }
+              80% { clip-path: inset(60% 0 10% 0); transform: translateX(-5px); }
+              100% { clip-path: inset(20% 0 50% 0); transform: translateX(5px); }
+            }
+            
+            @keyframes glitch-layer-2 {
+              0% { clip-path: inset(10% 0 70% 0); transform: translateX(8px); }
+              25% { clip-path: inset(50% 0 30% 0); transform: translateX(-8px); }
+              50% { clip-path: inset(30% 0 50% 0); transform: translateX(4px); }
+              75% { clip-path: inset(70% 0 10% 0); transform: translateX(-4px); }
+              100% { clip-path: inset(10% 0 70% 0); transform: translateX(8px); }
+            }
+            
+            @keyframes marquee-once {
+              0% { transform: translateX(100%); }
+              100% { transform: translateX(-100%); }
+            }
+            
+            .animate-marquee-once {
+              animation: marquee-once 18s linear infinite;
+            }
+          `}} />
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-auto bg-white p-8">
+        <div className="max-w-4xl mx-auto">
+          {/* From Your Library Section */}
+          <div className="flex justify-between items-center mb-6">
+            <div 
+              className="relative inline-flex items-center pl-6 pr-10 py-2 shadow-md border-y border-amber-900/20" 
+              style={{ 
+                clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
+                backgroundColor: '#d2b48c',
+                backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
+                backgroundSize: '4px 4px',
+                boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
+              }}
+            >
+              <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm">I SEE U</h2>
+            </div>
+            
+            {/* Complex Wavy Ornamental Line with more curvature - Shortened */}
+            <div className="flex-1 mx-2 h-10 flex items-center relative z-0">
+              <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 20">
+                {/* Triple Wavy Line for complexity */}
+                <path 
+                  d="M 0 10 C 20 2, 30 18, 50 10 C 70 2, 80 18, 100 10" 
+                  fill="none" 
+                  stroke="rgba(120, 53, 15, 0.15)" 
+                  strokeWidth="0.5"
+                />
+                <path 
+                  d="M 0 11 C 20 3, 30 19, 50 11 C 70 3, 80 19, 100 11" 
+                  fill="none" 
+                  stroke="rgba(120, 53, 15, 0.4)" 
+                  strokeWidth="1.2"
+                />
+                <path 
+                  d="M 0 12 C 20 4, 30 20, 50 12 C 70 4, 80 20, 100 12" 
+                  fill="none" 
+                  stroke="rgba(120, 53, 15, 0.15)" 
+                  strokeWidth="0.5"
+                />
+              </svg>
+              
+              {/* Center Decorative Element with Tooltip covering it */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
+                <div className="relative group cursor-help flex items-center justify-center">
+                  <div className="w-3.5 h-3.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-amber-900/20"></div>
+                  </div>
+                  {/* Tooltip Popup - Positioned to cover the square */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-2 bg-amber-900/95 backdrop-blur-md text-white text-[11px] rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl border border-amber-800/30 z-50 scale-90 group-hover:scale-100">
+                    没关系，别害怕，不对称的状态才是日常。
+                  </div>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
+              </div>
+
+              {/* Secondary Ornaments */}
+              <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
+              <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
+            </div>
+
+            <div 
+              className="relative inline-flex items-center pr-6 pl-10 py-2 shadow-md border-y border-amber-900/20 cursor-pointer group" 
+              style={{ 
+                clipPath: 'polygon(15% 50%, 0 0, 100% 0, 100% 100%, 0 100%)',
+                backgroundColor: '#d2b48c',
+                backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
+                backgroundSize: '4px 4px',
+                boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
+              }}
+            >
+              <span className="text-sm font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm group-hover:underline">See All</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+            {/* Leftmost Image */}
+            <div className="col-span-1 md:col-span-4 flex flex-col">
+              <div className="group cursor-pointer">
+                <div className="w-full aspect-[2/3] bg-gray-100 mb-4 border border-gray-300 shadow-md relative overflow-hidden">
+                  <img 
+                    src={recentBooks[0].cover} 
+                    alt={recentBooks[0].title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    referrerPolicy="no-referrer" 
+                  />
+                  {recentBooks[0].progress === 100 && (
+                    <div className="absolute top-0 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+                      Read
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-serif font-bold text-base leading-snug mb-1 line-clamp-2 group-hover:underline">{recentBooks[0].title}</h3>
+                <p className="text-sm text-gray-600 mb-1 font-serif italic">{recentBooks[0].author}</p>
+              </div>
+              
+              {/* Straight Ornamental Line below Author */}
+              <div className="w-full h-4 flex items-center relative z-0 mb-2 px-4">
+                <div className="w-full h-[2px] bg-amber-900/20 relative">
+                  {/* Center Decorative Element (No Tooltip) */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
+                    <div className="w-2.5 h-2.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
+                      <div className="w-1 h-1 bg-amber-900/20"></div>
+                    </div>
+                    <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
+                  </div>
+                  {/* Secondary Ornaments */}
+                  <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
+                  <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
+                </div>
+              </div>
+
+              {/* Interactive Dog Game Section */}
+              <DogGame />
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-black" style={{ width: `${recentBooks[0].progress}%` }}></div>
+                </div>
+                <span className="text-[11px] font-bold text-gray-500">{recentBooks[0].progress}%</span>
+              </div>
+            </div>
+
+            {/* Y2K Windows Interface with CRT Monitor Shell */}
+            <div className="col-span-1 md:col-span-8 flex flex-col items-center relative">
+              {/* Monitor Body */}
+              <div className="w-full bg-[#d4d0c8] p-4 rounded-2xl border-t-4 border-l-4 border-white/50 border-b-4 border-r-4 border-black/20 shadow-2xl flex flex-col">
+                {/* Screen Bezel (Dark inner frame) */}
+                <div className="w-full bg-[#1a1a1a] p-3 rounded-xl border-t-4 border-l-4 border-black/60 border-b-4 border-r-4 border-white/10 flex-1 flex flex-col relative overflow-hidden shadow-inner">
+                  {/* CRT Glass reflection effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-50 rounded-lg"></div>
+
+                  <div className="w-full h-full min-h-[400px] bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] p-[2px] font-sans flex flex-col shadow-[2px_2px_0px_rgba(0,0,0,0.2)] relative">
+                    <AnimatePresence mode="wait">
+                      {isComputerOn ? (
+                        <motion.div 
+                          key="desktop"
+                          initial={{ opacity: 0, filter: 'blur(10px)' }}
+                          animate={{ opacity: 1, filter: 'blur(0px)' }}
+                          exit={{ opacity: 0, filter: 'blur(10px)' }}
+                          transition={{ duration: 1.2, ease: "easeInOut" }}
+                          className="flex-1 flex flex-col relative h-full"
+                        >
+                          {/* Desktop Area */}
+                        <div className="flex-1 m-1 p-4 overflow-hidden flex flex-col relative">
+                          {/* Blurred Background Layer */}
+                          <div 
+                            className="absolute inset-0 z-0"
+                            style={{ 
+                              backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774683355704-ttq8cs.png")',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              filter: 'blur(3px)'
+                            }}
+                          ></div>
+
+                          {/* Desktop Icons Centered Vertically */}
+                          <div className="relative z-10 flex flex-col gap-8 justify-center items-center h-full">
+                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('YESTERDAY')}>
+                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">YESTERDAY</span>
+                            </div>
+                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TODAY')}>
+                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TODAY</span>
+                            </div>
+                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TOMORROW')}>
+                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TOMORROW</span>
+                            </div>
+                          </div>
+
+                          {/* Windows Modals */}
+                          {openWindow && (
+                            <BookOfAnswers type={openWindow} onClose={() => setOpenWindow(null)} />
+                          )}
+                        </div>
+                        
+                        {/* Taskbar */}
+                        <div className="h-7 bg-[#c0c0c0] border-t-2 border-white flex items-center px-0.5 gap-1 z-30">
+                          <button className="h-[22px] px-1.5 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] flex items-center justify-center active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white group">
+                            <span className="text-xs font-bold text-black">Start</span>
+                          </button>
+                          <div className="flex-1 h-[22px] border-t border-l border-[#808080] border-b border-r border-white mx-0.5"></div>
+                          <div className="h-[22px] px-2 border-t border-l border-[#808080] border-b border-r border-white flex items-center justify-center">
+                            <span className="text-[10px] text-black font-medium">
+                              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                        <motion.div 
+                          key="lockscreen"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
+                          transition={{ duration: 1.2, ease: "easeInOut" }}
+                          className="flex-1 m-1 flex items-center justify-center relative overflow-hidden"
+                          style={{
+                          backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774690774047-jzt6ue.png")',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-black/30"></div>
+                        <div 
+                          className="relative z-10 flex flex-col items-center gap-4 cursor-pointer group"
+                          onClick={() => setIsComputerOn(true)}
+                        >
+                          <div className="flex text-white/90 font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] sm:tracking-[0.3em] lg:tracking-[0.5em] whitespace-nowrap drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-700">
+                            {"WELCOME TO".split('').map((char, i) => (
+                              <motion.span
+                                key={i}
+                                initial={{ opacity: 0, filter: 'blur(10px)' }}
+                                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                                transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
+                              >
+                                {char === ' ' ? '\u00A0' : char}
+                              </motion.span>
+                            ))}
+                          </div>
+                          <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 2, duration: 1 }}
+                            className="text-white/50 text-[10px] tracking-widest font-sans uppercase group-hover:text-white/80 transition-colors"
+                          >
+                            Click to unlock
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Monitor Bottom Control Panel */}
+                <div className="h-10 w-full mt-2 flex items-center justify-between px-6">
+                  {/* Brand/Logo placeholder */}
+                  <div className="text-gray-500 font-serif italic text-sm tracking-widest font-bold">INFINITY</div>
+                  {/* Buttons */}
+                  <div className="flex gap-3 items-center">
+                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                    {/* Power Button */}
+                    <button 
+                      onClick={() => setIsComputerOn(!isComputerOn)}
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isComputerOn 
+                          ? 'bg-green-500 border-green-700 shadow-[0_0_5px_#22c55e]' 
+                          : 'bg-red-500 border-red-700 shadow-[0_0_5px_#ef4444]'
+                      } ml-4 outline-none active:scale-95 cursor-pointer`}
+                      title="Power"
+                    >
+                      <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v9m-4.5-2.5a9 9 0 109 0" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Monitor Stand */}
+              <div className="w-1/3 h-8 bg-[#c0bcb4] border-l-4 border-white/40 border-r-4 border-black/20 z-0 relative -mt-2 shadow-lg"></div>
+              <div className="w-1/2 h-4 bg-[#d4d0c8] rounded-b-xl border-b-4 border-black/20 shadow-xl z-10"></div>
+            </div>
+          </div>
+
+          {/* Collections Section */}
+          <div className="border-t-2 border-gray-200 pt-8">
+            <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-gray-900 mb-6">Your Collections</h2>
+            <div className="flex flex-col border-y border-gray-200">
+              {collections.map((col, idx) => (
+                <div key={idx} className="flex justify-between items-center py-5 border-b border-gray-200 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors px-2 group">
+                  <div className="flex items-center gap-4">
+                    <Folder className="w-6 h-6 text-gray-400 group-hover:text-black transition-colors" strokeWidth={1.5} />
+                    <span className="font-serif font-bold text-lg text-gray-800">{col.title}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">{col.count} items</span>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-black transition-colors" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PortfolioContent = () => (
   <div className="h-full bg-white/60 backdrop-blur-3xl p-8 overflow-auto">

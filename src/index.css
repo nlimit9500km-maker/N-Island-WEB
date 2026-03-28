@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=ZCOOL+KuaiLe&family=VT323&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-cute-ko: "Gaegu", cursive;
   --font-cute-zh: "ZCOOL KuaiLe", cursive;
+  --font-pixel: "VT323", monospace;
   
   @keyframes rain {
     0% { transform: translateY(0); opacity: 0; }
