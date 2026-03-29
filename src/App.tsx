@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls, useMotionValue, animate } from 'motion/react';
-import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu } from 'lucide-react';
+import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart } from 'lucide-react';
 import * as mm from 'music-metadata-browser';
 import { DogGame } from './components/DogGame';
 
@@ -102,36 +102,6 @@ const TopBar = () => {
   );
 };
 
-const BasicInfo = () => (
-  <div className="max-w-2xl mx-auto">
-    <div className="flex items-center gap-6 mb-8">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 p-1 shadow-lg shrink-0">
-        <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-          <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-        </div>
-      </div>
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">你好，我是开发者</h1>
-        <p className="text-gray-500 mt-2 text-lg">前端工程师 / 设计爱好者 / 终身学习者</p>
-      </div>
-    </div>
-    <div className="space-y-6 text-gray-600 leading-relaxed">
-      <p className="text-lg">欢迎来到我的个人数字空间。这里不仅是我的作品集，更是我记录生活、分享灵感的地方。我致力于创造美观、易用且充满细节的数字体验。</p>
-      
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">核心技能</h2>
-        <div className="flex flex-wrap gap-2">
-          {['React', 'TypeScript', 'Tailwind CSS', 'Next.js', 'Framer Motion', 'UI/UX Design'].map(skill => (
-            <span key={skill} className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium shadow-sm">
-              {skill}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 const XiaohongshuHomepage = () => {
   return (
     <div 
@@ -150,7 +120,7 @@ const XiaohongshuHomepage = () => {
 
         <div className="flex items-center gap-6 mb-6">
           <div className="relative">
-            <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg" referrerPolicy="no-referrer" />
+            <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323223334_83_2-imagetourl.cloud-1774756876092-3dsrts.png" alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg" referrerPolicy="no-referrer" />
             <div className="absolute bottom-0 right-0 w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white">+</div>
           </div>
           <div>
@@ -285,19 +255,12 @@ const XiaohongshuHomepage = () => {
 };
 
 const AboutContent = () => {
-  const [activeView, setActiveView] = useState<'basic' | 'icity'>('basic');
+  const [activeView, setActiveView] = useState<'icity'>('icity');
   
   return (
     <div className="flex h-full bg-white/60 backdrop-blur-3xl">
       <div className="w-48 bg-white/40 border-r border-black/5 p-4 flex flex-col gap-2 hidden sm:flex">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">个人资料</div>
-        <div 
-          className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer ${activeView === 'basic' ? 'bg-blue-500/10 text-blue-600' : 'text-gray-600 hover:bg-black/5'}`}
-          onClick={() => setActiveView('basic')}
-        >
-          <User className="w-4 h-4" />
-          <span className="text-sm font-medium">基本信息</span>
-        </div>
         <div 
           className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer ${activeView === 'icity' ? 'bg-blue-500/10 text-blue-600' : 'text-gray-600 hover:bg-black/5'}`}
           onClick={() => setActiveView('icity')}
@@ -311,7 +274,7 @@ const AboutContent = () => {
         </div>
       </div>
       <div className="flex-1 p-8 overflow-auto">
-        {activeView === 'basic' ? <BasicInfo /> : <XiaohongshuHomepage />}
+        <XiaohongshuHomepage />
       </div>
     </div>
   );
@@ -1348,6 +1311,7 @@ const DesktopIcon = ({ app, onClick }: any) => {
 };
 
 const HEALING_QUOTES = [
+  // 韩女文学
   { text: "不要因为今天的不堪，就对明天失去希望。", from: "《虽然想死，但还是想吃辣炒年糕》" },
   { text: "你不需要成为任何人，做那个最真实的自己就已经足够闪耀了。", from: "《决定以我自己的方式度过一生》" },
   { text: "即使是微不足道的日常，也值得被温柔以待。", from: "《语言的温度》" },
@@ -1357,7 +1321,48 @@ const HEALING_QUOTES = [
   { text: "那些看似没有意义的时光，其实都在默默滋养着你的灵魂。", from: "《时间会证明一切》" },
   { text: "无论世界多么喧嚣，请在内心为自己保留一片安静的角落。", from: "《静下心来找回自己》" },
   { text: "今天也辛苦了，好好睡一觉，明天又是崭新且充满希望的一天。", from: "《晚安，我的宇宙》" },
-  { text: "去爱那些能让你变得柔软的事物，去靠近那些给你带来光的人。", from: "《你的夏天还好吗》" }
+  { text: "去爱那些能让你变得柔软的事物，去靠近那些给你带来光的人。", from: "《你的夏天还好吗》" },
+  { text: "人生不是速度战，而是持久战。慢慢来，没关系。", from: "《就算稍微停下脚步也没关系》" },
+  { text: "偶尔逃避一下也没关系，只要记得回来的路就好。", from: "《今天也要用心过生活》" },
+  { text: "比起成为一个完美的人，我更想成为一个快乐的人。", from: "《即使不完美也没关系》" },
+  { text: "不要把别人的期待当成自己的目标，你的人生由你自己做主。", from: "《我决定活得像我》" },
+  { text: "不要因为别人走得快，就打乱了自己的节奏。", from: "《虽然想死，但还是想吃辣炒年糕》" },
+  { text: "你不需要总是那么坚强，偶尔软弱一下也是可以的。", from: "《决定以我自己的方式度过一生》" },
+  { text: "生活虽然充满艰辛，但总有一些微小的幸福在等待着你。", from: "《语言的温度》" },
+  { text: "不要害怕失败，因为每一次失败都是成长的契机。", from: "《我决定活得像我》" },
+  { text: "去爱那个不完美的自己，因为那是你最真实的模样。", from: "《你的夏天还好吗》" },
+  { text: "即使是在最黑暗的时刻，也要相信光芒终会穿透阴霾。", from: "《即使不完美也没关系》" },
+  { text: "不要把别人的评价看得太重，你的人生只有你自己能定义。", from: "《就算稍微停下脚步也没关系》" },
+  { text: "偶尔放纵一下自己，去吃想吃的食物，去做想做的事。", from: "《今天也要用心过生活》" },
+  { text: "比起追求外在的物质，内心的平静和满足更为重要。", from: "《静下心来找回自己》" },
+  { text: "人生没有标准答案，你走过的路就是你的答案。", from: "《我决定活得像我》" },
+  { text: "不要为了迎合别人而改变自己，因为你本来就很珍贵。", from: "《我是个年轻人，我心情不太好》" },
+  
+  // 日系文学
+  { text: "岁月漫长，然而值得等待。", from: "村上春树《如果我们的语言是威士忌》" },
+  { text: "不必太纠结于当下，也不必太忧虑未来，当你经历过一些事情的时候，眼前的风景已经和从前不一样了。", from: "村上春树《1Q84》" },
+  { text: "孤独一人也没关系，只要能发自内心地爱着一个人，人生就会有救。", from: "村上春树《1Q84》" },
+  { text: "不管前方的路有多苦，只要走的方向正确，不管多么崎岖不平，都比站在原地更接近幸福。", from: "宫崎骏《千与千寻》" },
+  { text: "生活坏到一定程度就会好起来，因为它无法更坏。努力过后，才知道许多事情，坚持坚持，就过来了。", from: "宫崎骏《龙猫》" },
+  { text: "世界这么大，人生这么长，总会有这么一个人，让你想要温柔的对待。", from: "宫崎骏《哈尔的移动城堡》" },
+  { text: "有些烦恼，丢掉了，才有云淡风轻的机会。", from: "宫崎骏《龙猫》" },
+  { text: "我本想这个冬日就死去的，可最近拿到一套鼠灰色细条纹的麻质和服，是适合夏天穿的，所以我还是先活到夏天吧。", from: "太宰治《晚年》" },
+  { text: "请不要灰心，你也会有人爱的。", from: "太宰治《人间失格》" },
+  { text: "只要活着，总会有好事发生的。", from: "樱桃子《樱桃小丸子》" },
+  { text: "雨天听雨，下雪日观雪，夏天体验酷暑，冬天领受刺骨寒风……无论什么样的日子，尽情玩味其中就好。", from: "森下典子《日日是好日》" },
+  { text: "所谓人生，大概就是一场不断相遇与告别的旅程吧。只要心中有光，便不惧路长。", from: "吉本芭娜娜《厨房》" },
+  { text: "即使是在悲伤的时候，也要好好吃饭，好好睡觉。只有照顾好自己，才有力气去面对明天。", from: "吉本芭娜娜《白河夜船》" },
+  { text: "世界上没有完美的人，也没有完美的生活。接受自己的不完美，才是幸福的开始。", from: "角田光代《第八日的蝉》" },
+  { text: "不要总是为了未来而担忧，要学会享受当下的每一刻。因为当下，才是你真正拥有的。", from: "青山七惠《一个人的好天气》" },
+  { text: "无论遇到什么困难，都不要放弃希望。因为希望，是支撑我们走下去的力量。", from: "东野圭吾《解忧杂货店》" },
+  { text: "每个人都有自己的故事，每个人都在努力地生活着。请对这个世界多一份温柔和理解。", from: "夏目漱石《我是猫》" },
+  { text: "人生就像一场旅行，重要的不是目的地，而是沿途的风景和看风景的心情。", from: "川端康成《雪国》" },
+  { text: "即使是在最寒冷的冬天，也要相信春天终会到来。因为生命，总是充满着奇迹。", from: "三岛由纪夫《金阁寺》" },
+  { text: "去爱吧，就像不曾受过伤一样；跳舞吧，就像没有人欣赏一样；唱歌吧，就像没有人聆听一样。", from: "艾佛列德·德索萨（日剧《悠长假期》引用）" },
+  { text: "人生不如意事十之八九，但总有一两件美好的事情，值得我们去回味和珍惜。", from: "林真理子《平民之宴》" },
+  { text: "不要害怕孤独，因为孤独是让你重新认识自己的最好机会。", from: "松浦弥太郎《100个基本》" },
+  { text: "把每一天都当作是生命中的最后一天来过，你就会发现，原来生活中有那么多美好的事物。", from: "黑柳彻子《窗边的小豆豆》" },
+  { text: "只要心中有爱，无论走到哪里，都会感到温暖和幸福。", from: "渡边淳一《失乐园》" }
 ];
 
 type PlayerState = {
@@ -2388,6 +2393,14 @@ const StickyNotes = () => {
 
   const [inputValue, setInputValue] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showMoments, setShowMoments] = useState(false);
+  
+  // Moments interaction states
+  const [momentsLikes, setMomentsLikes] = useState<string[]>([]);
+  const [momentsComments, setMomentsComments] = useState<{ name: string, content: string }[]>([]);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [isCommenting, setIsCommenting] = useState(false);
+  const [commentValue, setCommentValue] = useState("");
   
   // Menu states
   const [showMenu, setShowMenu] = useState(false);
@@ -2409,6 +2422,17 @@ const StickyNotes = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SIGNATURE, signature);
   }, [signature]);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowActionMenu(false);
+      if (!commentValue.trim()) {
+        setIsCommenting(false);
+      }
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [commentValue]);
 
   const handleSubmit = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue.trim()) {
@@ -2452,27 +2476,197 @@ const StickyNotes = () => {
 
   return (
     <div className="absolute top-20 left-[420px] flex flex-col gap-6 z-0">
-      {/* Note 1: Kraft Paper Style */}
-      <div 
-        className="w-56 h-56 rounded-sm shadow-[2px_4px_16px_rgba(0,0,0,0.2)] p-5 rotate-[-2deg] hover:rotate-0 hover:scale-105 transition-all duration-500 relative group overflow-hidden"
-        style={{ 
-          backgroundColor: '#d4b483',
-          backgroundImage: `url("https://www.transparenttextures.com/patterns/felt.png")`,
-          boxShadow: 'inset 0 0 100px rgba(0,0,0,0.1), 4px 8px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        {/* Tape effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-white/30 shadow-sm -mt-2 backdrop-blur-[2px] rounded-sm rotate-1"></div>
-        
-        <div className="flex flex-col h-full">
-          <div className="text-[9px] font-mono text-black/40 mb-1 tracking-widest uppercase italic">Memo / 01</div>
-          <textarea 
-            className="w-full flex-1 bg-transparent resize-none outline-none text-gray-900/80 font-medium placeholder-black/30 leading-relaxed text-xs" 
-            placeholder="在这里写下你的灵感..."
-            defaultValue="在这里写下你的灵感...&#10;&#10;有些事现在不做&#10;一辈子都不会做了。&#10;&#10;✨ 保持热爱，奔赴山海。"
-          ></textarea>
-          <div className="text-[9px] text-black/30 text-right mt-1 font-serif italic">NAN's Space</div>
+      {/* Note 1 Wrapper */}
+      <div className="relative">
+        {/* Note 1: Kraft Paper Style */}
+        <div 
+          className="w-56 h-56 rounded-sm shadow-[2px_4px_16px_rgba(0,0,0,0.2)] p-5 rotate-[-2deg] hover:rotate-0 hover:scale-105 transition-all duration-500 relative group overflow-hidden"
+          style={{ 
+            backgroundColor: '#d4b483',
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/felt.png")`,
+            boxShadow: 'inset 0 0 100px rgba(0,0,0,0.1), 4px 8px 20px rgba(0,0,0,0.2)'
+          }}
+        >
+          {/* Tape effect */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-white/30 shadow-sm -mt-2 backdrop-blur-[2px] rounded-sm rotate-1"></div>
+          
+          <div className="flex flex-col h-full">
+            <div className="text-[9px] font-mono text-black/40 mb-1 tracking-widest uppercase italic">Memo / 01</div>
+            <textarea 
+              className="w-full flex-1 bg-transparent resize-none outline-none text-gray-900/80 font-medium placeholder-black/30 leading-relaxed text-xs" 
+              placeholder="在这里写下你的灵感..."
+              defaultValue="在这里写下你的灵感...&#10;&#10;有些事现在不做&#10;一辈子都不会做了。&#10;&#10;✨ 保持热爱，奔赴山海。"
+            ></textarea>
+            <div 
+              className="text-[9px] text-black/30 text-right mt-1 font-serif italic cursor-pointer hover:text-black/60 transition-colors"
+              onClick={() => setShowMoments(!showMoments)}
+            >
+              NAN's Space
+            </div>
+          </div>
         </div>
+
+        {/* Moments Interface */}
+        <AnimatePresence>
+          {showMoments && (
+            <motion.div
+              initial={{ opacity: 0, x: -20, rotate: -2, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -20, rotate: -2, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="absolute top-0 left-[110%] w-[360px] bg-white rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden z-50 flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header Cover */}
+              <div className="h-40 bg-gray-200 relative">
+                <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222330_26_569-imagetourl.cloud-1774760503999-zj6cq0.png" className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
+                <div className="absolute -bottom-6 right-4 flex items-end gap-3 z-10">
+                  <span className="text-white font-bold text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-6">未命名诗集</span>
+                  <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/---imagetourl.cloud-1774760497006-tgtvus.jpg" className="w-16 h-16 rounded-xl border-2 border-white object-cover bg-white shadow-sm" alt="Avatar" referrerPolicy="no-referrer" />
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="p-4 pt-10 flex gap-3">
+                {/* Avatar Left */}
+                <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/---imagetourl.cloud-1774760497006-tgtvus.jpg" className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="Avatar" referrerPolicy="no-referrer" />
+                
+                {/* Post Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-[#576b95] text-[15px] mb-1">未命名诗集</div>
+                  <div className="text-[15px] text-gray-800 mb-2 leading-relaxed break-words">
+                    “我希望我们都能过得幸福，像炽热且阳光普照的日子一样，没有一点伤痕。”
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="flex justify-between items-center mt-3 relative">
+                    <span className="text-xs text-gray-400">2022年7月29日 02:34</span>
+                    <div className="relative">
+                      <div 
+                        className="bg-gray-100 rounded px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-gray-200 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowActionMenu(!showActionMenu);
+                        }}
+                      >
+                        <div className="w-1 h-1 bg-[#576b95] rounded-full"></div>
+                        <div className="w-1 h-1 bg-[#576b95] rounded-full"></div>
+                      </div>
+
+                      {/* Like/Comment Action Menu */}
+                      <AnimatePresence>
+                        {showActionMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8, x: 10 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, x: 10 }}
+                            className="absolute right-8 top-1/2 -translate-y-1/2 bg-[#3a3a3a] rounded-md flex items-center divide-x divide-black/20 overflow-hidden z-50"
+                          >
+                            <button 
+                              className="px-2 py-1 flex items-center gap-1.5 text-white text-[11px] hover:bg-black/10 transition-colors whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const hasLiked = momentsLikes.includes(signature);
+                                if (hasLiked) {
+                                  setMomentsLikes(momentsLikes.filter(name => name !== signature));
+                                } else {
+                                  setMomentsLikes([...momentsLikes, signature]);
+                                }
+                                setShowActionMenu(false);
+                              }}
+                            >
+                              <Heart className={`w-3 h-3 ${momentsLikes.includes(signature) ? "fill-red-500 stroke-red-500" : ""}`} />
+                              {momentsLikes.includes(signature) ? "取消" : "赞"}
+                            </button>
+                            <button 
+                              className="px-2 py-1 flex items-center gap-1.5 text-white text-[11px] hover:bg-black/10 transition-colors whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsCommenting(true);
+                                setShowActionMenu(false);
+                              }}
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              评论
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                  
+                  {/* Likes & Comments */}
+                  {(momentsLikes.length > 0 || momentsComments.length > 0) && (
+                    <div className="mt-3 bg-gray-50 rounded-sm p-2 flex flex-col gap-1 relative before:content-[''] before:absolute before:-top-1 before:left-3 before:w-2 before:h-2 before:bg-gray-50 before:rotate-45">
+                      {momentsLikes.length > 0 && (
+                        <div className={`flex items-center gap-2 text-xs text-[#576b95] font-medium ${momentsComments.length > 0 ? "border-b border-gray-200/50 pb-1" : ""}`}>
+                          <Heart className="w-3 h-3" /> {momentsLikes.join(", ")}
+                        </div>
+                      )}
+                      {momentsComments.map((comment, idx) => (
+                        <div key={idx} className="text-xs text-gray-700 pt-1 flex justify-between items-start group/comment">
+                          <div className="flex-1">
+                            <span className="text-[#576b95] font-medium">{comment.name}:</span> {comment.content}
+                          </div>
+                          {comment.name === signature && (
+                            <button 
+                              onClick={() => setMomentsComments(momentsComments.filter((_, i) => i !== idx))}
+                              className="text-[10px] text-[#576b95] opacity-0 group-hover/comment:opacity-60 hover:opacity-100 transition-opacity ml-2"
+                            >
+                              删除
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Comment Input */}
+                  <AnimatePresence>
+                    {isCommenting && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="mt-3 flex items-center gap-2"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <input 
+                          autoFocus
+                          type="text"
+                          className="flex-1 bg-gray-100 border-none rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#576b95]"
+                          placeholder="评论"
+                          value={commentValue}
+                          onChange={e => setCommentValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && commentValue.trim()) {
+                              setMomentsComments([...momentsComments, { name: signature, content: commentValue.trim() }]);
+                              setCommentValue("");
+                              setIsCommenting(false);
+                            }
+                          }}
+                        />
+                        <button 
+                          onClick={() => {
+                            if (commentValue.trim()) {
+                              setMomentsComments([...momentsComments, { name: signature, content: commentValue.trim() }]);
+                              setCommentValue("");
+                              setIsCommenting(false);
+                            }
+                          }}
+                          className="bg-[#576b95] text-white text-[10px] px-2 py-1 rounded disabled:opacity-50"
+                          disabled={!commentValue.trim()}
+                        >
+                          发送
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Note 2: iCity Embedded in Sticky Note */}
