@@ -1,6 +1,23 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import { Server } from "socket.io";
+import fs from "fs/promises";
+
+const DATA_FILE = path.join(process.cwd(), "data.json");
+
+async function loadData() {
+  try {
+    const data = await fs.readFile(DATA_FILE, "utf-8");
+    return JSON.parse(data);
+  } catch (e) {
+    return { momentsLikes: [], momentsComments: [] };
+  }
+}
+
+async function saveData(data: any) {
+  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+}
 
 async function startServer() {
   const app = express();
@@ -8,7 +25,6 @@ async function startServer() {
 
   app.get("/api/playlist", async (req, res) => {
     try {
-      // Try a different endpoint
       const response = await fetch("https://music.163.com/api/playlist/detail?id=6607728164", {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -61,8 +77,34 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+  });
+
+  const io = new Server(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
+
+  let appData = await loadData();
+
+  io.on("connection", (socket) => {
+    // Send initial state to the connected client
+    socket.emit("init_data", appData);
+
+    socket.on("update_likes", async (likes) => {
+      appData.momentsLikes = likes;
+      await saveData(appData);
+      socket.broadcast.emit("likes_updated", likes);
+    });
+
+    socket.on("update_comments", async (comments) => {
+      appData.momentsComments = comments;
+      await saveData(appData);
+      socket.broadcast.emit("comments_updated", comments);
+    });
   });
 }
 

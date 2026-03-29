@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls, useMotionValue, animate } from 'motion/react';
-import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart } from 'lucide-react';
+import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart, Link2, Info, Calendar } from 'lucide-react';
 import * as mm from 'music-metadata-browser';
 import { DogGame } from './components/DogGame';
+import { io } from 'socket.io-client';
+import { ALBUMS_DATA, ALBUMS_LIST } from './albumsData';
+
+const socket = io();
 
 // --- Components ---
 
@@ -345,6 +349,7 @@ const MusicContent = () => {
   const [view, setView] = useState<'library' | 'events'>('library');
   const [activeTab, setActiveTab] = useState<'love_songs' | 'recent'>('love_songs');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
 
   if (view === 'events') {
     return <NetEaseEventContent onBack={() => setView('library')} />;
@@ -393,7 +398,7 @@ const MusicContent = () => {
             </div>
           </div>
         </div>
-        <div className="flex-1 p-8 overflow-auto">
+        <div className={`flex-1 p-8 overflow-auto transition-colors duration-700 ${activeTab === 'recent' ? 'bg-slate-900/10' : ''}`}>
           {activeTab === 'love_songs' ? (
             <div className="w-full h-full flex flex-col">
               <div className="flex items-center justify-between mb-8">
@@ -421,28 +426,195 @@ const MusicContent = () => {
                 ></iframe>
               </div>
             </div>
+          ) : selectedAlbumId ? (
+            <div className="w-full h-full flex flex-col">
+              <button 
+                onClick={() => setSelectedAlbumId(null)} 
+                className="mb-6 px-4 py-2 bg-white/50 hover:bg-white backdrop-blur-sm rounded-full text-sm text-gray-700 hover:text-gray-900 flex items-center gap-2 transition-all shadow-sm border border-gray-200/50 self-start"
+              >
+                <ChevronLeft className="w-4 h-4" /> 返回
+              </button>
+              
+              {(() => {
+                const album = ALBUMS_LIST.find(a => a.id === selectedAlbumId);
+                const songs = ALBUMS_DATA[selectedAlbumId as keyof typeof ALBUMS_DATA] || [];
+                
+                if (!album) return null;
+                
+                return (
+                  <div className="flex flex-col gap-10">
+                    <div className="flex flex-col md:flex-row gap-8 items-start md:items-end relative group/header">
+                      <div className="relative shrink-0">
+                        <img src={album.cover} alt={album.title} className="w-48 h-48 rounded-2xl shadow-2xl object-cover ring-1 ring-black/5" referrerPolicy="no-referrer" />
+                        <div className="absolute inset-0 rounded-2xl shadow-inner pointer-events-none"></div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-4 flex-1">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white uppercase tracking-wider">Album</span>
+                            <div className="h-[1px] w-8 bg-slate-200"></div>
+                          </div>
+                          <h1 className="text-5xl font-black text-slate-800 tracking-tighter leading-tight drop-shadow-sm">{album.title}</h1>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shadow-sm">
+                              <User className="w-4 h-4 text-slate-600" />
+                            </div>
+                            <p className="text-xl font-bold text-slate-700 tracking-tight">{album.artist}</p>
+                          </div>
+                          
+                          {album.date && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/40 backdrop-blur-sm rounded-full border border-slate-200/50 shadow-sm">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <p className="text-xs font-bold text-slate-500 tracking-tight italic">
+                                {album.date} <span className="not-italic opacity-60 ml-0.5">发布：</span>
+                              </p>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                            <p className="text-xs font-bold uppercase tracking-[0.2em]">{songs.length} Tracks</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {album.url && (
+                        <div className="absolute top-0 right-0 flex items-center gap-3">
+                          <div className="relative group">
+                            <button 
+                              className="p-2.5 bg-white/50 hover:bg-white backdrop-blur-sm rounded-full text-slate-500 hover:text-slate-800 transition-all shadow-sm border border-slate-200/50"
+                              title="说明"
+                            >
+                              <Info className="w-5 h-5" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-2 w-56 p-4 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/50 text-[11px] text-slate-600 opacity-0 group-hover:opacity-100 pointer-events-none transition-all transform translate-y-2 group-hover:translate-y-0 z-20 leading-relaxed">
+                              <p className="font-bold text-slate-800 mb-1">温馨提示</p>
+                              点击右侧链接图标即可前往网易云音乐收听完整专辑哦！
+                            </div>
+                          </div>
+                          <a 
+                            href={album.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-2.5 bg-white/50 hover:bg-white backdrop-blur-sm rounded-full text-slate-500 hover:text-slate-800 transition-all shadow-sm border border-slate-200/50"
+                            title="在网易云音乐中打开"
+                          >
+                            <Link2 className="w-5 h-5" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-white/40 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-200/30 text-slate-400 text-[10px] uppercase tracking-[0.2em]">
+                            <th className="py-5 px-6 font-black w-16 text-center">#</th>
+                            <th className="py-5 px-4 font-black">Track Title</th>
+                            <th className="py-5 px-4 font-black">Artist</th>
+                            <th className="py-5 px-6 font-black text-right">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {songs.map((song, index) => (
+                            <tr key={song.id} className="border-b border-slate-100/30 hover:bg-white/60 transition-all duration-300 group">
+                              <td className="py-4 px-6 text-slate-300 font-mono text-xs text-center group-hover:text-slate-800 transition-colors">{String(index + 1).padStart(2, '0')}</td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-1 h-1 rounded-full bg-slate-200 group-hover:bg-slate-800 transition-colors"></div>
+                                  <span className="font-bold text-slate-700 text-sm group-hover:text-slate-900 transition-colors">{song.name}</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors">{song.artist}</span>
+                              </td>
+                              <td className="py-4 px-6 text-right">
+                                <span className="font-mono text-[11px] text-slate-400 group-hover:text-slate-800 transition-colors">
+                                  {Math.floor(song.duration / 1000 / 60)}:
+                                  {String(Math.floor((song.duration / 1000) % 60)).padStart(2, '0')}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           ) : (
-            <>
-              <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">最近在听</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="flex items-center gap-4 p-3 bg-white/50 rounded-xl shadow-sm hover:shadow-md hover:bg-white/80 transition-all cursor-pointer group border border-white/40">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden shadow-sm relative shrink-0">
-                      <img src={`https://picsum.photos/seed/album${i}/200/200`} alt="Album cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                          <ChevronRight className="w-5 h-5 text-white ml-0.5" />
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="w-full h-full"
+            >
+              <div className="mb-10 flex flex-col gap-2">
+                <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">最最</h1>
+                <div className="h-1 w-12 bg-slate-800 rounded-full"></div>
+                <p className="text-sm text-gray-500 font-medium tracking-widest uppercase mt-1">Recently Played & Favorites</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {ALBUMS_LIST.map((album, index) => (
+                  <motion.div 
+                    key={album.id} 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    onClick={() => setSelectedAlbumId(album.id)}
+                    className="group relative flex flex-col bg-white/40 backdrop-blur-md rounded-2xl p-4 border border-white/60 shadow-sm hover:shadow-xl hover:bg-white/70 transition-all duration-500 cursor-pointer overflow-hidden"
+                  >
+                    {/* Decorative background element */}
+                    <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-800/5 rounded-full blur-2xl group-hover:bg-slate-800/10 transition-colors"></div>
+                    
+                    <div className="flex items-center gap-5 relative z-10">
+                      <div className="w-20 h-20 rounded-xl overflow-hidden shadow-lg relative shrink-0 ring-1 ring-black/5">
+                        <img 
+                          src={album.cover} 
+                          alt={album.title} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" 
+                          referrerPolicy="no-referrer" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-[2px]">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                            <ChevronRight className="w-6 h-6 text-white ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 overflow-hidden">
+                        <h3 className="font-bold text-gray-900 text-lg line-clamp-1 group-hover:text-slate-800 transition-colors duration-300" title={album.title}>
+                          {album.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                          <p className="text-sm text-gray-500 font-medium truncate" title={album.artist}>
+                            {album.artist}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <div className="px-2 py-0.5 rounded-full bg-black/5 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                            Album
+                          </div>
+                          <div className="px-2 py-0.5 rounded-full bg-slate-800/10 text-[10px] font-bold text-slate-800 uppercase tracking-tighter">
+                            NetEase
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800 line-clamp-1">氛围音乐合集 {i}</h3>
-                      <p className="text-sm text-gray-500">独立音乐人</p>
-                    </div>
-                  </div>
+                    
+                    {/* Bottom accent line */}
+                    <div className="absolute bottom-0 left-0 h-1 bg-gray-300 w-0 group-hover:w-full transition-all duration-700 ease-in-out"></div>
+                  </motion.div>
                 ))}
               </div>
-            </>
+            </motion.div>
           )}
         </div>
       </div>
@@ -2434,6 +2606,37 @@ const StickyNotes = () => {
     return () => window.removeEventListener('click', handleClickOutside);
   }, [commentValue]);
 
+  useEffect(() => {
+    socket.on("init_data", (data: { momentsLikes: string[], momentsComments: { name: string, content: string }[] }) => {
+      if (data.momentsLikes) setMomentsLikes(data.momentsLikes);
+      if (data.momentsComments) setMomentsComments(data.momentsComments);
+    });
+
+    socket.on("likes_updated", (likes: string[]) => {
+      setMomentsLikes(likes);
+    });
+
+    socket.on("comments_updated", (comments: { name: string, content: string }[]) => {
+      setMomentsComments(comments);
+    });
+
+    return () => {
+      socket.off("init_data");
+      socket.off("likes_updated");
+      socket.off("comments_updated");
+    };
+  }, []);
+
+  const handleLikesChange = (newLikes: string[]) => {
+    setMomentsLikes(newLikes);
+    socket.emit("update_likes", newLikes);
+  };
+
+  const handleCommentsChange = (newComments: { name: string, content: string }[]) => {
+    setMomentsComments(newComments);
+    socket.emit("update_comments", newComments);
+  };
+
   const handleSubmit = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue.trim()) {
       setIcityContent(`“ ${inputValue.trim()} ”`);
@@ -2492,11 +2695,19 @@ const StickyNotes = () => {
           
           <div className="flex flex-col h-full">
             <div className="text-[9px] font-mono text-black/40 mb-1 tracking-widest uppercase italic">Memo / 01</div>
-            <textarea 
-              className="w-full flex-1 bg-transparent resize-none outline-none text-gray-900/80 font-medium placeholder-black/30 leading-relaxed text-xs" 
-              placeholder="在这里写下你的灵感..."
-              defaultValue="在这里写下你的灵感...&#10;&#10;有些事现在不做&#10;一辈子都不会做了。&#10;&#10;✨ 保持热爱，奔赴山海。"
-            ></textarea>
+            <div className="w-full flex-1 flex flex-col justify-center px-1 select-none">
+              <div className="space-y-5">
+                <p className="text-amber-950 font-serif text-[14px] leading-relaxed tracking-wider text-center italic drop-shadow-[0_1px_1px_rgba(255,255,255,0.3)]">
+                  “我希望我们都能过得幸福，像炽热且阳光普照的日子一样，没有一点伤痕。”
+                </p>
+                <div className="flex justify-end items-center gap-2 pr-2">
+                  <div className="w-6 h-[1px] bg-amber-900/20"></div>
+                  <p className="text-amber-900/80 font-serif text-[10px] italic tracking-[0.15em]">
+                    《我的解放日志》
+                  </p>
+                </div>
+              </div>
+            </div>
             <div 
               className="text-[9px] text-black/30 text-right mt-1 font-serif italic cursor-pointer hover:text-black/60 transition-colors"
               onClick={() => setShowMoments(!showMoments)}
@@ -2568,9 +2779,9 @@ const StickyNotes = () => {
                                 e.stopPropagation();
                                 const hasLiked = momentsLikes.includes(signature);
                                 if (hasLiked) {
-                                  setMomentsLikes(momentsLikes.filter(name => name !== signature));
+                                  handleLikesChange(momentsLikes.filter(name => name !== signature));
                                 } else {
-                                  setMomentsLikes([...momentsLikes, signature]);
+                                  handleLikesChange([...momentsLikes, signature]);
                                 }
                                 setShowActionMenu(false);
                               }}
@@ -2610,7 +2821,7 @@ const StickyNotes = () => {
                           </div>
                           {comment.name === signature && (
                             <button 
-                              onClick={() => setMomentsComments(momentsComments.filter((_, i) => i !== idx))}
+                              onClick={() => handleCommentsChange(momentsComments.filter((_, i) => i !== idx))}
                               className="text-[10px] text-[#576b95] opacity-0 group-hover/comment:opacity-60 hover:opacity-100 transition-opacity ml-2"
                             >
                               删除
@@ -2640,7 +2851,7 @@ const StickyNotes = () => {
                           onChange={e => setCommentValue(e.target.value)}
                           onKeyDown={e => {
                             if (e.key === 'Enter' && commentValue.trim()) {
-                              setMomentsComments([...momentsComments, { name: signature, content: commentValue.trim() }]);
+                              handleCommentsChange([...momentsComments, { name: signature, content: commentValue.trim() }]);
                               setCommentValue("");
                               setIsCommenting(false);
                             }
@@ -2649,7 +2860,7 @@ const StickyNotes = () => {
                         <button 
                           onClick={() => {
                             if (commentValue.trim()) {
-                              setMomentsComments([...momentsComments, { name: signature, content: commentValue.trim() }]);
+                              handleCommentsChange([...momentsComments, { name: signature, content: commentValue.trim() }]);
                               setCommentValue("");
                               setIsCommenting(false);
                             }
@@ -2669,12 +2880,12 @@ const StickyNotes = () => {
         </AnimatePresence>
       </div>
 
-      {/* Note 2: iCity Embedded in Sticky Note */}
+      {/* Note 2: Yours Embedded in Sticky Note */}
       <div 
         className="w-56 h-56 rounded-sm shadow-[2px_4px_16px_rgba(0,0,0,0.2)] p-5 rotate-[3deg] hover:rotate-0 hover:scale-105 transition-all duration-500 relative group overflow-hidden"
         style={{ 
-          backgroundColor: '#bbf7d0', // Soft mint green paper
-          backgroundImage: `url("https://www.transparenttextures.com/patterns/felt.png")`,
+          backgroundColor: '#fdfcf0', // Warm cream paper
+          backgroundImage: `url("https://www.transparenttextures.com/patterns/paper-fibers.png")`,
           boxShadow: 'inset 0 0 80px rgba(0,0,0,0.05), 4px 8px 20px rgba(0,0,0,0.15)'
         }}
       >
@@ -2807,14 +3018,14 @@ const StickyNotes = () => {
         {/* Tape effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-4 bg-white/20 shadow-sm -mt-2 backdrop-blur-sm rounded-sm -rotate-1"></div>
         
-        {/* iCity Widget Content Embedded */}
+        {/* Yours Widget Content Embedded */}
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-lg bg-white/40 flex items-center justify-center shadow-sm">
                 <Search className="w-3 h-3 text-gray-700" />
               </div>
-              <span className="text-[10px] font-bold text-black/40 tracking-tight uppercase">iCity / Daily</span>
+              <span className="text-[10px] font-bold text-black/40 tracking-tight uppercase">Yours / Daily</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-blue-500/60 animate-pulse"></div>
           </div>
@@ -2871,7 +3082,7 @@ const BottomBar = () => {
       {/* Polaroid Avatar (Frosted Glass) */}
       <div className="absolute bottom-2 left-8 w-20 h-24 bg-white/20 backdrop-blur-xl p-1.5 pb-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] -rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-white/40 group rounded-sm">
         <div className="w-full h-full overflow-hidden bg-white/10 rounded-sm">
-          <img src="https://picsum.photos/seed/avatar/200/200" alt="Avatar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" referrerPolicy="no-referrer" />
+          <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323223343_86_2-imagetourl.cloud-1774789075796-7fut44.png" alt="Avatar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" referrerPolicy="no-referrer" />
         </div>
       </div>
       

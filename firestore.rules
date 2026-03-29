@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: moments/{momentId}/comments
+    // Document ID: {commentId}
+    // Fields:
+    //   - id: string (required) - unique ID
+    //   - momentId: string (required) - ID of the moment
+    //   - userId: string (required) - ID of the user
+    //   - userName: string (required) - name of the user
+    //   - content: string (required, < 1000 chars) - comment content
+    //   - timestamp: timestamp (required) - time posted
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['id', 'momentId', 'userId', 'userName', 'content', 'timestamp']) &&
+             data.keys().hasOnly(['id', 'momentId', 'userId', 'userName', 'content', 'timestamp']) &&
+             data.id is string &&
+             data.momentId is string &&
+             data.userId is string &&
+             data.userName is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /moments/{momentId}/comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                       isValidComment(request.resource.data) && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.userId) && 
+                       isValidComment(request.resource.data) &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.momentId == resource.data.momentId &&
+                       request.resource.data.timestamp == resource.data.timestamp;
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+  }
+}

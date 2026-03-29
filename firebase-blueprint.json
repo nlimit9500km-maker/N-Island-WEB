@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a moment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the comment." },
+        "momentId": { "type": "string", "description": "The ID of the moment the comment belongs to." },
+        "userId": { "type": "string", "description": "The ID of the user who posted the comment." },
+        "userName": { "type": "string", "description": "The name of the user who posted the comment." },
+        "content": { "type": "string", "description": "The content of the comment." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "The timestamp when the comment was posted." }
+      },
+      "required": ["id", "momentId", "userId", "userName", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/moments/{momentId}/comments/{commentId}": {
+      "schema": { "$ref": "Comment" },
+      "description": "Comments for a specific moment."
+    }
+  }
+}
