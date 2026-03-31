@@ -5,6 +5,9 @@ import * as mm from 'music-metadata-browser';
 import { DogGame } from './components/DogGame';
 import { io } from 'socket.io-client';
 import { ALBUMS_DATA, ALBUMS_LIST } from './albumsData';
+import { DiaryView } from './components/DiaryView';
+import { MediaView } from './components/MediaView';
+import { PhotoesView } from './components/PhotoesView';
 
 const socket = io();
 
@@ -779,7 +782,7 @@ const LifeContent = () => {
   const collections = [
     { title: '日记簿', count: 4 },
     { title: '影音集', count: 12 },
-    { title: 'photo', count: 36 },
+    { title: 'photoes', count: 36 },
   ];
 
   return (
@@ -816,6 +819,15 @@ const LifeContent = () => {
           <div className="flex items-center px-4 gap-6 h-full shrink-0 border-r border-gray-100/50 mr-2 bg-white z-10">
             <div 
               className="relative h-full flex items-center cursor-pointer group"
+              onClick={() => setActiveTab(null)}
+            >
+              <span className={`text-[15px] font-medium transition-colors ${activeTab === null ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>首页</span>
+              {activeTab === null && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#FB7299] rounded-full"></div>
+              )}
+            </div>
+            <div 
+              className="relative h-full flex items-center cursor-pointer group"
               onClick={() => setActiveTab('diary')}
             >
               <span className={`text-[15px] font-medium transition-colors ${activeTab === 'diary' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>日记簿</span>
@@ -834,10 +846,10 @@ const LifeContent = () => {
             </div>
             <div 
               className="relative h-full flex items-center cursor-pointer group"
-              onClick={() => setActiveTab('photo')}
+              onClick={() => setActiveTab('photoes')}
             >
-              <span className={`text-[15px] font-medium transition-colors ${activeTab === 'photo' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>photo</span>
-              {activeTab === 'photo' && (
+              <span className={`text-[15px] font-medium transition-colors ${activeTab === 'photoes' ? 'text-[#FB7299]' : 'text-[#61666D] group-hover:text-[#FB7299]'}`}>photoes</span>
+              {activeTab === 'photoes' && (
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#FB7299] rounded-full"></div>
               )}
             </div>
@@ -955,292 +967,342 @@ const LifeContent = () => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto bg-white p-8">
-        <div className="max-w-4xl mx-auto">
-          {/* From Your Library Section */}
-          <div className="flex justify-between items-center mb-6">
-            <div 
-              className="relative inline-flex items-center pl-6 pr-10 py-2 shadow-md border-y border-amber-900/20" 
-              style={{ 
-                clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
-                backgroundColor: '#d2b48c',
-                backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
-                backgroundSize: '4px 4px',
-                boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
-              }}
+      <div className="flex-1 overflow-auto bg-white">
+        <AnimatePresence mode="wait">
+          {activeTab === 'diary' ? (
+            <motion.div 
+              key="diary"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="h-full"
             >
-              <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm">I SEE U</h2>
-            </div>
-            
-            {/* Complex Wavy Ornamental Line with more curvature - Shortened */}
-            <div className="flex-1 mx-2 h-10 flex items-center relative z-0">
-              <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 20">
-                {/* Triple Wavy Line for complexity */}
-                <path 
-                  d="M 0 10 C 20 2, 30 18, 50 10 C 70 2, 80 18, 100 10" 
-                  fill="none" 
-                  stroke="rgba(120, 53, 15, 0.15)" 
-                  strokeWidth="0.5"
-                />
-                <path 
-                  d="M 0 11 C 20 3, 30 19, 50 11 C 70 3, 80 19, 100 11" 
-                  fill="none" 
-                  stroke="rgba(120, 53, 15, 0.4)" 
-                  strokeWidth="1.2"
-                />
-                <path 
-                  d="M 0 12 C 20 4, 30 20, 50 12 C 70 4, 80 20, 100 12" 
-                  fill="none" 
-                  stroke="rgba(120, 53, 15, 0.15)" 
-                  strokeWidth="0.5"
-                />
-              </svg>
-              
-              {/* Center Decorative Element with Tooltip covering it */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
-                <div className="relative group cursor-help flex items-center justify-center">
-                  <div className="w-3.5 h-3.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 bg-amber-900/20"></div>
-                  </div>
-                  {/* Tooltip Popup - Positioned to cover the square */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-2 bg-amber-900/95 backdrop-blur-md text-white text-[11px] rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl border border-amber-800/30 z-50 scale-90 group-hover:scale-100">
-                    没关系，别害怕，不对称的状态才是日常。
-                  </div>
-                </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
-              </div>
-
-              {/* Secondary Ornaments */}
-              <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
-              <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
-            </div>
-
-            <div 
-              className="relative inline-flex items-center pr-6 pl-10 py-2 shadow-md border-y border-amber-900/20 cursor-pointer group" 
-              style={{ 
-                clipPath: 'polygon(15% 50%, 0 0, 100% 0, 100% 100%, 0 100%)',
-                backgroundColor: '#d2b48c',
-                backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
-                backgroundSize: '4px 4px',
-                boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
-              }}
+              <DiaryView />
+            </motion.div>
+          ) : activeTab === 'media' ? (
+            <motion.div 
+              key="media"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="h-full"
             >
-              <span className="text-sm font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm group-hover:underline">See All</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
-            {/* Leftmost Image */}
-            <div className="col-span-1 md:col-span-4 flex flex-col">
-              <div className="group cursor-pointer">
-                <div className="w-full aspect-[2/3] bg-gray-100 mb-4 border border-gray-300 shadow-md relative overflow-hidden">
-                  <img 
-                    src={recentBooks[0].cover} 
-                    alt={recentBooks[0].title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    referrerPolicy="no-referrer" 
-                  />
-                  {recentBooks[0].progress === 100 && (
-                    <div className="absolute top-0 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
-                      Read
-                    </div>
-                  )}
-                </div>
-                <h3 className="font-serif font-bold text-base leading-snug mb-1 line-clamp-2 group-hover:underline">{recentBooks[0].title}</h3>
-                <p className="text-sm text-gray-600 mb-1 font-serif italic">{recentBooks[0].author}</p>
-              </div>
-              
-              {/* Straight Ornamental Line below Author */}
-              <div className="w-full h-4 flex items-center relative z-0 mb-2 px-4">
-                <div className="w-full h-[2px] bg-amber-900/20 relative">
-                  {/* Center Decorative Element (No Tooltip) */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
-                    <div className="w-2.5 h-2.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
-                      <div className="w-1 h-1 bg-amber-900/20"></div>
-                    </div>
-                    <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
+              <MediaView />
+            </motion.div>
+          ) : activeTab === 'photoes' ? (
+            <motion.div 
+              key="photoes"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="h-full"
+            >
+              <PhotoesView />
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="home"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="p-8"
+            >
+              <div className="max-w-4xl mx-auto">
+                {/* From Your Library Section */}
+                <div className="flex justify-between items-center mb-6">
+                  <div 
+                    className="relative inline-flex items-center pl-6 pr-10 py-2 shadow-md border-y border-amber-900/20" 
+                    style={{ 
+                      clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
+                      backgroundColor: '#d2b48c',
+                      backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
+                      backgroundSize: '4px 4px',
+                      boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm">I SEE U</h2>
                   </div>
-                  {/* Secondary Ornaments */}
-                  <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
-                  <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
-                </div>
-              </div>
-
-              {/* Interactive Dog Game Section */}
-              <DogGame />
-              <div className="flex items-center gap-3 mt-auto">
-                <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-black" style={{ width: `${recentBooks[0].progress}%` }}></div>
-                </div>
-                <span className="text-[11px] font-bold text-gray-500">{recentBooks[0].progress}%</span>
-              </div>
-            </div>
-
-            {/* Y2K Windows Interface with CRT Monitor Shell */}
-            <div className="col-span-1 md:col-span-8 flex flex-col items-center relative">
-              {/* Monitor Body */}
-              <div className="w-full bg-[#d4d0c8] p-4 rounded-2xl border-t-4 border-l-4 border-white/50 border-b-4 border-r-4 border-black/20 shadow-2xl flex flex-col">
-                {/* Screen Bezel (Dark inner frame) */}
-                <div className="w-full bg-[#1a1a1a] p-3 rounded-xl border-t-4 border-l-4 border-black/60 border-b-4 border-r-4 border-white/10 flex-1 flex flex-col relative overflow-hidden shadow-inner">
-                  {/* CRT Glass reflection effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-50 rounded-lg"></div>
-
-                  <div className="w-full h-full min-h-[400px] bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] p-[2px] font-sans flex flex-col shadow-[2px_2px_0px_rgba(0,0,0,0.2)] relative">
-                    <AnimatePresence mode="wait">
-                      {isComputerOn ? (
-                        <motion.div 
-                          key="desktop"
-                          initial={{ opacity: 0, filter: 'blur(10px)' }}
-                          animate={{ opacity: 1, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, filter: 'blur(10px)' }}
-                          transition={{ duration: 1.2, ease: "easeInOut" }}
-                          className="flex-1 flex flex-col relative h-full"
-                        >
-                          {/* Desktop Area */}
-                        <div className="flex-1 m-1 p-4 overflow-hidden flex flex-col relative">
-                          {/* Blurred Background Layer */}
-                          <div 
-                            className="absolute inset-0 z-0"
-                            style={{ 
-                              backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774683355704-ttq8cs.png")',
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              filter: 'blur(3px)'
-                            }}
-                          ></div>
-
-                          {/* Desktop Icons Centered Vertically */}
-                          <div className="relative z-10 flex flex-col gap-8 justify-center items-center h-full">
-                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('YESTERDAY')}>
-                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">YESTERDAY</span>
-                            </div>
-                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TODAY')}>
-                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TODAY</span>
-                            </div>
-                            <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TOMORROW')}>
-                              <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TOMORROW</span>
-                            </div>
-                          </div>
-
-                          {/* Windows Modals */}
-                          {openWindow && (
-                            <BookOfAnswers type={openWindow} onClose={() => setOpenWindow(null)} />
-                          )}
+                  
+                  {/* Complex Wavy Ornamental Line with more curvature - Shortened */}
+                  <div className="flex-1 mx-2 h-10 flex items-center relative z-0">
+                    <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 20">
+                      {/* Triple Wavy Line for complexity */}
+                      <path 
+                        d="M 0 10 C 20 2, 30 18, 50 10 C 70 2, 80 18, 100 10" 
+                        fill="none" 
+                        stroke="rgba(120, 53, 15, 0.15)" 
+                        strokeWidth="0.5"
+                      />
+                      <path 
+                        d="M 0 11 C 20 3, 30 19, 50 11 C 70 3, 80 19, 100 11" 
+                        fill="none" 
+                        stroke="rgba(120, 53, 15, 0.4)" 
+                        strokeWidth="1.2"
+                      />
+                      <path 
+                        d="M 0 12 C 20 4, 30 20, 50 12 C 70 4, 80 20, 100 12" 
+                        fill="none" 
+                        stroke="rgba(120, 53, 15, 0.15)" 
+                        strokeWidth="0.5"
+                      />
+                    </svg>
+                    
+                    {/* Center Decorative Element with Tooltip covering it */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
+                      <div className="relative group cursor-help flex items-center justify-center">
+                        <div className="w-3.5 h-3.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-amber-900/20"></div>
                         </div>
-                        
-                        {/* Taskbar */}
-                        <div className="h-7 bg-[#c0c0c0] border-t-2 border-white flex items-center px-0.5 gap-1 z-30">
-                          <button className="h-[22px] px-1.5 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] flex items-center justify-center active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white group">
-                            <span className="text-xs font-bold text-black">Start</span>
-                          </button>
-                          <div className="flex-1 h-[22px] border-t border-l border-[#808080] border-b border-r border-white mx-0.5"></div>
-                          <div className="h-[22px] px-2 border-t border-l border-[#808080] border-b border-r border-white flex items-center justify-center">
-                            <span className="text-[10px] text-black font-medium">
-                              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
+                        {/* Tooltip Popup - Positioned to cover the square */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-2 bg-amber-900/95 backdrop-blur-md text-white text-[11px] rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl border border-amber-800/30 z-50 scale-90 group-hover:scale-100">
+                          没关系，别害怕，不对称的状态才是日常。
                         </div>
-                      </motion.div>
-                    ) : (
-                        <motion.div 
-                          key="lockscreen"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
-                          transition={{ duration: 1.2, ease: "easeInOut" }}
-                          className="flex-1 m-1 flex items-center justify-center relative overflow-hidden"
-                          style={{
-                          backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774690774047-jzt6ue.png")',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }}
-                      >
-                        <div className="absolute inset-0 bg-black/30"></div>
-                        <div 
-                          className="relative z-10 flex flex-col items-center gap-4 cursor-pointer group"
-                          onClick={() => setIsComputerOn(true)}
-                        >
-                          <div className="flex text-white/90 font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] sm:tracking-[0.3em] lg:tracking-[0.5em] whitespace-nowrap drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-700">
-                            {"WELCOME TO".split('').map((char, i) => (
-                              <motion.span
-                                key={i}
+                      </div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-900/40"></div>
+                    </div>
+
+                    {/* Secondary Ornaments */}
+                    <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
+                    <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-amber-900/20"></div>
+                  </div>
+
+                  <div 
+                    className="relative inline-flex items-center pr-6 pl-10 py-2 shadow-md border-y border-amber-900/20 cursor-pointer group" 
+                    style={{ 
+                      clipPath: 'polygon(15% 50%, 0 0, 100% 0, 100% 100%, 0 100%)',
+                      backgroundColor: '#d2b48c',
+                      backgroundImage: 'radial-gradient(#c3a37a 1px, transparent 0)',
+                      backgroundSize: '4px 4px',
+                      boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <span className="text-sm font-bold uppercase tracking-widest font-serif text-amber-950 drop-shadow-sm group-hover:underline">See All</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+                  {/* Leftmost Image */}
+                  <div className="col-span-1 md:col-span-4 flex flex-col">
+                    <div className="group cursor-pointer">
+                      <div className="w-full aspect-[2/3] bg-gray-100 mb-4 border border-gray-300 shadow-md relative overflow-hidden">
+                        <img 
+                          src={recentBooks[0].cover} 
+                          alt={recentBooks[0].title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                          referrerPolicy="no-referrer" 
+                        />
+                        {recentBooks[0].progress === 100 && (
+                          <div className="absolute top-0 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+                            Read
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-serif font-bold text-base leading-snug mb-1 line-clamp-2 group-hover:underline">{recentBooks[0].title}</h3>
+                      <p className="text-sm text-gray-600 mb-1 font-serif italic">{recentBooks[0].author}</p>
+                    </div>
+                    
+                    {/* Straight Ornamental Line below Author */}
+                    <div className="w-full h-4 flex items-center relative z-0 mb-2 px-4">
+                      <div className="w-full h-[2px] bg-amber-900/20 relative">
+                        {/* Center Decorative Element (No Tooltip) */}
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
+                          <div className="w-2.5 h-2.5 rotate-45 border border-amber-900/40 bg-[#d2b48c] shadow-sm flex items-center justify-center">
+                            <div className="w-1 h-1 bg-amber-900/20"></div>
+                          </div>
+                          <div className="w-1 h-1 rounded-full bg-amber-900/40"></div>
+                        </div>
+                        {/* Secondary Ornaments */}
+                        <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
+                        <div className="absolute right-[20%] top-1/2 -translate-y-1/2 w-0.5 h-0.5 rounded-full bg-amber-900/20"></div>
+                      </div>
+                    </div>
+
+                    {/* Interactive Dog Game Section */}
+                    <DogGame />
+                    <div className="flex items-center gap-3 mt-auto">
+                      <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-black" style={{ width: `${recentBooks[0].progress}%` }}></div>
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-500">{recentBooks[0].progress}%</span>
+                    </div>
+                  </div>
+
+                  {/* Y2K Windows Interface with CRT Monitor Shell */}
+                  <div className="col-span-1 md:col-span-8 flex flex-col items-center relative">
+                    {/* Monitor Body */}
+                    <div className="w-full bg-[#d4d0c8] p-4 rounded-2xl border-t-4 border-l-4 border-white/50 border-b-4 border-r-4 border-black/20 shadow-2xl flex flex-col">
+                      {/* Screen Bezel (Dark inner frame) */}
+                      <div className="w-full bg-[#1a1a1a] p-3 rounded-xl border-t-4 border-l-4 border-black/60 border-b-4 border-r-4 border-white/10 flex-1 flex flex-col relative overflow-hidden shadow-inner">
+                        {/* CRT Glass reflection effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-50 rounded-lg"></div>
+
+                        <div className="w-full h-full min-h-[400px] bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] p-[2px] font-sans flex flex-col shadow-[2px_2px_0px_rgba(0,0,0,0.2)] relative">
+                          <AnimatePresence mode="wait">
+                            {isComputerOn ? (
+                              <motion.div 
+                                key="desktop"
                                 initial={{ opacity: 0, filter: 'blur(10px)' }}
                                 animate={{ opacity: 1, filter: 'blur(0px)' }}
-                                transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
+                                exit={{ opacity: 0, filter: 'blur(10px)' }}
+                                transition={{ duration: 1.2, ease: "easeInOut" }}
+                                className="flex-1 flex flex-col relative h-full"
                               >
-                                {char === ' ' ? '\u00A0' : char}
-                              </motion.span>
-                            ))}
-                          </div>
-                          <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 2, duration: 1 }}
-                            className="text-white/50 text-[10px] tracking-widest font-sans uppercase group-hover:text-white/80 transition-colors"
+                                {/* Desktop Area */}
+                              <div className="flex-1 m-1 p-4 overflow-hidden flex flex-col relative">
+                                {/* Blurred Background Layer */}
+                                <div 
+                                  className="absolute inset-0 z-0"
+                                  style={{ 
+                                    backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774683355704-ttq8cs.png")',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    filter: 'blur(3px)'
+                                  }}
+                                ></div>
+
+                                {/* Desktop Icons Centered Vertically */}
+                                <div className="relative z-10 flex flex-col gap-8 justify-center items-center h-full">
+                                  <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('YESTERDAY')}>
+                                    <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">YESTERDAY</span>
+                                  </div>
+                                  <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TODAY')}>
+                                    <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TODAY</span>
+                                  </div>
+                                  <div className="flex flex-col items-center cursor-pointer group" onClick={() => setOpenWindow('TOMORROW')}>
+                                    <span className="text-sm font-bold text-white text-center leading-tight drop-shadow-[1px_1px_2px_rgba(0,0,0,0.9)] px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 group-hover:bg-blue-600/80 transition-all tracking-widest">TOMORROW</span>
+                                  </div>
+                                </div>
+
+                                {/* Windows Modals */}
+                                {openWindow && (
+                                  <BookOfAnswers type={openWindow} onClose={() => setOpenWindow(null)} />
+                                )}
+                              </div>
+                              
+                              {/* Taskbar */}
+                              <div className="h-7 bg-[#c0c0c0] border-t-2 border-white flex items-center px-0.5 gap-1 z-30">
+                                <button className="h-[22px] px-1.5 bg-[#c0c0c0] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] flex items-center justify-center active:border-t-[#808080] active:border-l-[#808080] active:border-b-white active:border-r-white group">
+                                  <span className="text-xs font-bold text-black">Start</span>
+                                </button>
+                                <div className="flex-1 h-[22px] border-t border-l border-[#808080] border-b border-r border-white mx-0.5"></div>
+                                <div className="h-[22px] px-2 border-t border-l border-[#808080] border-b border-r border-white flex items-center justify-center">
+                                  <span className="text-[10px] text-black font-medium">
+                                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ) : (
+                              <motion.div 
+                                key="lockscreen"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
+                                transition={{ duration: 1.2, ease: "easeInOut" }}
+                                className="flex-1 m-1 flex items-center justify-center relative overflow-hidden"
+                                style={{
+                                backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774690774047-jzt6ue.png")',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center'
+                              }}
+                            >
+                              <div className="absolute inset-0 bg-black/30"></div>
+                              <div 
+                                className="relative z-10 flex flex-col items-center gap-4 cursor-pointer group"
+                                onClick={() => setIsComputerOn(true)}
+                              >
+                                <div className="flex text-white/90 font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] sm:tracking-[0.3em] lg:tracking-[0.5em] whitespace-nowrap drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-700">
+                                  {"WELCOME TO".split('').map((char, i) => (
+                                    <motion.span
+                                      key={i}
+                                      initial={{ opacity: 0, filter: 'blur(10px)' }}
+                                      animate={{ opacity: 1, filter: 'blur(0px)' }}
+                                      transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
+                                    >
+                                      {char === ' ' ? '\u00A0' : char}
+                                    </motion.span>
+                                  ))}
+                                </div>
+                                <motion.div 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 2, duration: 1 }}
+                                  className="text-white/50 text-[10px] tracking-widest font-sans uppercase group-hover:text-white/80 transition-colors"
+                                >
+                                  Click to unlock
+                                </motion.div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {/* Monitor Bottom Control Panel */}
+                      <div className="h-10 w-full mt-2 flex items-center justify-between px-6">
+                        {/* Brand/Logo placeholder */}
+                        <div className="text-gray-500 font-serif italic text-sm tracking-widest font-bold">INFINITY</div>
+                        {/* Buttons */}
+                        <div className="flex gap-3 items-center">
+                          <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                          <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                          <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
+                          {/* Power Button */}
+                          <button 
+                            onClick={() => setIsComputerOn(!isComputerOn)}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isComputerOn 
+                                ? 'bg-green-500 border-green-700 shadow-[0_0_5px_#22c55e]' 
+                                : 'bg-red-500 border-red-700 shadow-[0_0_5px_#ef4444]'
+                            } ml-4 outline-none active:scale-95 cursor-pointer`}
+                            title="Power"
                           >
-                            Click to unlock
-                          </motion.div>
+                            <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v9m-4.5-2.5a9 9 0 109 0" />
+                            </svg>
+                          </button>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
+                      </div>
+                    </div>
 
-              {/* Monitor Bottom Control Panel */}
-                <div className="h-10 w-full mt-2 flex items-center justify-between px-6">
-                  {/* Brand/Logo placeholder */}
-                  <div className="text-gray-500 font-serif italic text-sm tracking-widest font-bold">INFINITY</div>
-                  {/* Buttons */}
-                  <div className="flex gap-3 items-center">
-                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
-                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
-                    <div className="w-3 h-1 bg-gray-400 rounded-full shadow-inner"></div>
-                    {/* Power Button */}
-                    <button 
-                      onClick={() => setIsComputerOn(!isComputerOn)}
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                        isComputerOn 
-                          ? 'bg-green-500 border-green-700 shadow-[0_0_5px_#22c55e]' 
-                          : 'bg-red-500 border-red-700 shadow-[0_0_5px_#ef4444]'
-                      } ml-4 outline-none active:scale-95 cursor-pointer`}
-                      title="Power"
-                    >
-                      <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v9m-4.5-2.5a9 9 0 109 0" />
-                      </svg>
-                    </button>
+                    {/* Monitor Stand */}
+                    <div className="w-1/3 h-8 bg-[#c0bcb4] border-l-4 border-white/40 border-r-4 border-black/20 z-0 relative -mt-2 shadow-lg"></div>
+                    <div className="w-1/2 h-4 bg-[#d4d0c8] rounded-b-xl border-b-4 border-black/20 shadow-xl z-10"></div>
+                  </div>
+                </div>
+
+                {/* Collections Section */}
+                <div className="border-t-2 border-gray-200 pt-8">
+                  <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-gray-900 mb-6">Your Collections</h2>
+                  <div className="flex flex-col border-y border-gray-200">
+                    {collections.map((col, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex justify-between items-center py-5 border-b border-gray-200 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors px-2 group"
+                        onClick={() => {
+                          if (col.title === '日记簿') setActiveTab('diary');
+                          if (col.title === '影音集') setActiveTab('media');
+                          if (col.title === 'photoes') setActiveTab('photoes');
+                        }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Folder className="w-6 h-6 text-gray-400 group-hover:text-black transition-colors" strokeWidth={1.5} />
+                          <span className="font-serif font-bold text-lg text-gray-800">{col.title}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">{col.count} items</span>
+                          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-black transition-colors" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              {/* Monitor Stand */}
-              <div className="w-1/3 h-8 bg-[#c0bcb4] border-l-4 border-white/40 border-r-4 border-black/20 z-0 relative -mt-2 shadow-lg"></div>
-              <div className="w-1/2 h-4 bg-[#d4d0c8] rounded-b-xl border-b-4 border-black/20 shadow-xl z-10"></div>
-            </div>
-          </div>
-
-          {/* Collections Section */}
-          <div className="border-t-2 border-gray-200 pt-8">
-            <h2 className="text-xl font-bold uppercase tracking-widest font-serif text-gray-900 mb-6">Your Collections</h2>
-            <div className="flex flex-col border-y border-gray-200">
-              {collections.map((col, idx) => (
-                <div key={idx} className="flex justify-between items-center py-5 border-b border-gray-200 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors px-2 group">
-                  <div className="flex items-center gap-4">
-                    <Folder className="w-6 h-6 text-gray-400 group-hover:text-black transition-colors" strokeWidth={1.5} />
-                    <span className="font-serif font-bold text-lg text-gray-800">{col.title}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">{col.count} items</span>
-                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-black transition-colors" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -2557,10 +2619,10 @@ const StickyNotes = () => {
     localStorage.getItem(STORAGE_KEYS.CONTENT) || "“ 每一个不曾起舞的日子，都是对生命的辜负。”"
   );
   const [avatarUrl, setAvatarUrl] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.AVATAR) || "https://picsum.photos/seed/avatar/40/40"
+    localStorage.getItem(STORAGE_KEYS.AVATAR) || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png"
   );
   const [signature, setSignature] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.SIGNATURE) || "尼采"
+    localStorage.getItem(STORAGE_KEYS.SIGNATURE) || "Island_乱码"
   );
 
   const [inputValue, setInputValue] = useState("");
@@ -2589,11 +2651,17 @@ const StickyNotes = () => {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.AVATAR, avatarUrl);
-  }, [avatarUrl]);
+    window.dispatchEvent(new CustomEvent('icity_profile_updated', { 
+      detail: { avatar: avatarUrl, signature } 
+    }));
+  }, [avatarUrl, signature]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SIGNATURE, signature);
-  }, [signature]);
+    window.dispatchEvent(new CustomEvent('icity_profile_updated', { 
+      detail: { avatar: avatarUrl, signature } 
+    }));
+  }, [signature, avatarUrl]);
 
   useEffect(() => {
     const handleClickOutside = () => {
