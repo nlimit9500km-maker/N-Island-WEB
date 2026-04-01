@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useDragControls, useMotionValue, animate } from 'motion/react';
-import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart, Link2, Info, Calendar, Cloud, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence, useDragControls, useMotionValue, animate, useTransform, useSpring } from 'motion/react';
+import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart, Link2, Info, Calendar, Cloud, Image as ImageIcon, Volume2 } from 'lucide-react';
 import * as mm from 'music-metadata-browser';
 import { DogGame } from './components/DogGame';
 import { io } from 'socket.io-client';
@@ -2338,33 +2338,44 @@ const NansPlaylistWidget = () => {
     setHasError(false);
     if (audioRef.current) {
       audioRef.current.load();
-      if (!userPaused) {
-        audioRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch(err => {
-          console.warn("Auto-play failed:", err);
-          setIsPlaying(false);
-        });
-      } else {
+    }
+  }, [currentSongIndex]);
+
+  // Robust auto-play with interaction fallback
+  useEffect(() => {
+    if (userPaused) {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
         setIsPlaying(false);
       }
+      return;
     }
-  }, [currentSongIndex, userPaused]);
 
-  // Initial auto-play
-  useEffect(() => {
     const attemptPlay = async () => {
-      if (audioRef.current && !userPaused) {
+      if (audioRef.current && audioRef.current.paused) {
         try {
           await audioRef.current.play();
           setIsPlaying(true);
         } catch (err) {
-          console.warn("Initial auto-play failed, waiting for user interaction:", err);
+          console.warn("Auto-play blocked, waiting for user interaction...");
+          setIsPlaying(false);
         }
       }
     };
+
     attemptPlay();
-  }, []);
+
+    // Attach listeners to catch any interaction to start playing
+    document.addEventListener('click', attemptPlay);
+    document.addEventListener('touchstart', attemptPlay);
+    document.addEventListener('keydown', attemptPlay);
+
+    return () => {
+      document.removeEventListener('click', attemptPlay);
+      document.removeEventListener('touchstart', attemptPlay);
+      document.removeEventListener('keydown', attemptPlay);
+    };
+  }, [currentSongIndex, userPaused]);
 
   const togglePlay = React.useCallback(async () => {
     if (audioRef.current) {
@@ -2694,9 +2705,12 @@ const StickyNotes = () => {
   const [avatarUrl, setAvatarUrl] = useState(() => 
     localStorage.getItem(STORAGE_KEYS.AVATAR) || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png"
   );
-  const [signature, setSignature] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.SIGNATURE) || "Island_乱码"
-  );
+  const [signature, setSignature] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SIGNATURE);
+    if (saved) return saved;
+    const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
+    return `Island_${randomNum}`;
+  });
 
   const [inputValue, setInputValue] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -3277,9 +3291,200 @@ const BottomBar = () => {
   );
 };
 
+const DissipatingText = ({ text, delay = 0 }: { text: string, delay?: number }) => {
+  const characters = Array.from(text);
+  
+  return (
+    <div className="flex flex-wrap justify-center gap-[0.2em]">
+      {characters.map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ 
+            opacity: 0, 
+            filter: 'blur(15px)',
+            scale: 1.8,
+            y: 15
+          }}
+          animate={{ 
+            opacity: 1, 
+            filter: 'blur(0px)',
+            scale: 1,
+            y: 0
+          }}
+          transition={{ 
+            duration: 2.5,
+            delay: delay + (i * 0.35),
+            ease: [0.16, 1, 0.3, 1]
+          }}
+          className="inline-block"
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
+
+const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const [progress, setProgress] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+    const x = (clientX / innerWidth - 0.5) * 2;
+    const y = (clientY / innerHeight - 0.5) * 2;
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+
+  const springConfig = { damping: 30, stiffness: 100 };
+  const bgX = useSpring(useTransform(mouseX, [-1, 1], [-20, 20]), springConfig);
+  const bgY = useSpring(useTransform(mouseY, [-1, 1], [-20, 20]), springConfig);
+  const textX = useSpring(useTransform(mouseX, [-1, 1], [15, -15]), springConfig);
+  const textY = useSpring(useTransform(mouseY, [-1, 1], [15, -15]), springConfig);
+
+  useEffect(() => {
+    const totalDuration = 12000;
+    const interval = 50;
+    const step = 100 / (totalDuration / interval);
+    
+    const progressTimer = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressTimer);
+          return 100;
+        }
+        return prev + step;
+      });
+    }, interval);
+
+    const timer = setTimeout(() => {
+      onComplete();
+    }, totalDuration);
+    
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressTimer);
+    };
+  }, [onComplete]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 2, ease: "easeInOut" } }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black overflow-hidden cursor-pointer"
+      onMouseMove={handleMouseMove}
+      onClick={onComplete}
+    >
+      {/* Background Image with Distorted Animation */}
+      <motion.div 
+        initial={{ scale: 1.2, opacity: 1, filter: 'blur(15px) brightness(0.3)' }}
+        animate={{ 
+          scale: [1.2, 1.05],
+          filter: ['blur(15px) brightness(0.3)', 'blur(0px) brightness(0.75)']
+        }}
+        transition={{ duration: 12, ease: "linear" }}
+        style={{ x: bgX, y: bgY }}
+        className="absolute inset-0 w-[115%] h-[115%] -left-[7.5%] -top-[7.5%]"
+      >
+        <img 
+          src="https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9YVJmQ3R0.jpg" 
+          alt="Loading Background" 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        
+        {/* Noise/Grain Overlay */}
+        <div className="absolute inset-0 opacity-[0.1] pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+        
+        {/* Glitch Overlay */}
+        <motion.div 
+          animate={{ 
+            opacity: [0, 0.04, 0, 0.02, 0],
+            x: [0, -1, 1, -0.5, 0],
+          }}
+          transition={{ duration: 0.4, repeat: Infinity, repeatType: "mirror" }}
+          className="absolute inset-0 bg-white/5 mix-blend-overlay"
+        />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-black/95" />
+      </motion.div>
+
+      {/* Content */}
+      <motion.div 
+        style={{ x: textX, y: textY }}
+        className="relative z-10 flex flex-col items-center justify-center text-center px-6 h-full w-full pointer-events-none"
+      >
+        <div className="flex flex-col gap-12 items-center flex-1 justify-center">
+          <div className="space-y-10 text-white/90 font-serif text-2xl md:text-3xl lg:text-4xl tracking-[0.4em] leading-loose italic" style={{ textShadow: '0 4px 40px rgba(0,0,0,1)' }}>
+            <DissipatingText text="我见证你的存在，" delay={2.5} />
+            <DissipatingText text="见证你美丽的纵身一跃" delay={5.5} />
+            <DissipatingText text="乃至无人问津的坠亡。" delay={8.5} />
+          </div>
+        </div>
+
+        {/* Bottom Section: Watermark & Progress */}
+        <div className="w-full max-w-md flex flex-col items-center gap-12 pb-20">
+          {/* Watermark with subtle flicker */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0, 0.5, 0.4, 0.6, 0.5],
+            }}
+            transition={{ duration: 4, delay: 10, repeat: Infinity, repeatType: "mirror" }}
+          >
+            <div className="flex items-center gap-10">
+              <div className="w-24 h-[1px] bg-gradient-to-r from-transparent to-white/40"></div>
+              <span className="text-white/70 font-serif text-sm tracking-[0.8em] uppercase italic drop-shadow-lg">无棘莺落</span>
+              <div className="w-24 h-[1px] bg-gradient-to-l from-transparent to-white/40"></div>
+            </div>
+          </motion.div>
+
+          {/* Loading Progress Bar */}
+          <div className="w-full flex flex-col items-center gap-4">
+            <div className="w-full h-[1px] bg-white/10 relative overflow-hidden">
+              <motion.div 
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="flex justify-between w-full text-[10px] tracking-[0.3em] text-white/30 font-serif uppercase">
+              <motion.div
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="flex items-center gap-2"
+              >
+                <Volume2 size={10} className="animate-pulse" />
+                <span>Audio Active</span>
+              </motion.div>
+              <span>{Math.round(progress)}%</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Skip Prompt */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.4, 0] }}
+        transition={{ delay: 4, duration: 4, repeat: Infinity }}
+        className="absolute bottom-6 text-white/20 text-[10px] tracking-[0.6em] font-serif pointer-events-none z-20 uppercase"
+      >
+        - 点击任意处进入 -
+      </motion.div>
+
+      {/* Vignette Effect */}
+      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_200px_rgba(0,0,0,1)] z-20" />
+    </motion.div>
+  );
+};
+
 export default function App() {
   const [windows, setWindows] = useState<any[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const openApp = (appId: string) => {
     const existing = windows.find(w => w.id === appId);
@@ -3313,6 +3518,10 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[url('https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9ZG1ia3pD.png')] bg-cover bg-center relative font-sans text-gray-900">
+      <AnimatePresence>
+        {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
+      </AnimatePresence>
+
       <DynamicIsland hasOpenWindows={windows.length > 0} />
       <TopBar />
       
