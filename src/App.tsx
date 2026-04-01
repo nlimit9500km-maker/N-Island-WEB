@@ -2325,6 +2325,7 @@ const NansPlaylistWidget = () => {
   const [hasError, setHasError] = useState(false);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
   const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const [userPaused, setUserPaused] = useState(false);
   
   const togglePlaylist = () => setIsPlaylistOpen(!isPlaylistOpen);
   
@@ -2333,23 +2334,49 @@ const NansPlaylistWidget = () => {
 
   // When song changes, reset states
   useEffect(() => {
-    setIsPlaying(false);
     setCurrentTime(0);
     setHasError(false);
     if (audioRef.current) {
       audioRef.current.load();
+      if (!userPaused) {
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(err => {
+          console.warn("Auto-play failed:", err);
+          setIsPlaying(false);
+        });
+      } else {
+        setIsPlaying(false);
+      }
     }
-  }, [currentSongIndex]);
+  }, [currentSongIndex, userPaused]);
+
+  // Initial auto-play
+  useEffect(() => {
+    const attemptPlay = async () => {
+      if (audioRef.current && !userPaused) {
+        try {
+          await audioRef.current.play();
+          setIsPlaying(true);
+        } catch (err) {
+          console.warn("Initial auto-play failed, waiting for user interaction:", err);
+        }
+      }
+    };
+    attemptPlay();
+  }, []);
 
   const togglePlay = React.useCallback(async () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
+        setUserPaused(true);
       } else {
         try {
           await audioRef.current.play();
           setIsPlaying(true);
+          setUserPaused(false);
         } catch (err) {
           console.warn("播放尝试失败:", err);
         }
@@ -2561,7 +2588,13 @@ const NansPlaylistWidget = () => {
         onTimeUpdate={handleTimeUpdate} 
         onLoadedMetadata={handleLoadedMetadata}
         onError={handleAudioError}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={() => {
+          if (!userPaused) {
+            setCurrentSongIndex((prev) => (prev + 1) % SONGS.length);
+          } else {
+            setIsPlaying(false);
+          }
+        }}
       />
     </div>
   );
