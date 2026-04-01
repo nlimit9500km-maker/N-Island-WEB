@@ -565,8 +565,8 @@ export const MediaView = () => {
                       className="w-full h-auto rounded-lg"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute bottom-2 right-2">
-                      <span className="text-[7px] text-white/60 bg-black/20 px-1.5 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-90 inline-block">@无棘莺落</span>
+                    <div className={showThoughtsFor.id === '1' ? "absolute bottom-2 left-1/2 -translate-x-1/2" : "absolute bottom-2 right-2"}>
+                      <span className={showThoughtsFor.id === '1' ? "text-[6px] text-gray-300/90 bg-black/20 px-1 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-75 inline-block" : "text-[7px] text-white/60 bg-black/20 px-1.5 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-90 inline-block"}>@无棘莺落</span>
                     </div>
                   </div>
 
@@ -579,8 +579,8 @@ export const MediaView = () => {
                         onClick={() => setFullscreenImage(imgUrl)}
                       >
                         <img src={imgUrl} alt={`Image ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" referrerPolicy="no-referrer" />
-                        <div className="absolute bottom-1 right-1">
-                          <span className="text-[7px] text-white/60 bg-black/20 px-1.5 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-90 inline-block">@无棘莺落</span>
+                        <div className={showThoughtsFor.id === '1' ? "absolute bottom-1 left-1/2 -translate-x-1/2" : "absolute bottom-1 right-1"}>
+                          <span className={showThoughtsFor.id === '1' ? "text-[6px] text-gray-300/90 bg-black/20 px-1 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-75 inline-block" : "text-[7px] text-white/60 bg-black/20 px-1.5 py-0 rounded-sm backdrop-blur-[2px] tracking-tighter scale-y-90 inline-block"}>@无棘莺落</span>
                         </div>
                       </div>
                     ))}
@@ -727,8 +727,8 @@ export const MediaView = () => {
               referrerPolicy="no-referrer"
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="absolute bottom-8 right-8 pointer-events-none">
-              <span className="text-[7px] text-white/40 bg-black/30 px-2 py-0.5 rounded-sm backdrop-blur-sm tracking-tighter scale-y-90 inline-block">@无棘莺落</span>
+            <div className={showThoughtsFor?.id === '1' ? "absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none" : "absolute bottom-8 right-8 pointer-events-none"}>
+              <span className={showThoughtsFor?.id === '1' ? "text-[6px] text-gray-300/80 bg-black/30 px-1.5 py-0.5 rounded-sm backdrop-blur-sm tracking-tighter scale-y-75 inline-block" : "text-[7px] text-white/40 bg-black/30 px-2 py-0.5 rounded-sm backdrop-blur-sm tracking-tighter scale-y-90 inline-block"}>@无棘莺落</span>
             </div>
           </motion.div>
         )}

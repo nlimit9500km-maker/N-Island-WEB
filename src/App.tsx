@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls, useMotionValue, animate } from 'motion/react';
-import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart, Link2, Info, Calendar } from 'lucide-react';
+import { User, Music, Coffee, Lightbulb, X, Minus, Maximize2, Wifi, Battery, Search, ChevronRight, Upload, Check, GripVertical, Lock, Unlock, Palette, Type, Bell, ListMusic, ThumbsUp, Repeat, MessageSquare, RefreshCw, Folder, FileText, Settings, ChevronLeft, MoreVertical, Clock, Book, Home, ShoppingCart, ArrowLeft, Flower, Leaf, PenLine, Globe, Gamepad2, Mail, Menu, Heart, Link2, Info, Calendar, Cloud, Image as ImageIcon } from 'lucide-react';
 import * as mm from 'music-metadata-browser';
 import { DogGame } from './components/DogGame';
 import { io } from 'socket.io-client';
@@ -350,7 +350,7 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
 
 const MusicContent = () => {
   const [view, setView] = useState<'library' | 'events'>('library');
-  const [activeTab, setActiveTab] = useState<'love_songs' | 'recent'>('love_songs');
+  const [activeTab, setActiveTab] = useState<'love_songs' | 'scattered' | 'recent'>('love_songs');
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
 
@@ -393,6 +393,13 @@ const MusicContent = () => {
               <span className="text-sm font-medium">LOVE Songs</span>
             </div>
             <div 
+              onClick={() => setActiveTab('scattered')}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${activeTab === 'scattered' ? 'bg-pink-500/10 text-pink-600' : 'text-gray-600 hover:bg-black/5'}`}
+            >
+              <Cloud className="w-4 h-4" />
+              <span className="text-sm font-medium">到散落的那一天</span>
+            </div>
+            <div 
               onClick={() => setActiveTab('recent')}
               className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${activeTab === 'recent' ? 'bg-pink-500/10 text-pink-600' : 'text-gray-600 hover:bg-black/5'}`}
             >
@@ -419,6 +426,39 @@ const MusicContent = () => {
                 <iframe 
                   key={refreshKey}
                   src={`https://open.spotify.com/embed/playlist/4GVGnwkGf7CAZRazy1ObVe?si=GQxjbLsTQP6bLDujYg600g&t=${refreshKey}`}
+                  width="100%" 
+                  height="100%" 
+                  frameBorder="0" 
+                  allowFullScreen={true} 
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                  loading="lazy"
+                  className="w-full h-full min-h-[600px]"
+                ></iframe>
+              </div>
+            </div>
+          ) : activeTab === 'scattered' ? (
+            <div className="w-full h-full flex flex-col">
+              <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">到散落的那一天</h1>
+                <div className="flex items-center gap-6">
+                  <div className="text-sm text-gray-600 italic text-right">
+                    <p>-请在我的葬礼上循环播放这个PLAYLIST.</p>
+                    <p>-散化成一缕尘埃，再凝聚成一颗星。</p>
+                  </div>
+                  <button 
+                    onClick={() => setRefreshKey(prev => prev + 1)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/60 hover:bg-white/90 text-gray-700 rounded-full shadow-sm border border-black/5 transition-all shrink-0"
+                    title="刷新内容"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span className="text-sm font-medium">刷新</span>
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 w-full bg-black/5 rounded-2xl overflow-hidden shadow-sm border border-white/40">
+                <iframe 
+                  key={refreshKey}
+                  src={`https://open.spotify.com/embed/playlist/4i30udTdpF97GcNdYdUhPT?t=${refreshKey}`}
                   width="100%" 
                   height="100%" 
                   frameBorder="0" 
@@ -2642,6 +2682,7 @@ const StickyNotes = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [showSigInput, setShowSigInput] = useState(false);
   const [tempValue, setTempValue] = useState("");
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -2812,7 +2853,16 @@ const StickyNotes = () => {
                 
                 {/* Post Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-[#576b95] text-[15px] mb-1">未命名诗集</div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="font-semibold text-[#576b95] text-[15px]">未命名诗集</div>
+                    <ImageIcon 
+                      className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFullscreenImage('https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/all-imagetourl.cloud-1775031508441-xqze8z.jpg');
+                      }} 
+                    />
+                  </div>
                   <div className="text-[15px] text-gray-800 mb-2 leading-relaxed break-words">
                     “我希望我们都能过得幸福，像炽热且阳光普照的日子一样，没有一点伤痕。”
                   </div>
@@ -3132,6 +3182,37 @@ const StickyNotes = () => {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Viewer */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              src={fullscreenImage}
+              alt="Fullscreen"
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              referrerPolicy="no-referrer"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
