@@ -2707,9 +2707,11 @@ const StickyNotes = () => {
   );
   const [signature, setSignature] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SIGNATURE);
-    if (saved) return saved;
-    const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
-    return `Island_${randomNum}`;
+    if (saved && saved !== "Island_乱码") return saved;
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    const defaultName = `Island_${randomNum}`;
+    localStorage.setItem(STORAGE_KEYS.SIGNATURE, defaultName);
+    return defaultName;
   });
 
   const [inputValue, setInputValue] = useState("");
@@ -3380,12 +3382,17 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     >
       {/* Background Image with Distorted Animation */}
       <motion.div 
-        initial={{ scale: 1.2, opacity: 1, filter: 'blur(15px) brightness(0.3)' }}
+        initial={{ scale: 1.2, opacity: 0, filter: 'blur(10px) brightness(0.3)' }}
         animate={{ 
-          scale: [1.2, 1.05],
-          filter: ['blur(15px) brightness(0.3)', 'blur(0px) brightness(0.75)']
+          scale: 1.05,
+          opacity: 0.85,
+          filter: 'blur(0px) brightness(0.75)'
         }}
-        transition={{ duration: 12, ease: "linear" }}
+        transition={{ 
+          scale: { duration: 12, ease: "linear" },
+          opacity: { duration: 0.8, ease: "easeOut" },
+          filter: { duration: 0.8, ease: "easeOut" }
+        }}
         style={{ x: bgX, y: bgY }}
         className="absolute inset-0 w-[115%] h-[115%] -left-[7.5%] -top-[7.5%]"
       >

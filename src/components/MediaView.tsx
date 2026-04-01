@@ -100,9 +100,18 @@ export const MediaView = () => {
     localStorage.setItem('thoughts_comments', JSON.stringify(thoughtsComments));
   }, [thoughtsComments]);
 
-  const [userProfile, setUserProfile] = useState({
-    avatar: localStorage.getItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png",
-    signature: localStorage.getItem('icity_signature') || "Island_乱码"
+  const [userProfile, setUserProfile] = useState(() => {
+    const savedAvatar = localStorage.getItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
+    const savedSignature = localStorage.getItem('icity_signature');
+    
+    if (savedSignature && savedSignature !== "Island_乱码") {
+      return { avatar: savedAvatar, signature: savedSignature };
+    }
+    
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    const defaultName = `Island_${randomNum}`;
+    localStorage.setItem('icity_signature', defaultName);
+    return { avatar: savedAvatar, signature: defaultName };
   });
 
   useEffect(() => {
