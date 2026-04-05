@@ -1565,6 +1565,15 @@ const APPS = [
     icon: <Lightbulb className="w-8 h-8 text-white" strokeWidth={1.5} />,
     color: 'bg-gradient-to-b from-[#a18cd1] to-[#fbc2eb]',
     content: <PortfolioContent />
+  },
+  {
+    id: 'diary',
+    title: '日记簿',
+    icon: <Book className="w-8 h-8 text-white" strokeWidth={1.5} />,
+    color: 'bg-gradient-to-b from-[#ff9a9e] to-[#fecfef]',
+    content: <DiaryView />,
+    defaultWidth: 950,
+    defaultHeight: 700
   }
 ];
 

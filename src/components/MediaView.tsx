@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Film, Book, Music, ExternalLink, Star, Search, Plus, X, PenLine, Check, MessageCircle, Trash2, Image as ImageIcon, Send, User, Repeat, ThumbsUp, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { io } from 'socket.io-client';
+
+const socket = io();
 
 interface ReviewComment {
   id: string;
@@ -81,24 +84,37 @@ export const MediaView = () => {
   const [newCommentText, setNewCommentText] = useState('');
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  const [thoughtsLikes, setThoughtsLikes] = useState<string[]>(() => {
-    const saved = localStorage.getItem('thoughts_likes');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [thoughtsComments, setThoughtsComments] = useState<{ id: string, name: string, avatar: string, content: string, timestamp: number }[]>(() => {
-    const saved = localStorage.getItem('thoughts_comments');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [thoughtsLikes, setThoughtsLikes] = useState<string[]>([]);
+  const [thoughtsComments, setThoughtsComments] = useState<{ id: string, name: string, avatar: string, content: string, timestamp: number }[]>([]);
   const [isCommentingThoughts, setIsCommentingThoughts] = useState(false);
   const [thoughtsCommentValue, setThoughtsCommentValue] = useState("");
 
   useEffect(() => {
-    localStorage.setItem('thoughts_likes', JSON.stringify(thoughtsLikes));
-  }, [thoughtsLikes]);
+    socket.on("init_data", (data: any) => {
+      if (data.thoughtsLikes) setThoughtsLikes(data.thoughtsLikes);
+      if (data.thoughtsComments) setThoughtsComments(data.thoughtsComments);
+      if (data.reviews) setReviews(data.reviews);
+    });
 
-  useEffect(() => {
-    localStorage.setItem('thoughts_comments', JSON.stringify(thoughtsComments));
-  }, [thoughtsComments]);
+    socket.on("thoughts_likes_updated", (likes: string[]) => {
+      setThoughtsLikes(likes);
+    });
+
+    socket.on("thoughts_comments_updated", (comments: any[]) => {
+      setThoughtsComments(comments);
+    });
+
+    socket.on("reviews_updated", (updatedReviews: Review[]) => {
+      setReviews(updatedReviews);
+    });
+
+    return () => {
+      socket.off("init_data");
+      socket.off("thoughts_likes_updated");
+      socket.off("thoughts_comments_updated");
+      socket.off("reviews_updated");
+    };
+  }, []);
 
   const [userProfile, setUserProfile] = useState(() => {
     const savedAvatar = localStorage.getItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
@@ -361,7 +377,11 @@ export const MediaView = () => {
                         </div>
                         {review.isCurrentUser && (
                           <button 
-                            onClick={() => setReviews(reviews.filter(r => r.id !== review.id))}
+                            onClick={() => {
+                              const newReviews = reviews.filter(r => r.id !== review.id);
+                              setReviews(newReviews);
+                              socket.emit("update_reviews", newReviews);
+                            }}
                             className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                             title="删除"
                           >
@@ -420,11 +440,13 @@ export const MediaView = () => {
                                   if (e.key === 'Enter' && newCommentText.trim()) {
                                     const newComment = {
                                       id: Date.now().toString(),
-                                      userName: '我',
+                                      userName: userProfile.signature,
                                       content: newCommentText,
                                       createdAt: new Date().toISOString().split('T')[0]
                                     };
-                                    setReviews(reviews.map(r => r.id === review.id ? { ...r, comments: [...r.comments, newComment] } : r));
+                                    const newReviews = reviews.map(r => r.id === review.id ? { ...r, comments: [...r.comments, newComment] } : r);
+                                    setReviews(newReviews);
+                                    socket.emit("update_reviews", newReviews);
                                     setNewCommentText('');
                                   }
                                 }}
@@ -434,11 +456,13 @@ export const MediaView = () => {
                                   if (!newCommentText.trim()) return;
                                   const newComment = {
                                     id: Date.now().toString(),
-                                    userName: '我',
+                                    userName: userProfile.signature,
                                     content: newCommentText,
                                     createdAt: new Date().toISOString().split('T')[0]
                                   };
-                                  setReviews(reviews.map(r => r.id === review.id ? { ...r, comments: [...r.comments, newComment] } : r));
+                                  const newReviews = reviews.map(r => r.id === review.id ? { ...r, comments: [...r.comments, newComment] } : r);
+                                  setReviews(newReviews);
+                                  socket.emit("update_reviews", newReviews);
                                   setNewCommentText('');
                                 }}
                                 className="p-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition-colors"
@@ -509,7 +533,9 @@ export const MediaView = () => {
                           createdAt: new Date().toISOString().split('T')[0],
                           comments: []
                         };
-                        setReviews([newReview, ...reviews]);
+                        const newReviews = [newReview, ...reviews];
+                        setReviews(newReviews);
+                        socket.emit("update_reviews", newReviews);
                         setNewReviewText('');
                         setNewReviewImage(null);
                       }}
@@ -611,7 +637,11 @@ export const MediaView = () => {
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               {comment.name === userProfile.signature && (
                                 <button 
-                                  onClick={() => setThoughtsComments(thoughtsComments.filter(c => c.id !== comment.id))}
+                                  onClick={() => {
+                                    const newComments = thoughtsComments.filter(c => c.id !== comment.id);
+                                    setThoughtsComments(newComments);
+                                    socket.emit("update_thoughts_comments", newComments);
+                                  }}
                                   className="text-red-500/70 hover:text-red-500 p-1"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -660,7 +690,9 @@ export const MediaView = () => {
                               content: thoughtsCommentValue,
                               timestamp: Date.now()
                             };
-                            setThoughtsComments([newComment, ...thoughtsComments]);
+                            const newComments = [newComment, ...thoughtsComments];
+                            setThoughtsComments(newComments);
+                            socket.emit("update_thoughts_comments", newComments);
                             setThoughtsCommentValue("");
                             setIsCommentingThoughts(false);
                           }}
@@ -690,11 +722,14 @@ export const MediaView = () => {
                 <div 
                   className={`flex-1 flex items-center justify-center gap-2 cursor-pointer transition-colors ${thoughtsLikes.includes(userProfile.signature) ? 'text-amber-600' : 'text-amber-900/50 hover:text-amber-900'}`}
                   onClick={() => {
+                    let newLikes;
                     if (thoughtsLikes.includes(userProfile.signature)) {
-                      setThoughtsLikes(thoughtsLikes.filter(name => name !== userProfile.signature));
+                      newLikes = thoughtsLikes.filter(name => name !== userProfile.signature);
                     } else {
-                      setThoughtsLikes([...thoughtsLikes, userProfile.signature]);
+                      newLikes = [...thoughtsLikes, userProfile.signature];
                     }
+                    setThoughtsLikes(newLikes);
+                    socket.emit("update_thoughts_likes", newLikes);
                   }}
                 >
                   <ThumbsUp className={`w-5 h-5 ${thoughtsLikes.includes(userProfile.signature) ? 'fill-amber-600' : ''}`} />
