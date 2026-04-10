@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Play, Film, Book, Music, ExternalLink, Star, Search, Plus, X, PenLine, Check, MessageCircle, Trash2, Image as ImageIcon, Send, User, Repeat, ThumbsUp, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-const socket = io();
+const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 interface ReviewComment {
   id: string;
@@ -364,8 +364,8 @@ export const MediaView = () => {
                     <p className="text-sm font-serif">暂无观后感，来写下第一篇吧</p>
                   </div>
                 ) : (
-                  reviews.filter(r => r.mediaId === showReviewsFor.id).map(review => (
-                    <div key={review.id} className="bg-white p-5 rounded-2xl shadow-sm border border-amber-900/5 flex flex-col gap-4">
+                  reviews.filter(r => r.mediaId === showReviewsFor.id).map((review, idx) => (
+                    <div key={`${review.id}-${idx}`} className="bg-white p-5 rounded-2xl shadow-sm border border-amber-900/5 flex flex-col gap-4">
                       {/* User info & Delete */}
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -418,8 +418,8 @@ export const MediaView = () => {
                             exit={{ opacity: 0, height: 0 }}
                             className="flex flex-col gap-3 pt-3 bg-amber-50/50 p-4 rounded-xl overflow-hidden"
                           >
-                            {review.comments.map(comment => (
-                              <div key={comment.id} className="flex flex-col gap-1">
+                            {review.comments.map((comment, idx) => (
+                              <div key={`${comment.id}-${idx}`} className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-bold text-amber-950">{comment.userName}</span>
                                   <span className="text-[10px] text-amber-900/40">{comment.createdAt}</span>
@@ -439,7 +439,7 @@ export const MediaView = () => {
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' && newCommentText.trim()) {
                                     const newComment = {
-                                      id: Date.now().toString(),
+                                      id: crypto.randomUUID(),
                                       userName: userProfile.signature,
                                       content: newCommentText,
                                       createdAt: new Date().toISOString().split('T')[0]
@@ -455,7 +455,7 @@ export const MediaView = () => {
                                 onClick={() => {
                                   if (!newCommentText.trim()) return;
                                   const newComment = {
-                                    id: Date.now().toString(),
+                                    id: crypto.randomUUID(),
                                     userName: userProfile.signature,
                                     content: newCommentText,
                                     createdAt: new Date().toISOString().split('T')[0]
@@ -523,7 +523,7 @@ export const MediaView = () => {
                       onClick={() => {
                         if (!newReviewText.trim() && !newReviewImage) return;
                         const newReview: Review = {
-                          id: Date.now().toString(),
+                          id: crypto.randomUUID(),
                           mediaId: showReviewsFor.id,
                           isCurrentUser: true,
                           userName: userProfile.signature,
@@ -628,8 +628,8 @@ export const MediaView = () => {
                 <div className="bg-[#fdfbf7] border-t border-amber-900/10 p-6 shrink-0 max-h-64 overflow-y-auto">
                   <h4 className="text-sm font-bold text-amber-950 mb-4">评论 ({thoughtsComments.length})</h4>
                   <div className="space-y-4">
-                    {thoughtsComments.map(comment => (
-                      <div key={comment.id} className="flex gap-3 group">
+                    {thoughtsComments.map((comment, idx) => (
+                      <div key={`${comment.id}-${idx}`} className="flex gap-3 group">
                         <img src={comment.avatar} alt={comment.name} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
@@ -684,7 +684,7 @@ export const MediaView = () => {
                           onClick={() => {
                             if (!thoughtsCommentValue.trim()) return;
                             const newComment = {
-                              id: Date.now().toString(),
+                              id: crypto.randomUUID(),
                               name: userProfile.signature,
                               avatar: userProfile.avatar,
                               content: thoughtsCommentValue,

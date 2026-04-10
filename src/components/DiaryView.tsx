@@ -41,30 +41,40 @@ export const DiaryView = () => {
   const [activeSetting, setActiveSetting] = useState<'profile' | 'theme' | 'privacy' | 'notifications' | 'sync' | null>(null);
 
   // --- Moments State ---
-  const [entries, setEntries] = useState<DiaryEntry[]>([
-    {
-      id: '1',
-      date: '2026-04-05',
-      time: '14:23',
-      title: '春日漫步',
-      content: '今天去公园散步，看到樱花都开了。微风拂过，花瓣如雪般落下，那一刻感觉时间都静止了。生活中的小确幸大概就是如此吧。',
-      mood: '😊',
-      weather: '☀️',
-      folder: '生活碎片',
-      location: '浙江省 · 杭州市',
-      images: ['https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774681518731-ajx7b8.jpg']
-    },
-    {
-      id: '2',
-      date: '2026-04-03',
-      time: '23:15',
-      title: '深夜随笔',
-      content: '最近在读《虽然想死，但还是想吃辣炒年糕》，感触颇深。每个人都有脆弱的时候，允许自己停下来，也是一种勇敢。',
-      mood: '🌙',
-      weather: '🌧️',
-      folder: '默认日记本'
+  const [entries, setEntries] = useState<DiaryEntry[]>(() => {
+    const saved = localStorage.getItem('diary_entries');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary_entries', e);
+      }
     }
-  ]);
+    return [
+      {
+        id: '1',
+        date: '2026-04-05',
+        time: '14:23',
+        title: '春日漫步',
+        content: '今天去公园散步，看到樱花都开了。微风拂过，花瓣如雪般落下，那一刻感觉时间都静止了。生活中的小确幸大概就是如此吧。',
+        mood: '😊',
+        weather: '☀️',
+        folder: '生活碎片',
+        location: '浙江省 · 杭州市',
+        images: ['https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774681518731-ajx7b8.jpg']
+      },
+      {
+        id: '2',
+        date: '2026-04-03',
+        time: '23:15',
+        title: '深夜随笔',
+        content: '最近在读《虽然想死，但还是想吃辣炒年糕》，感触颇深。每个人都有脆弱的时候，允许自己停下来，也是一种勇敢。',
+        mood: '🌙',
+        weather: '🌧️',
+        folder: '默认日记本'
+      }
+    ];
+  });
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   
   // New Diary Form State (icity style)
@@ -75,7 +85,17 @@ export const DiaryView = () => {
   const [newFolder, setNewFolder] = useState('默认日记本');
   const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [showFolderMenu, setShowFolderMenu] = useState(false);
-  const [folders, setFolders] = useState(['默认日记本', '生活碎片', '旅行日记', '工作灵感', '梦境记录']);
+  const [folders, setFolders] = useState<string[]>(() => {
+    const saved = localStorage.getItem('diary_folders');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary_folders', e);
+      }
+    }
+    return ['默认日记本', '生活碎片', '旅行日记', '工作灵感', '梦境记录'];
+  });
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
@@ -94,8 +114,51 @@ export const DiaryView = () => {
   // New states for calendar, folders, and stats
   const [showFoldersView, setShowFoldersView] = useState(false);
   const [showStatsView, setShowStatsView] = useState(false);
+  const [showCalendarView, setShowCalendarView] = useState(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState('2026-04-05');
   const [isCalendarEditMode, setIsCalendarEditMode] = useState(false);
-  const [markedDates, setMarkedDates] = useState<string[]>([]);
+  const [markedDates, setMarkedDates] = useState<string[]>(() => {
+    const saved = localStorage.getItem('diary_marked_dates');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary_marked_dates', e);
+      }
+    }
+    return [];
+  });
+  const [calendarEvents, setCalendarEvents] = useState<{id: string, date: string, title: string}[]>(() => {
+    const saved = localStorage.getItem('diary_calendar_events');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary_calendar_events', e);
+      }
+    }
+    return [
+      { id: 'e1', date: '2026-04-05', title: '下午3点和朋友喝咖啡' }
+    ];
+  });
+  const [newEventTitle, setNewEventTitle] = useState('');
+
+  // Persist states to localStorage
+  useEffect(() => {
+    localStorage.setItem('diary_entries', JSON.stringify(entries));
+  }, [entries]);
+
+  useEffect(() => {
+    localStorage.setItem('diary_folders', JSON.stringify(folders));
+  }, [folders]);
+
+  useEffect(() => {
+    localStorage.setItem('diary_marked_dates', JSON.stringify(markedDates));
+  }, [markedDates]);
+
+  useEffect(() => {
+    localStorage.setItem('diary_calendar_events', JSON.stringify(calendarEvents));
+  }, [calendarEvents]);
 
   useEffect(() => {
     if (isAddingMoment && editorRef.current) {
@@ -131,62 +194,62 @@ export const DiaryView = () => {
 
   const renderLinkCard = (link: string, isPreview = false, key?: string | number) => {
     const type = getLinkType(link);
-    const commonClasses = "flex items-center gap-4 p-5 rounded-[32px] border transition-all group relative overflow-hidden w-full max-w-full backdrop-blur-xl";
+    const commonClasses = "flex items-center gap-5 p-6 rounded-[32px] border transition-all group relative overflow-hidden w-full max-w-full backdrop-blur-2xl";
     
     const configs = {
       music: {
-        bg: "bg-gradient-to-br from-rose-50/95 via-white/80 to-rose-100/90 border-rose-200/40",
-        icon: <Music className="w-7 h-7 text-rose-500" />,
+        bg: "bg-gradient-to-br from-rose-50/90 via-white/70 to-rose-100/80 border-rose-200/30",
+        icon: <Music className="w-8 h-8 text-rose-500" />,
         text: "text-rose-950",
         label: "MUSIC · 正在播放",
         accent: "bg-rose-500/10",
         desc: "点击跳转播放",
-        glow: "shadow-[0_12px_40px_rgb(244,63,94,0.15)]"
+        glow: "shadow-[0_20px_50px_rgba(244,63,94,0.12)]"
       },
       xhs: {
-        bg: "bg-gradient-to-br from-red-50/95 via-white/80 to-red-100/90 border-red-200/40",
-        icon: <PenLine className="w-7 h-7 text-red-500" />,
+        bg: "bg-gradient-to-br from-red-50/90 via-white/70 to-red-100/80 border-red-200/30",
+        icon: <PenLine className="w-8 h-8 text-red-500" />,
         text: "text-red-950",
         label: "XHS · 笔记详情",
         accent: "bg-red-500/10",
         desc: "查看精彩分享",
-        glow: "shadow-[0_12px_40px_rgb(239,68,68,0.15)]"
+        glow: "shadow-[0_20px_50px_rgba(239,68,68,0.12)]"
       },
       bilibili: {
-        bg: "bg-gradient-to-br from-sky-50/95 via-white/80 to-sky-100/90 border-sky-200/40",
-        icon: <Video className="w-7 h-7 text-sky-500" />,
+        bg: "bg-gradient-to-br from-sky-50/90 via-white/70 to-sky-100/80 border-sky-200/30",
+        icon: <Video className="w-8 h-8 text-sky-500" />,
         text: "text-sky-950",
         label: "BILIBILI · 视频内容",
         accent: "bg-sky-500/10",
         desc: "点击观看视频",
-        glow: "shadow-[0_12px_40px_rgb(14,165,233,0.15)]"
+        glow: "shadow-[0_20px_50px_rgba(14,165,233,0.12)]"
       },
       weibo: {
-        bg: "bg-gradient-to-br from-orange-50/95 via-white/80 to-orange-100/90 border-orange-200/40",
-        icon: <Send className="w-7 h-7 text-orange-500" />,
+        bg: "bg-gradient-to-br from-orange-50/90 via-white/70 to-orange-100/80 border-orange-200/30",
+        icon: <Send className="w-8 h-8 text-orange-500" />,
         text: "text-orange-950",
         label: "WEIBO · 动态详情",
         accent: "bg-orange-500/10",
         desc: "查看最新动态",
-        glow: "shadow-[0_12px_40px_rgb(249,115,22,0.15)]"
+        glow: "shadow-[0_20px_50px_rgba(249,115,22,0.12)]"
       },
       douyin: {
-        bg: "bg-gradient-to-br from-gray-900/95 via-gray-800/90 to-black border-gray-700/40",
-        icon: <Video className="w-7 h-7 text-white" />,
+        bg: "bg-gradient-to-br from-gray-900/90 via-gray-800/80 to-black border-gray-700/30",
+        icon: <Video className="w-8 h-8 text-white" />,
         text: "text-white",
         label: "DOUYIN · 短视频",
         accent: "bg-white/10",
         desc: "观看热门视频",
-        glow: "shadow-[0_12px_40px_rgb(0,0,0,0.2)]"
+        glow: "shadow-[0_20px_50px_rgba(0,0,0,0.25)]"
       },
       default: {
-        bg: "bg-gradient-to-br from-gray-50/95 via-white/80 to-gray-100/90 border-gray-200/40",
-        icon: <LinkIcon className="w-7 h-7 text-gray-500" />,
+        bg: "bg-gradient-to-br from-gray-50/90 via-white/70 to-gray-100/80 border-gray-200/30",
+        icon: <LinkIcon className="w-8 h-8 text-gray-500" />,
         text: "text-gray-950",
         label: "LINK · 外部链接",
         accent: "bg-gray-500/10",
         desc: "访问网页内容",
-        glow: "shadow-[0_12px_40px_rgb(107,114,128,0.1)]"
+        glow: "shadow-[0_20px_50px_rgba(107,114,128,0.08)]"
       }
     };
 
@@ -199,51 +262,53 @@ export const DiaryView = () => {
         target="_blank" 
         rel="noreferrer" 
         onClick={(e) => e.stopPropagation()}
-        className={`${commonClasses} ${config.bg} ${config.glow} hover:translate-y-[-4px] hover:shadow-2xl active:scale-[0.96]`}
+        className={`${commonClasses} ${config.bg} ${config.glow} hover:translate-y-[-6px] hover:shadow-2xl active:scale-[0.97]`}
       >
         {/* Decorative background element */}
-        <div className="absolute -right-8 -bottom-8 opacity-[0.06] rotate-12 pointer-events-none group-hover:scale-125 group-hover:rotate-0 transition-all duration-700">
-          {React.cloneElement(config.icon as React.ReactElement, { className: "w-40 h-40" })}
+        <div className="absolute -right-10 -bottom-10 opacity-[0.08] rotate-12 pointer-events-none group-hover:scale-150 group-hover:rotate-0 transition-all duration-1000">
+          {React.cloneElement(config.icon as React.ReactElement, { className: "w-48 h-48" })}
         </div>
 
-        {/* Glass shine effect */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+        {/* Dynamic glass shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1500 ease-in-out pointer-events-none" />
 
-        <div className={`w-16 h-16 rounded-[24px] ${config.accent} flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`w-20 h-20 rounded-[28px] ${config.accent} flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden group-hover:scale-110 transition-transform duration-500`}>
           <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           {config.icon}
+          {/* Subtle pulse ring */}
+          <div className="absolute inset-0 border-2 border-white/20 rounded-[28px] animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '3s' }} />
         </div>
 
         <div className="flex-1 min-w-0 z-10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${config.text} bg-white/60 backdrop-blur-md px-3 py-1 rounded-xl border border-white/40 shadow-sm`}>
+          <div className="flex items-center gap-3 mb-2">
+            <span className={`text-[11px] font-black uppercase tracking-[0.3em] ${config.text} bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-2xl border border-white/50 shadow-sm`}>
               {config.label.split(' · ')[0]}
             </span>
-            <span className={`text-[11px] font-bold opacity-50 ${config.text} tracking-tight`}>
+            <span className={`text-[12px] font-bold opacity-40 ${config.text} tracking-tight italic`}>
               {config.label.split(' · ')[1] || config.desc}
             </span>
           </div>
-          <h4 className={`text-lg font-black truncate ${config.text} mb-0.5 tracking-tight`}>
+          <h4 className={`text-xl font-black truncate ${config.text} mb-1 tracking-tighter leading-tight`}>
             {link.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
           </h4>
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${config.text} opacity-20 animate-pulse`} />
-            <p className={`text-[11px] font-bold opacity-40 truncate ${config.text} tracking-wide`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-2 h-2 rounded-full ${config.text} opacity-30 animate-pulse`} />
+            <p className={`text-[12px] font-bold opacity-40 truncate ${config.text} tracking-wide font-mono`}>
               {link}
             </p>
           </div>
         </div>
 
-        <div className={`w-12 h-12 rounded-[20px] ${config.accent} flex items-center justify-center shrink-0 group-hover:translate-x-2 transition-all group-hover:bg-white/30 backdrop-blur-sm`}>
-          <ChevronRight className={`w-7 h-7 opacity-70 ${config.text}`} />
+        <div className={`w-14 h-14 rounded-[24px] ${config.accent} flex items-center justify-center shrink-0 group-hover:translate-x-3 transition-all group-hover:bg-white/40 backdrop-blur-md border border-white/20 shadow-sm`}>
+          <ChevronRight className={`w-8 h-8 opacity-60 ${config.text}`} />
         </div>
         
         {isPreview && (
           <button 
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setNewLinks(newLinks.filter(l => l !== link)); }}
-            className="absolute top-4 right-4 p-2.5 text-gray-400 hover:text-red-500 bg-white/95 backdrop-blur-md rounded-[18px] shadow-xl opacity-0 group-hover:opacity-100 transition-all border border-gray-100 hover:scale-110 active:scale-90 z-20"
+            className="absolute top-5 right-5 p-3 text-gray-400 hover:text-red-500 bg-white/95 backdrop-blur-md rounded-[22px] shadow-2xl opacity-0 group-hover:opacity-100 transition-all border border-gray-100 hover:scale-110 active:scale-90 z-20"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         )}
       </a>
@@ -251,26 +316,40 @@ export const DiaryView = () => {
   };
 
   // --- Future Letters State ---
-  const [letters, setLetters] = useState<FutureLetter[]>([
-    {
-      id: 'f1',
-      createdAt: '2025-01-01',
-      deliverAt: '2026-01-01',
-      title: '给一年后的自己',
-      content: '你好，一年后的我。你现在过得好吗？有没有实现当初的愿望？希望你依然保持热爱，奔赴山海。',
-      isDelivered: true,
-      recipient: '未来的我'
-    },
-    {
-      id: 'f2',
-      createdAt: '2026-04-01',
-      deliverAt: '2027-04-01',
-      title: '写在春天',
-      content: '希望明年的春天，你已经去过了想去的地方。',
-      isDelivered: false,
-      recipient: '未来的我'
+  const [letters, setLetters] = useState<FutureLetter[]>(() => {
+    const saved = localStorage.getItem('diary_letters');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary_letters', e);
+      }
     }
-  ]);
+    return [
+      {
+        id: 'f1',
+        createdAt: '2025-01-01',
+        deliverAt: '2026-01-01',
+        title: '给一年后的自己',
+        content: '你好，一年后的我。你现在过得好吗？有没有实现当初的愿望？希望你依然保持热爱，奔赴山海。',
+        isDelivered: true,
+        recipient: '未来的我'
+      },
+      {
+        id: 'f2',
+        createdAt: '2026-04-01',
+        deliverAt: '2027-04-01',
+        title: '写在春天',
+        content: '希望明年的春天，你已经去过了想去的地方。',
+        isDelivered: false,
+        recipient: '未来的我'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('diary_letters', JSON.stringify(letters));
+  }, [letters]);
   const [selectedLetter, setSelectedLetter] = useState<FutureLetter | null>(null);
   const [isAddingLetter, setIsAddingLetter] = useState(false);
   const [newLetterTitle, setNewLetterTitle] = useState('');
@@ -292,11 +371,13 @@ export const DiaryView = () => {
       if (styleType === 'fontSize' && value) {
         span.style.fontSize = value;
       } else if (styleType === 'highlight' && value) {
-        span.style.background = `linear-gradient(to top, ${value} 45%, transparent 45%)`;
-        span.style.padding = '1.25px 2px';
-        span.style.borderRadius = '2px';
-        span.style.margin = '-1.25px 0';
-        span.style.display = 'inline-block';
+        // Mimic WPS bottom highlight: wraps text with slight overflow
+        span.style.backgroundColor = value;
+        span.style.padding = '2px 4px';
+        span.style.borderRadius = '3px';
+        span.style.boxDecorationBreak = 'clone';
+        (span.style as any).webkitBoxDecorationBreak = 'clone';
+        span.style.display = 'inline';
       }
       span.appendChild(range.extractContents());
       range.insertNode(span);
@@ -333,7 +414,7 @@ export const DiaryView = () => {
       setEditingEntryId(null);
     } else {
       const newEntry: DiaryEntry = {
-        id: Date.now().toString(),
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
         date: now.toISOString().split('T')[0],
         time: now.toTimeString().substring(0, 5),
         title: plainTextContent.split('\n')[0].substring(0, 15) || '无题',
@@ -428,7 +509,7 @@ export const DiaryView = () => {
   const handleAddLetter = () => {
     if (!newLetterTitle || !newLetterContent || !newLetterDate) return;
     const newLetter: FutureLetter = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString().split('T')[0],
       deliverAt: newLetterDate,
       title: newLetterTitle,
@@ -499,7 +580,7 @@ export const DiaryView = () => {
             {activeSetting === 'theme' && (
               <div className="mt-8 w-full grid grid-cols-3 gap-3">
                 {['bg-amber-50', 'bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-rose-50', 'bg-gray-900'].map((color, i) => (
-                  <div key={i} className={`aspect-square rounded-2xl ${color} border-2 border-transparent hover:border-gray-300 cursor-pointer transition-all`} />
+                  <div key={`theme-color-${i}`} className={`aspect-square rounded-2xl ${color} border-2 border-transparent hover:border-gray-300 cursor-pointer transition-all`} />
                 ))}
               </div>
             )}
@@ -526,8 +607,8 @@ export const DiaryView = () => {
               <Book className="w-5 h-5" />
             </button>
             <button 
-              onClick={() => setIsCalendarEditMode(!isCalendarEditMode)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm ${isCalendarEditMode ? 'bg-[#5c7a73] text-white' : 'bg-[#f0f4f2] text-[#5c7a73] hover:bg-[#e2e8e4]'}`}
+              onClick={() => setShowCalendarView(true)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm ${showCalendarView ? 'bg-[#5c7a73] text-white' : 'bg-[#f0f4f2] text-[#5c7a73] hover:bg-[#e2e8e4]'}`}
             >
               <CalendarDays className="w-5 h-5" />
             </button>
@@ -546,7 +627,7 @@ export const DiaryView = () => {
             const isMarked = markedDates.includes(dateStr);
             return (
               <div 
-                key={i} 
+                key={`week-day-${i}`} 
                 onClick={() => {
                   if (isCalendarEditMode) {
                     setMarkedDates(prev => 
@@ -569,9 +650,9 @@ export const DiaryView = () => {
 
       {/* Entries List */}
       <div className="px-6 space-y-4 max-w-2xl mx-auto">
-        {entries.filter(e => e.title.includes(searchQuery) || e.content.includes(searchQuery)).map((entry) => (
+        {entries.filter(e => e.title.includes(searchQuery) || e.content.includes(searchQuery)).map((entry, idx) => (
           <motion.div
-            key={entry.id}
+            key={`${entry.id}-${idx}`}
             layoutId={`moment-${entry.id}`}
             onClick={() => setSelectedEntry(entry)}
             className="bg-white p-5 rounded-3xl shadow-sm border border-[#e2e8e4] cursor-pointer hover:shadow-md transition-all flex gap-4 group"
@@ -602,7 +683,7 @@ export const DiaryView = () => {
               {entry.files && entry.files.length > 0 && (
                 <div className="flex flex-col gap-3 mb-4 w-full max-w-full overflow-hidden">
                   {entry.files.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-4 p-4 bg-gradient-to-br from-[#f8faf9] to-[#f0f4f2] rounded-[24px] border border-[#e2e8e4] w-full shadow-sm hover:shadow-md transition-all group">
+                    <div key={`entry-file-${idx}`} className="flex items-center gap-4 p-4 bg-gradient-to-br from-[#f8faf9] to-[#f0f4f2] rounded-[24px] border border-[#e2e8e4] w-full shadow-sm hover:shadow-md transition-all group">
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
                         <FileText className="w-6 h-6 text-[#5c7a73]" />
                       </div>
@@ -630,7 +711,7 @@ export const DiaryView = () => {
               {entry.images && entry.images.length > 0 && (
                 <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
                   {entry.images.map((img, idx) => (
-                    <img key={idx} src={img} alt="diary" className="w-20 h-20 rounded-xl object-cover shrink-0 border border-gray-100" />
+                    <img key={`entry-image-${idx}`} src={img} alt="diary" className="w-20 h-20 rounded-xl object-cover shrink-0 border border-gray-100" />
                   ))}
                 </div>
               )}
@@ -680,9 +761,9 @@ export const DiaryView = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {letters.map((letter) => (
+          {letters.map((letter, idx) => (
             <motion.div
-              key={letter.id}
+              key={`${letter.id}-${idx}`}
               layoutId={`letter-${letter.id}`}
               onClick={() => setSelectedLetter(letter)}
               className={`relative p-6 rounded-2xl cursor-pointer transition-all ${
@@ -873,7 +954,7 @@ export const DiaryView = () => {
                 {selectedEntry.images && selectedEntry.images.length > 0 && (
                   <div className="flex gap-3 mb-6 overflow-x-auto scrollbar-hide">
                     {selectedEntry.images.map((img, idx) => (
-                      <img key={idx} src={img} alt="diary" className="h-40 rounded-2xl object-cover shrink-0 border border-gray-200 shadow-sm" />
+                      <img key={`selected-image-${idx}`} src={img} alt="diary" className="h-40 rounded-2xl object-cover shrink-0 border border-gray-200 shadow-sm" />
                     ))}
                   </div>
                 )}
@@ -885,7 +966,7 @@ export const DiaryView = () => {
                 {selectedEntry.files && selectedEntry.files.length > 0 && (
                   <div className="flex flex-col gap-3 mt-6 w-full max-w-full overflow-hidden">
                     {selectedEntry.files.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-4 p-5 bg-white rounded-[28px] border border-[#e2e8e4] shadow-sm w-full hover:shadow-md transition-all group">
+                      <div key={`selected-file-${idx}`} className="flex items-center gap-4 p-5 bg-white rounded-[28px] border border-[#e2e8e4] shadow-sm w-full hover:shadow-md transition-all group">
                         <div className="w-14 h-14 bg-[#f0f4f2] rounded-[20px] flex items-center justify-center shrink-0 shadow-inner group-hover:rotate-3 transition-transform">
                           <FileText className="w-7 h-7 text-[#5c7a73]" />
                         </div>
@@ -960,7 +1041,7 @@ export const DiaryView = () => {
               {newFiles.length > 0 && (
                 <div className="flex flex-col gap-2 mt-4">
                   {newFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div key={`new-file-${idx}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                       <FileText className="w-5 h-5 text-gray-500" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
@@ -985,7 +1066,7 @@ export const DiaryView = () => {
               {newImages.length > 0 && (
                 <div className="flex flex-wrap gap-3 mt-4">
                   {newImages.map((img, idx) => (
-                    <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                    <div key={`new-image-${idx}`} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
                       <img src={img} alt="preview" className="w-full h-full object-cover" />
                       <button 
                         onClick={() => setNewImages(newImages.filter((_, i) => i !== idx))}
@@ -1054,6 +1135,13 @@ export const DiaryView = () => {
                         </button>
                         {showHighlightPicker && (
                           <div className="absolute bottom-full left-0 mb-2 bg-white p-2 rounded-xl shadow-lg border border-gray-100 flex gap-2 z-50">
+                            <button 
+                              onClick={() => { applyStyle('highlight', 'transparent'); setShowHighlightPicker(false); }}
+                              className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center bg-white"
+                              title="无标亮"
+                            >
+                              <div className="w-4 h-px bg-red-500 rotate-45" />
+                            </button>
                             {['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8'].map(color => (
                               <button 
                                 key={color}
@@ -1195,7 +1283,7 @@ export const DiaryView = () => {
                       
                       {folders.map((folder, idx) => (
                         <button 
-                          key={idx}
+                          key={`folder-menu-${idx}`}
                           onClick={() => { setNewFolder(folder); setShowFolderMenu(false); }}
                           className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
                         >
@@ -1283,40 +1371,119 @@ export const DiaryView = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
               onClick={() => setShowFoldersView(false)}
             >
               <motion.div
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-white/20"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                      <Book className="w-5 h-5 text-indigo-500" />
+                <div className="p-8 border-b border-[#e2e8e4] flex justify-between items-center bg-[#fdfbf7]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-[#5c7a73]/10 rounded-[22px] shadow-sm flex items-center justify-center">
+                      <Book className="w-7 h-7 text-[#5c7a73]" />
                     </div>
-                    <h3 className="font-bold text-gray-800 text-lg">我的日记本</h3>
+                    <div>
+                      <h3 className="font-black text-[#2c3e38] text-xl tracking-tight">日记簿分类</h3>
+                      <p className="text-xs text-[#5c7a73]/60 font-bold uppercase tracking-widest">Collections</p>
+                    </div>
                   </div>
-                  <button onClick={() => setShowFoldersView(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                  <button onClick={() => setShowFoldersView(false)} className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full flex items-center justify-center transition-all active:scale-90 border border-[#e2e8e4]">
                     <X className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
-                <div className="p-4 overflow-auto flex-1 grid grid-cols-2 gap-4">
-                  {folders.map((folder, idx) => {
-                    const count = entries.filter(e => e.folder === folder).length;
-                    return (
-                      <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100 hover:shadow-md transition-all cursor-pointer group">
-                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                          <Book className="w-6 h-6 text-indigo-400" />
+                <div className="p-8 overflow-auto flex-1 bg-[#fdfbf7]">
+                  <div className="grid grid-cols-1 gap-4">
+                    {folders.map((folder, idx) => {
+                      const count = entries.filter(e => e.folder === folder).length;
+                      return (
+                        <div 
+                          key={`folder-${folder}-${idx}`} 
+                          className="bg-white rounded-[28px] p-6 border border-[#e2e8e4] hover:border-[#5c7a73]/30 hover:shadow-xl hover:translate-x-1 transition-all cursor-pointer group flex items-center gap-5"
+                        >
+                          <div className="w-16 h-16 bg-[#5c7a73]/5 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <Book className="w-8 h-8 text-[#5c7a73]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-black text-[#2c3e38] text-lg mb-1 truncate tracking-tight">{folder}</h4>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-[#5c7a73] bg-[#5c7a73]/10 px-2 py-0.5 rounded-md uppercase tracking-wider">Collection</span>
+                              <p className="text-xs text-gray-400 font-bold">{count} 篇随笔</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-6 h-6 text-gray-200 group-hover:text-[#5c7a73] transition-colors" />
                         </div>
-                        <h4 className="font-bold text-gray-800 mb-1 truncate">{folder}</h4>
-                        <p className="text-xs text-gray-500 font-medium">{count} 篇日记</p>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="p-8 bg-white border-t border-[#e2e8e4]">
+                  <button 
+                    onClick={() => setIsCreatingFolder(true)}
+                    className="w-full py-5 bg-[#5c7a73] text-white font-black rounded-[24px] shadow-lg shadow-[#5c7a73]/25 hover:bg-[#4a635d] transition-all active:scale-95 flex items-center justify-center gap-3"
+                  >
+                    <Plus className="w-6 h-6" />
+                    创建新日记簿
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Create Folder Modal */}
+        <AnimatePresence>
+          {isCreatingFolder && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+              onClick={() => setIsCreatingFolder(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden p-8 border border-white/20"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                    <Plus className="w-6 h-6 text-indigo-500" />
+                  </div>
+                  <h3 className="font-black text-gray-900 text-xl tracking-tight">新建日记本</h3>
+                </div>
+                <input 
+                  type="text"
+                  placeholder="输入日记本名称..."
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl mb-6 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none font-bold text-gray-800"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setIsCreatingFolder(false)}
+                    className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (newFolderName.trim() && !folders.includes(newFolderName.trim())) {
+                        setFolders([...folders, newFolderName.trim()]);
+                        setNewFolderName('');
+                        setIsCreatingFolder(false);
+                      }
+                    }}
+                    className="flex-1 py-4 bg-indigo-500 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-all active:scale-95"
+                  >
+                    创建
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
@@ -1330,69 +1497,291 @@ export const DiaryView = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
               onClick={() => setShowStatsView(false)}
             >
               <motion.div
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/20"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
-                      <BarChart2 className="w-5 h-5 text-emerald-500" />
+                <div className="p-8 border-b border-[#e2e8e4] flex justify-between items-center bg-[#fdfbf7]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-[#5c7a73]/10 rounded-[22px] shadow-sm flex items-center justify-center">
+                      <BarChart2 className="w-7 h-7 text-[#5c7a73]" />
                     </div>
-                    <h3 className="font-bold text-gray-800 text-lg">记录统计</h3>
+                    <div>
+                      <h3 className="font-black text-[#2c3e38] text-xl tracking-tight">记录统计</h3>
+                      <p className="text-xs text-[#5c7a73]/60 font-bold uppercase tracking-widest">Insights</p>
+                    </div>
                   </div>
-                  <button onClick={() => setShowStatsView(false)} className="p-2 hover:bg-white/50 rounded-full transition-colors">
-                    <X className="w-5 h-5 text-gray-500" />
+                  <button onClick={() => setShowStatsView(false)} className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full flex items-center justify-center transition-all active:scale-90 border border-[#e2e8e4]">
+                    <X className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
-                <div className="p-6 space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-emerald-50/50 rounded-2xl p-5 border border-emerald-100/50">
-                      <p className="text-xs font-bold text-emerald-600/70 mb-1">总日记数</p>
-                      <p className="text-3xl font-black text-emerald-700">{entries.length}</p>
+                <div className="p-8 space-y-8 bg-[#fdfbf7]">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="bg-white rounded-[28px] p-6 border border-[#e2e8e4] relative overflow-hidden group hover:border-[#5c7a73]/30 transition-colors">
+                      <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#5c7a73]/5 rounded-full group-hover:scale-150 transition-transform" />
+                      <p className="text-[10px] font-black text-[#5c7a73]/60 uppercase tracking-widest mb-2">总日记数</p>
+                      <p className="text-4xl font-black text-[#2c3e38] tracking-tighter">{entries.length}</p>
                     </div>
-                    <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100/50">
-                      <p className="text-xs font-bold text-blue-600/70 mb-1">连续记录</p>
-                      <p className="text-3xl font-black text-blue-700">24 <span className="text-sm font-bold opacity-50">天</span></p>
+                    <div className="bg-white rounded-[28px] p-6 border border-[#e2e8e4] relative overflow-hidden group hover:border-[#5c7a73]/30 transition-colors">
+                      <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#5c7a73]/5 rounded-full group-hover:scale-150 transition-transform" />
+                      <p className="text-[10px] font-black text-[#5c7a73]/60 uppercase tracking-widest mb-2">连续记录</p>
+                      <p className="text-4xl font-black text-[#2c3e38] tracking-tighter">24 <span className="text-sm font-bold opacity-40">天</span></p>
                     </div>
-                    <div className="bg-purple-50/50 rounded-2xl p-5 border border-purple-100/50">
-                      <p className="text-xs font-bold text-purple-600/70 mb-1">总字数</p>
-                      <p className="text-3xl font-black text-purple-700">
+                    <div className="bg-white rounded-[28px] p-6 border border-[#e2e8e4] relative overflow-hidden group hover:border-[#5c7a73]/30 transition-colors">
+                      <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#5c7a73]/5 rounded-full group-hover:scale-150 transition-transform" />
+                      <p className="text-[10px] font-black text-[#5c7a73]/60 uppercase tracking-widest mb-2">总字数</p>
+                      <p className="text-4xl font-black text-[#2c3e38] tracking-tighter">
                         {entries.reduce((acc, curr) => acc + curr.content.replace(/<[^>]*>?/gm, '').length, 0)}
                       </p>
                     </div>
-                    <div className="bg-orange-50/50 rounded-2xl p-5 border border-orange-100/50">
-                      <p className="text-xs font-bold text-orange-600/70 mb-1">照片/视频</p>
-                      <p className="text-3xl font-black text-orange-700">
-                        {entries.reduce((acc, curr) => acc + (curr.images?.length || 0), 0)}
+                    <div className="bg-white rounded-[28px] p-6 border border-[#e2e8e4] relative overflow-hidden group hover:border-[#5c7a73]/30 transition-colors">
+                      <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#5c7a73]/5 rounded-full group-hover:scale-150 transition-transform" />
+                      <p className="text-[10px] font-black text-[#5c7a73]/60 uppercase tracking-widest mb-2">媒体文件</p>
+                      <p className="text-4xl font-black text-[#2c3e38] tracking-tighter">
+                        {entries.reduce((acc, curr) => acc + (curr.images?.length || 0) + (curr.files?.length || 0), 0)}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                    <h4 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      记录时段分布
-                    </h4>
-                    <div className="flex items-end gap-2 h-24">
+                  <div className="bg-white rounded-[32px] p-8 border border-[#e2e8e4] relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-sm font-black text-[#2c3e38] flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#5c7a73]" />
+                        记录时段分布
+                      </h4>
+                      <span className="text-[10px] font-bold text-gray-400">最近7天</span>
+                    </div>
+                    <div className="flex items-end gap-3 h-32">
                       {[30, 50, 20, 80, 40, 60, 90].map((height, i) => (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                          <div className="w-full bg-emerald-100 rounded-t-md relative group">
-                            <div 
-                              className="absolute bottom-0 left-0 right-0 bg-emerald-400 rounded-t-md transition-all group-hover:bg-emerald-500"
-                              style={{ height: `${height}%` }}
+                        <div key={`stats-bar-${i}`} className="flex-1 flex flex-col items-center gap-3 group">
+                          <div className="w-full bg-[#f0f4f2] rounded-2xl relative h-full overflow-hidden">
+                            <motion.div 
+                              initial={{ height: 0 }}
+                              animate={{ height: `${height}%` }}
+                              transition={{ delay: i * 0.1, duration: 0.8, ease: "circOut" }}
+                              className="absolute bottom-0 left-0 right-0 bg-[#5c7a73] rounded-2xl transition-all group-hover:brightness-110"
                             />
                           </div>
-                          <span className="text-[10px] text-gray-400 font-medium">{['早', '上', '中', '下', '晚', '夜', '深'][i]}</span>
+                          <span className="text-[10px] text-gray-400 font-black tracking-tighter">{['早', '上', '中', '下', '晚', '夜', '深'][i]}</span>
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Calendar View Modal (iPhone Style) */}
+        <AnimatePresence>
+          {showCalendarView && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+              onClick={() => setShowCalendarView(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/20"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-8 border-b border-[#e2e8e4] flex justify-between items-center bg-[#fdfbf7]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-[#5c7a73]/10 rounded-[22px] shadow-sm flex items-center justify-center">
+                      <CalendarDays className="w-7 h-7 text-[#5c7a73]" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-[#2c3e38] text-xl tracking-tight">2026年4月</h3>
+                      <p className="text-xs text-[#5c7a73]/60 font-bold uppercase tracking-widest">April</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setIsCalendarEditMode(!isCalendarEditMode)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${isCalendarEditMode ? 'bg-[#5c7a73] text-white border-[#5c7a73] shadow-lg shadow-[#5c7a73]/20' : 'bg-white text-gray-400 hover:bg-gray-50 border-[#e2e8e4]'}`}
+                    >
+                      <PenLine className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setShowCalendarView(false)} className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full flex items-center justify-center transition-all active:scale-90 border border-[#e2e8e4]">
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-8 bg-[#fdfbf7]">
+                  <div className="grid grid-cols-7 gap-2 mb-4">
+                    {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+                      <div key={day} className="text-center text-[11px] font-black text-gray-400 uppercase tracking-widest py-2">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="grid grid-cols-7 gap-2">
+                    {/* Placeholder for days before the 1st of April 2026 (April 1st 2026 is a Wednesday) */}
+                    {[null, null, null].map((_, i) => <div key={`empty-${i}`} />)}
+                    
+                    {Array.from({ length: 30 }).map((_, i) => {
+                      const day = i + 1;
+                      const dateStr = `2026-04-${day.toString().padStart(2, '0')}`;
+                      const isToday = day === 5;
+                      const isSelected = selectedCalendarDate === dateStr;
+                      const isMarked = markedDates.includes(dateStr);
+                      const hasEvent = calendarEvents.some(e => e.date === dateStr);
+                      const hasEntry = entries.some(e => e.date === dateStr);
+                      
+                      return (
+                        <button
+                          key={`calendar-day-${day}`}
+                          onClick={() => {
+                            if (isCalendarEditMode) {
+                              setMarkedDates(prev => 
+                                prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]
+                              );
+                            } else {
+                              setSelectedCalendarDate(dateStr);
+                            }
+                          }}
+                          className={`
+                            relative h-12 flex flex-col items-center justify-center rounded-2xl transition-all
+                            ${isSelected && !isCalendarEditMode ? 'bg-[#5c7a73] text-white shadow-lg shadow-[#5c7a73]/20' : ''}
+                            ${!isSelected && isToday ? 'text-[#5c7a73] font-black' : ''}
+                            ${!isSelected && !isToday ? 'text-[#2c3e38] hover:bg-white hover:shadow-sm' : ''}
+                            ${isCalendarEditMode ? 'active:scale-90 border border-dashed border-[#5c7a73]/30' : ''}
+                          `}
+                        >
+                          <span className={`text-sm ${isSelected || isToday ? 'font-black' : 'font-bold'}`}>
+                            {day}
+                          </span>
+                          <div className="flex gap-1 mt-1">
+                            {isMarked && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-rose-500'}`} />}
+                            {hasEvent && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white/80' : 'bg-indigo-400'}`} />}
+                            {hasEntry && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white/50' : 'bg-[#5c7a73]'}`} />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="p-8 bg-[#fdfbf7] border-t border-[#e2e8e4] flex-1 overflow-auto">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="text-sm font-black text-[#2c3e38] tracking-tight">
+                      {selectedCalendarDate === '2026-04-05' ? '今天的记录' : `${selectedCalendarDate.split('-')[1]}月${selectedCalendarDate.split('-')[2]}日`}
+                    </h4>
+                    <button 
+                      onClick={() => {
+                        setNewLetterDate(selectedCalendarDate);
+                        setIsAddingLetter(true);
+                      }}
+                      className="text-[10px] font-black text-[#5c7a73] bg-[#5c7a73]/10 px-3 py-1.5 rounded-full uppercase tracking-wider hover:bg-[#5c7a73]/20 transition-colors"
+                    >
+                      + 添加提醒
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex gap-2 mb-2">
+                      <input 
+                        type="text" 
+                        value={newEventTitle}
+                        onChange={(e) => setNewEventTitle(e.target.value)}
+                        placeholder="添加新事件..." 
+                        className="flex-1 bg-white border border-[#e2e8e4] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#5c7a73] font-medium text-[#2c3e38]"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newEventTitle.trim()) {
+                            setCalendarEvents([...calendarEvents, { id: crypto.randomUUID(), date: selectedCalendarDate, title: newEventTitle.trim() }]);
+                            setNewEventTitle('');
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={() => {
+                          if (newEventTitle.trim()) {
+                            setCalendarEvents([...calendarEvents, { id: crypto.randomUUID(), date: selectedCalendarDate, title: newEventTitle.trim() }]);
+                            setNewEventTitle('');
+                          }
+                        }}
+                        className="px-4 bg-[#5c7a73] text-white rounded-xl font-bold text-sm hover:bg-[#4a635d] transition-colors"
+                      >
+                        添加
+                      </button>
+                    </div>
+
+                    {markedDates.includes(selectedCalendarDate) && (
+                      <div className="flex items-center gap-4 p-5 bg-white rounded-[28px] border border-rose-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
+                        <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center shrink-0">
+                          <Calendar className="w-6 h-6 text-rose-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-black text-[#2c3e38] truncate tracking-tight">重要标记事项</p>
+                          <p className="text-[11px] font-bold text-rose-400 uppercase tracking-widest">用户手动标记</p>
+                        </div>
+                        <button 
+                          onClick={() => setMarkedDates(prev => prev.filter(d => d !== selectedCalendarDate))}
+                          className="p-2 hover:bg-rose-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4 text-rose-300" />
+                        </button>
+                      </div>
+                    )}
+
+                    {calendarEvents.filter(e => e.date === selectedCalendarDate).map((event, idx) => (
+                      <div key={`${event.id}-${idx}`} className="flex items-center gap-4 p-5 bg-white rounded-[28px] border border-indigo-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
+                        <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center shrink-0">
+                          <Clock className="w-6 h-6 text-indigo-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-black text-[#2c3e38] truncate tracking-tight">{event.title}</p>
+                          <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest">提醒事项</p>
+                        </div>
+                        <button 
+                          onClick={() => setCalendarEvents(prev => prev.filter(e => e.id !== event.id))}
+                          className="p-2 hover:bg-indigo-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4 text-indigo-300" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {entries.filter(e => e.date === selectedCalendarDate).map((entry, i) => (
+                      <div 
+                        key={`entry-${entry.id}-${i}`} 
+                        onClick={() => { setSelectedEntry(entry); setShowCalendarView(false); }}
+                        className="flex items-center gap-4 p-5 bg-white rounded-[28px] border border-[#e2e8e4] shadow-sm hover:shadow-md hover:translate-x-1 transition-all cursor-pointer"
+                      >
+                        <div className="w-12 h-12 bg-[#5c7a73]/10 rounded-2xl flex items-center justify-center shrink-0">
+                          <Book className="w-6 h-6 text-[#5c7a73]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-black text-[#2c3e38] truncate tracking-tight">{entry.title || '无标题随笔'}</p>
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{entry.time}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-200" />
+                      </div>
+                    ))}
+                    
+                    {!markedDates.includes(selectedCalendarDate) && calendarEvents.filter(e => e.date === selectedCalendarDate).length === 0 && entries.filter(e => e.date === selectedCalendarDate).length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-[#e2e8e4]">
+                          <CalendarDays className="w-8 h-8 text-[#5c7a73]/40" />
+                        </div>
+                        <p className="text-sm font-black text-[#2c3e38] mb-1">今天还没有记录</p>
+                        <p className="text-xs text-gray-400 font-bold">现在去记录一段时光吧</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

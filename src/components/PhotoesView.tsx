@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Heart, Share2, Download, X, Maximize2, Grid, List, MapPin, Calendar } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-const socket = io();
+const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 interface Photo {
   id: string;
@@ -260,13 +260,13 @@ export const PhotoesView = () => {
         animate="visible"
       >
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-          {photos.map((photo) => {
+          {photos.map((photo, idx) => {
             const likesCount = (photoLikes[photo.id] || []).length + photo.likes;
             const isLiked = (photoLikes[photo.id] || []).includes(userProfile.signature);
 
             return (
               <motion.div
-                key={photo.id}
+                key={`${photo.id}-${idx}`}
                 variants={itemVariants}
                 whileHover={{ y: -8 }}
                 onClick={() => setSelectedPhoto(photo)}

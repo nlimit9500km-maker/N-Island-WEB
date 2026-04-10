@@ -9,7 +9,7 @@ import { DiaryView } from './components/DiaryView';
 import { MediaView } from './components/MediaView';
 import { PhotoesView } from './components/PhotoesView';
 
-const socket = io();
+const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 // --- Components ---
 
@@ -564,7 +564,7 @@ const MusicContent = () => {
                         </thead>
                         <tbody>
                           {songs.map((song, index) => (
-                            <tr key={song.id} className="border-b border-slate-100/30 hover:bg-white/60 transition-all duration-300 group">
+                            <tr key={`${song.id}-${index}`} className="border-b border-slate-100/30 hover:bg-white/60 transition-all duration-300 group">
                               <td className="py-4 px-6 text-slate-300 font-mono text-xs text-center group-hover:text-slate-800 transition-colors">{String(index + 1).padStart(2, '0')}</td>
                               <td className="py-4 px-4">
                                 <div className="flex items-center gap-3">
@@ -606,7 +606,7 @@ const MusicContent = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {ALBUMS_LIST.map((album, index) => (
                   <motion.div 
-                    key={album.id} 
+                    key={`${album.id}-${index}`} 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -3553,9 +3553,9 @@ export default function App() {
       
       {/* Desktop Icons */}
       <div className="pt-4 px-4 flex flex-col flex-wrap gap-4 h-[calc(100vh-76px)] content-end absolute right-4 top-7 z-10">
-        {APPS.map(app => (
+        {APPS.map((app, index) => (
           <DesktopIcon 
-            key={app.id} 
+            key={`${app.id}-${index}`} 
             app={app} 
             onClick={() => openApp(app.id)} 
           />
@@ -3568,7 +3568,7 @@ export default function App() {
           const app = APPS.find(a => a.id === w.id)!;
           return (
             <Window
-              key={w.id}
+              key={`${w.id}-${index}`}
               app={app}
               isOpen={w.isOpen}
               isMaximized={w.isMaximized}
