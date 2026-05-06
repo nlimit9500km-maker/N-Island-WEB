@@ -1017,7 +1017,7 @@ const LifeContent = () => {
               exit={{ opacity: 0, y: -10 }}
               className="h-full"
             >
-              <DiaryView />
+              <DiaryView mode="life" />
             </motion.div>
           ) : activeTab === 'media' ? (
             <motion.div 
@@ -1568,10 +1568,10 @@ const APPS = [
   },
   {
     id: 'diary',
-    title: '日记簿',
+    title: '屿·记',
     icon: <Book className="w-8 h-8 text-white" strokeWidth={1.5} />,
     color: 'bg-gradient-to-b from-[#ff9a9e] to-[#fecfef]',
-    content: <DiaryView />,
+    content: <DiaryView mode="island" />,
     defaultWidth: 950,
     defaultHeight: 700
   }
