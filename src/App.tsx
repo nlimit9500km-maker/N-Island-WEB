@@ -9,6 +9,10 @@ import { DiaryView } from './components/DiaryView';
 import { MediaView } from './components/MediaView';
 import { PhotoesView } from './components/PhotoesView';
 
+const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+
 const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 // --- Components ---
@@ -3533,7 +3537,10 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[url('https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9ZG1ia3pD.png')] bg-cover bg-center relative font-sans text-gray-900">
+    <div 
+      className="h-screen w-screen overflow-hidden bg-cover bg-center relative font-sans text-gray-900"
+      style={{ backgroundImage: "url('https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9ZG1ia3pD.png')" }}
+    >
       <AnimatePresence>
         {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
       </AnimatePresence>

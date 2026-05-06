@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Heart, Share2, Download, X, Maximize2, Grid, List, MapPin, Calendar } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+
 const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 interface Photo {
@@ -54,7 +58,7 @@ export const PhotoesView = () => {
   const [photoLikes, setPhotoLikes] = useState<Record<string, string[]>>({});
   const [isSharing, setIsSharing] = useState(false);
   const [userProfile, setUserProfile] = useState(() => {
-    const savedAvatar = localStorage.getItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
+    const savedAvatar = safeGetItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
     const savedSignature = localStorage.getItem('icity_signature');
     
     if (savedSignature && savedSignature !== "Island_乱码") {
@@ -63,7 +67,7 @@ export const PhotoesView = () => {
     
     const randomId = Math.floor(100 + Math.random() * 900);
     const newSignature = `Island_${randomId}`;
-    localStorage.setItem('icity_signature', newSignature);
+    safeSetItem('icity_signature', newSignature);
     return { avatar: savedAvatar, signature: newSignature };
   });
 

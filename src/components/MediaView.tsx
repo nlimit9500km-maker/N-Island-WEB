@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Play, Film, Book, Music, ExternalLink, Star, Search, Plus, X, PenLine, Check, MessageCircle, Trash2, Image as ImageIcon, Send, User, Repeat, ThumbsUp, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+
 const socket = io({ reconnectionAttempts: 3, timeout: 5000 });
 
 interface ReviewComment {
@@ -117,7 +121,7 @@ export const MediaView = () => {
   }, []);
 
   const [userProfile, setUserProfile] = useState(() => {
-    const savedAvatar = localStorage.getItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
+    const savedAvatar = safeGetItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
     const savedSignature = localStorage.getItem('icity_signature');
     
     if (savedSignature && savedSignature !== "Island_乱码") {
@@ -126,7 +130,7 @@ export const MediaView = () => {
     
     const randomNum = Math.floor(100 + Math.random() * 900);
     const defaultName = `Island_${randomNum}`;
-    localStorage.setItem('icity_signature', defaultName);
+    safeSetItem('icity_signature', defaultName);
     return { avatar: savedAvatar, signature: defaultName };
   });
 
@@ -439,7 +443,7 @@ export const MediaView = () => {
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' && newCommentText.trim()) {
                                     const newComment = {
-                                      id: crypto.randomUUID(),
+                                      id: Math.random().toString(36).substring(2, 11),
                                       userName: userProfile.signature,
                                       content: newCommentText,
                                       createdAt: new Date().toISOString().split('T')[0]
