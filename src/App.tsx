@@ -2235,19 +2235,20 @@ const SONGS = [
   }
 ];
 
-const ReminderModal = ({ onClose }: { onClose: () => void }) => (
+const ReminderModal = React.forwardRef<HTMLDivElement, { onClose: () => void }>(({ onClose }, ref) => (
   <motion.div
+    ref={ref}
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.95 }}
-    className="absolute inset-0 z-[110] bg-[#fffdf5]/98 backdrop-blur-xl rounded-2xl p-5 flex flex-col items-center justify-center overflow-hidden border border-white/40 shadow-2xl"
-    onClick={(e) => e.stopPropagation()}
+    className="absolute inset-0 z-[110] bg-[#fffdf5]/98 backdrop-blur-xl rounded-2xl p-5 flex flex-col items-center justify-center overflow-hidden border border-white/40 shadow-2xl cursor-pointer"
+    onClick={(e) => { e.stopPropagation(); onClose(); }}
   >
-    <button onClick={onClose} className="absolute top-3 right-3 p-1.5 hover:bg-black/5 rounded-full transition-colors z-20">
+    <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-3 right-3 p-1.5 hover:bg-black/5 rounded-full transition-colors z-20">
       <X className="w-4 h-4 text-gray-400" />
     </button>
     
-    <div className="relative flex flex-col items-center w-full max-w-[200px]">
+    <div className="relative flex flex-col items-center w-full max-w-[200px]" onClick={(e) => e.stopPropagation()}>
       {/* Speech Bubble - Compact and Centered */}
       <motion.div 
         initial={{ opacity: 0, scale: 0.8, y: 10 }}
@@ -2325,7 +2326,7 @@ const ReminderModal = ({ onClose }: { onClose: () => void }) => (
       </div>
     </div>
   </motion.div>
-);
+));
 
 const NansPlaylistWidget = () => {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
@@ -2340,7 +2341,15 @@ const NansPlaylistWidget = () => {
   const [isReminderOpen, setIsReminderOpen] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   
-  const togglePlaylist = () => setIsPlaylistOpen(!isPlaylistOpen);
+  const togglePlaylist = () => {
+    setIsPlaylistOpen(!isPlaylistOpen);
+    setIsReminderOpen(false);
+  };
+  
+  const toggleReminder = () => {
+    setIsReminderOpen(!isReminderOpen);
+    setIsPlaylistOpen(false);
+  };
   
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekTime, setSeekTime] = useState(0);
@@ -2502,7 +2511,7 @@ const NansPlaylistWidget = () => {
 
       {/* Reminder Modal */}
       <AnimatePresence>
-        {isReminderOpen && <ReminderModal onClose={() => setIsReminderOpen(false)} />}
+        {isReminderOpen && <ReminderModal key="reminder" onClose={() => setIsReminderOpen(false)} />}
       </AnimatePresence>
 
       <div className="flex items-center justify-between mb-1">
@@ -2511,10 +2520,10 @@ const NansPlaylistWidget = () => {
           <span className="text-xs font-bold text-white/90 tracking-wider">NAN's ♡ Playlist</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsReminderOpen(true)} className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95" title="提醒">
+          <button onClick={toggleReminder} className={`p-1.5 rounded-full hover:bg-white/20 transition-all active:scale-95 ${isReminderOpen ? 'text-white bg-white/20' : 'text-white/70'}`} title="提醒">
             <Bell className="w-3.5 h-3.5" />
           </button>
-          <button onClick={togglePlaylist} className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95" title="歌单播放列表">
+          <button onClick={togglePlaylist} className={`p-1.5 rounded-full hover:bg-white/20 transition-all active:scale-95 ${isPlaylistOpen ? 'text-white bg-white/20' : 'text-white/70'}`} title="歌单播放列表">
             <ListMusic className="w-3.5 h-3.5" />
           </button>
         </div>

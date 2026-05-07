@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles } from 'lucide-react';
+import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles, ChevronRight, Search, Settings, ChevronLeft, Trash2, Download, LogOut } from 'lucide-react';
 
 const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
 
 
 interface DiaryEntry {
@@ -27,6 +28,14 @@ interface FutureLetter {
   content: string;
   isOpened: boolean;
   stamp?: string;
+}
+
+interface SpecialDay {
+  id: string;
+  title: string;
+  date: string;
+  category: 'anniversary' | 'birthday' | 'other';
+  isCountUp: boolean;
 }
 
 export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
@@ -126,6 +135,129 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const [newLetterStamp, setNewLetterStamp] = useState('💌');
   const [selectedLetter, setSelectedLetter] = useState<FutureLetter | null>(null);
 
+  // User Profile State for Island Mode
+  const profileStorageKey = 'island_user_profile';
+  const initProfile = () => {
+    const saved = safeGetItem(profileStorageKey);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return {
+      signature: "记录点滴，不负韶华",
+      avatarUrl: "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg"
+    }
+  };
+  const [theme, setTheme] = useState<'day' | 'night' | 'sunset' | 'misty'>(() => {
+    const saved = safeGetItem('island_theme');
+    return (saved as any) || 'day';
+  });
+
+  useEffect(() => {
+    safeSetItem('island_theme', theme);
+  }, [theme]);
+
+  const [profile, setProfile] = useState(initProfile());
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [profileMenuStep, setProfileMenuStep] = useState<'main' | 'avatar_options' | 'calendar' | 'settings' | 'theme_picker' | 'special_days' | 'add_special_day'>('main');
+  
+  const [customBgUrl, setCustomBgUrl] = useState<string | null>(() => safeGetItem('island_custom_bg'));
+  const [bgOpacity, setBgOpacity] = useState<number>(() => {
+    const saved = safeGetItem('island_bg_opacity');
+    return saved ? parseFloat(saved) : 1;
+  });
+
+  const [specialDays, setSpecialDays] = useState<SpecialDay[]>(() => {
+    const saved = safeGetItem('island_special_days');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { id: '1', title: '屿·记 诞生', date: '2026-05-01', category: 'anniversary', isCountUp: true }
+    ];
+  });
+
+  const [newSpecialDayTitle, setNewSpecialDayTitle] = useState('');
+  const [newSpecialDayDate, setNewSpecialDayDate] = useState('');
+  const [newSpecialDayCategory, setNewSpecialDayCategory] = useState<'anniversary' | 'birthday' | 'other'>('anniversary');
+
+  useEffect(() => {
+    if (customBgUrl) safeSetItem('island_custom_bg', customBgUrl);
+    else localStorage.removeItem('island_custom_bg');
+  }, [customBgUrl]);
+
+  useEffect(() => {
+    safeSetItem('island_bg_opacity', bgOpacity.toString());
+  }, [bgOpacity]);
+
+  useEffect(() => {
+    safeSetItem('island_special_days', JSON.stringify(specialDays));
+  }, [specialDays]);
+
+  const [showSigInput, setShowSigInput] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [tempProfileInput, setTempProfileInput] = useState('');
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const bgFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+
+  const handlePrevMonth = () => {
+    setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  useEffect(() => {
+    safeSetItem(profileStorageKey, JSON.stringify(profile));
+  }, [profile, profileStorageKey]);
+
+  const handleProfileFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProfile({ ...profile, avatarUrl: event.target?.result as string });
+        setShowProfileMenu(false);
+        setProfileMenuStep('main');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCustomBgUrl(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfileUrlSubmit = () => {
+    if (tempProfileInput.trim()) {
+      setProfile({ ...profile, avatarUrl: tempProfileInput.trim() });
+    }
+    setShowProfileMenu(false);
+    setShowUrlInput(false);
+    setProfileMenuStep('main');
+    setTempProfileInput('');
+  };
+
+  const handleSigSubmit = () => {
+    if (tempProfileInput.trim()) {
+      setProfile({ ...profile, signature: tempProfileInput.trim() });
+    }
+    setShowProfileMenu(false);
+    setShowSigInput(false);
+    setTempProfileInput('');
+  };
+
   useEffect(() => {
     safeSetItem(letterStorageKey, JSON.stringify(letters));
   }, [letters, letterStorageKey]);
@@ -205,17 +337,124 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   };
 
   return (
-    <div className={`h-full flex flex-col ${isIsland ? 'bg-[#f8fafc] overflow-hidden' : bgClass} ${fontClass} relative`}>
+    <div className={`h-full flex flex-col ${isIsland ? 'bg-[#f4f7f6] overflow-hidden' : bgClass} ${fontClass} relative`}>
       {isIsland && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#e0f2fe]/40 rounded-full blur-[120px] mix-blend-multiply" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#fce7f3]/40 rounded-full blur-[120px] mix-blend-multiply" />
-          <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-[#f3e8ff]/30 rounded-full blur-[120px] mix-blend-multiply" />
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          {/* Base Ocean/Sky Gradient - Responsive to Theme */}
+          <div className={`absolute inset-0 transition-colors duration-1000 ${
+            customBgUrl ? '' :
+            theme === 'day' ? 'bg-gradient-to-b from-[#b5e0f7] via-[#a3d9f3] to-[#88c4f2]' :
+            theme === 'night' ? 'bg-gradient-to-b from-[#1a1a2e] via-[#16213e] to-[#0f3460]' :
+            theme === 'sunset' ? 'bg-gradient-to-b from-[#ff9a9e] via-[#fecfef] to-[#ffafbd]' :
+            'bg-gradient-to-b from-[#cbd5e1] via-[#94a3b8] to-[#64748b]'
+          }`} style={{ 
+            backgroundImage: customBgUrl ? `url(${customBgUrl})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: bgOpacity
+          }} />
+          
+          {/* Night Mode Stars */}
+          {theme === 'night' && (
+            <div className="absolute inset-0 z-0">
+              {[...Array(50)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="absolute bg-white rounded-full animate-pulse"
+                  style={{
+                    width: Math.random() * 2 + 'px',
+                    height: Math.random() * 2 + 'px',
+                    top: Math.random() * 70 + '%',
+                    left: Math.random() * 100 + '%',
+                    animationDelay: Math.random() * 5 + 's',
+                    opacity: Math.random() * 0.5 + 0.3
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Distant Clouds - Hidden in Misty theme */}
+          {theme !== 'misty' && (
+            <>
+              <motion.div 
+                animate={{ x: [0, 100, 0] }}
+                transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+                className="absolute top-[10%] left-[-10%] w-[40%] h-[30%] opacity-40"
+              >
+                <svg viewBox="0 0 200 100" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 50 A20 20 0 0 1 90 50 A25 25 0 0 1 140 60 A20 20 0 0 1 140 80 L30 80 A15 15 0 0 1 50 50 Z" />
+                </svg>
+              </motion.div>
+              <motion.div 
+                animate={{ x: [0, -80, 0] }}
+                transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
+                className="absolute top-[20%] right-[-5%] w-[30%] h-[20%] opacity-20 scale-x-[-1]"
+              >
+                <svg viewBox="0 0 200 100" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 50 A20 20 0 0 1 90 50 A25 25 0 0 1 140 60 A20 20 0 0 1 140 80 L30 80 A15 15 0 0 1 50 50 Z" />
+                </svg>
+              </motion.div>
+            </>
+          )}
+
+          {/* Misty Layer */}
+          {theme === 'misty' && (
+            <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px] z-[5]" />
+          )}
+
+          {/* Island Base SVG at bottom */}
+          <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[180%] md:w-[120%] h-[60vh] opacity-30 blur-[4px]">
+             <svg viewBox="0 0 1000 400" preserveAspectRatio="none" className={`w-full h-full transition-colors duration-1000 ${
+               theme === 'night' ? 'fill-[#1b4332]' : 'fill-[#52b788]'
+             }`}>
+               <path d="M0 400 L0 250 Q250 150 500 250 T1000 200 L1000 400 Z" />
+             </svg>
+          </div>
+          <div className="absolute bottom-[-5%] left-1/2 -translate-x-1/2 w-[140%] md:w-[100%] h-[50vh] opacity-95">
+             <svg viewBox="0 0 1000 400" preserveAspectRatio="none" className={`w-full h-full transition-colors duration-1000 ${
+               theme === 'night' ? 'fill-[#2d6a4f]' : 'fill-[#74c69d]'
+             }`}>
+               <path d="M0 400 L0 200 Q300 80 600 200 T1000 180 L1000 400 Z" />
+             </svg>
+          </div>
+          
+          {/* Decorative Trees/Props on the island - No animations */}
+          <div className="absolute bottom-[20%] left-[20%] text-6xl md:text-8xl filter drop-shadow-xl saturate-150 transition-all duration-1000">🌴</div>
+          <div className="absolute bottom-[28%] right-[15%] text-6xl md:text-7xl filter drop-shadow-xl saturate-150 transition-all duration-1000">🌲</div>
+          <div className="absolute bottom-[10%] left-[45%] text-4xl filter drop-shadow-sm">⛺️</div>
+          <div className="absolute bottom-[25%] left-[55%] text-3xl filter drop-shadow-sm">🦆</div>
+          
+          {/* Distant Boat */}
+          <motion.div 
+            animate={{ x: [-200, 1000] }}
+            transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-[40%] left-[-100px] text-2xl opacity-20"
+          >
+            ⛵️
+          </motion.div>
+
+          {/* Sparkles on water */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 2 + i, repeat: Infinity, delay: i }}
+              className="absolute text-blue-200/40 text-xs"
+              style={{ bottom: `${35 + i * 2}%`, left: `${10 + i * 15}%` }}
+            >
+              ✨
+            </motion.div>
+          ))}
+
+          {/* Foreground WavesOverlay */}
+          <div className="absolute bottom-0 left-0 w-full h-[20%] bg-gradient-to-t from-[#48cae4]/40 to-transparent" />
         </div>
       )}
 
-      <div className={`relative z-10 w-full shrink-0 ${isIsland ? 'pt-8 pb-4' : 'border-b border-amber-900/10 p-6 flex flex-col gap-6'}`}>
-        {!isIsland ? (
+      <div className={`relative z-10 w-full shrink-0 ${isIsland ? 'hidden' : 'border-b border-amber-900/10 p-6 flex flex-col gap-6'}`}>
+        {!isIsland && (
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-amber-950 font-serif">
@@ -228,26 +467,514 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
             <div className="flex items-center gap-4">
             </div>
           </div>
-        ) : (
-          <div className="max-w-6xl mx-auto px-4 md:px-10 flex justify-between items-center w-full">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/80 backdrop-blur-xl rounded-[1.2rem] flex items-center justify-center shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border border-white rotate-[-5deg]">
-                <Sparkles className="w-6 h-6 text-blue-500 drop-shadow-sm" strokeWidth={1.5} />
-              </div>
-              <div className="flex flex-col">
-                <h2 className="text-[28px] font-black text-gray-900 tracking-tight leading-none mb-1 shadow-sm opacity-90">
-                  屿·记
-                </h2>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
-                  Island Journal
-                </p>
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
       <div className={`flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 custom-scrollbar ${isIsland ? 'pb-32' : ''}`}>
+        {isIsland && (
+          <div className="max-w-6xl mx-auto mb-10 px-0 md:px-0 flex flex-col md:flex-row justify-between items-start md:items-center w-full relative gap-6">
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                <div className="w-20 h-20 bg-white/90 backdrop-blur-xl rounded-[2rem] flex items-center justify-center shadow-[0_12px_40px_-10px_rgba(0,0,0,0.15)] border border-white rotate-[-5deg] group-hover:rotate-0 transition-all duration-700">
+                  <span className="text-4xl">🏝️</span>
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-lg ring-4 ring-[#f4f7f6]">
+                  {entries.length}
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-[40px] font-black text-gray-900 tracking-tighter leading-none mb-2">
+                  屿·记
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-white/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/50 shadow-sm items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">
+                      Island Active
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Unified Top Interaction Bar */}
+            <div className="flex items-center gap-2 relative z-50">
+              <div className="flex items-center bg-white/40 backdrop-blur-xl p-1.5 rounded-full border border-white/60 shadow-sm transition-all select-none">
+                {/* Stats Section */}
+                <div className="hidden md:flex items-center gap-4 px-4 py-1">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Memories</span>
+                    <span className="text-sm font-black text-gray-800 leading-none">{entries.length}</span>
+                  </div>
+                  <div className="w-px h-6 bg-white/40" />
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Letters</span>
+                    <span className="text-sm font-black text-gray-800 leading-none">{letters.length}</span>
+                  </div>
+                </div>
+                
+                <div className="w-px h-8 bg-white/40 mx-1 hidden md:block" />
+
+                {/* Main Action Buttons & Profile */}
+                <div className="flex items-center gap-1.5 px-1">
+                  {/* Calendar Toggle */}
+                  <button 
+                    onClick={() => {
+                      setProfileMenuStep('calendar');
+                      setShowProfileMenu(true);
+                    }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${profileMenuStep === 'calendar' && showProfileMenu ? 'bg-blue-500 text-white shadow-lg' : 'bg-white/40 text-gray-700 hover:bg-white/60'}`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+
+                  {/* Settings Toggle */}
+                  <button 
+                    onClick={() => {
+                      setProfileMenuStep('settings');
+                      setShowProfileMenu(true);
+                    }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${profileMenuStep === 'settings' && showProfileMenu ? 'bg-gray-800 text-white shadow-lg' : 'bg-white/40 text-gray-700 hover:bg-white/60'}`}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+
+                  <div className="w-px h-8 bg-white/40 mx-1" />
+
+                  {/* Profile Section */}
+                  <div 
+                    onClick={() => {
+                      if (!showProfileMenu) setProfileMenuStep('main');
+                      setShowProfileMenu(!showProfileMenu);
+                    }}
+                    className="flex items-center gap-2 hover:bg-white/40 p-1 pr-3 rounded-full transition-all cursor-pointer group"
+                  >
+                    <img 
+                      src={profile.avatarUrl} 
+                      className="w-10 h-10 border-2 border-white rounded-full object-cover shadow-sm bg-white group-hover:scale-105 transition-transform" 
+                      referrerPolicy="no-referrer" 
+                      alt="Profile" 
+                    />
+                    <div className="flex flex-col hidden sm:flex text-left">
+                      <span className="text-[11px] font-black text-gray-800 leading-none">个人中心</span>
+                      <span className="text-[8px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter truncate max-w-[60px]">{profile.signature}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    className="absolute top-[60px] right-0 w-[300px] bg-white/95 backdrop-blur-3xl border border-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col z-[100]"
+                  >
+                    <div className="fixed inset-0 z-[-1]" onClick={() => {
+                        setShowProfileMenu(false);
+                        setProfileMenuStep('main');
+                        setShowUrlInput(false);
+                        setShowSigInput(false);
+                    }} />
+                    
+                    {/* Header showing current step */}
+                      <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest gap-1 flex items-center">
+                          {profileMenuStep === 'main' && 'icity // 个人主页'}
+                          {profileMenuStep === 'calendar' && '日历视图 Calendar'}
+                          {profileMenuStep === 'special_days' && '倒数日 Days Matter'}
+                          {profileMenuStep === 'add_special_day' && '添加纪念日'}
+                          {profileMenuStep === 'settings' && '应用设置 Settings'}
+                          {profileMenuStep === 'theme_picker' && '背景模式 Theme'}
+                          {profileMenuStep === 'avatar_options' && '修改头像'}
+                        </span>
+                        {profileMenuStep !== 'main' && (
+                          <button onClick={(e) => { e.stopPropagation(); setProfileMenuStep('main'); }} className="text-[9px] font-bold text-blue-500 hover:text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">返回</button>
+                        )}
+                     </div>
+
+                     <div className="p-2 flex flex-col" onClick={e => e.stopPropagation()}>
+                        {profileMenuStep === 'main' && !showSigInput && !showUrlInput && (
+                          <div className="flex flex-col gap-1">
+                             {/* icity style profile header */}
+                             <div className="bg-white rounded-[1.5rem] p-4 flex flex-col gap-4 border border-gray-50">
+                                <div className="flex justify-between items-start">
+                                   <img 
+                                     src={profile.avatarUrl} 
+                                     className="w-16 h-16 rounded-2xl object-cover shadow-sm bg-gray-50 cursor-pointer hover:opacity-80 transition-opacity" 
+                                     referrerPolicy="no-referrer" 
+                                     alt="Avatar"
+                                     onClick={() => setProfileMenuStep('avatar_options')}
+                                   />
+                                   <div className="flex gap-2">
+                                      <div className="flex flex-col items-center">
+                                         <span className="text-sm font-black text-gray-900">{entries.length}</span>
+                                         <span className="text-[8px] font-bold text-gray-400 uppercase">Entries</span>
+                                      </div>
+                                      <div className="w-px h-6 bg-gray-100 my-auto mx-1" />
+                                      <div className="flex flex-col items-center">
+                                         <span className="text-sm font-black text-gray-900">{specialDays.length}</span>
+                                         <span className="text-[8px] font-bold text-gray-400 uppercase">Days</span>
+                                      </div>
+                                   </div>
+                                </div>
+                                <div className="flex flex-col">
+                                   <span className="text-xs font-black text-gray-900 uppercase tracking-tight">Personal Island Profile</span>
+                                   <span className="text-[10px] text-gray-500 mt-1 cursor-pointer hover:text-blue-500 transition-colors flex items-center gap-1" onClick={() => { setTempProfileInput(profile.signature); setShowSigInput(true); }}>
+                                     {profile.signature}
+                                     <Sparkles className="w-2.5 h-2.5 opacity-50" />
+                                   </span>
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 gap-2 mt-2">
+                                <button onClick={() => setProfileMenuStep('calendar')} className="flex items-center justify-between p-3.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-2xl transition-all group">
+                                   <div className="flex items-center gap-3">
+                                      <Calendar className="w-4 h-4" />
+                                      <span className="text-[11px] font-bold">日历 - 回忆录</span>
+                                   </div>
+                                   <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-100" />
+                                </button>
+                                <button onClick={() => setProfileMenuStep('special_days')} className="flex items-center justify-between p-3.5 bg-gray-50 hover:bg-pink-50 text-gray-700 hover:text-pink-700 rounded-2xl transition-all group">
+                                   <div className="flex items-center gap-3">
+                                      <Clock className="w-4 h-4" />
+                                      <span className="text-[11px] font-bold">倒数日 - 纪念</span>
+                                   </div>
+                                   <div className="flex items-center gap-2">
+                                      {specialDays.length > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-md">New!</span>}
+                                      <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-100" />
+                                   </div>
+                                </button>
+                                <button onClick={() => setProfileMenuStep('settings')} className="flex items-center justify-between p-3.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-2xl transition-all group">
+                                   <div className="flex items-center gap-3">
+                                      <Settings className="w-4 h-4" />
+                                      <span className="text-[11px] font-bold">应用设置</span>
+                                   </div>
+                                   <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-100" />
+                                </button>
+                             </div>
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'calendar' && (
+                          <div className="p-2 flex flex-col gap-4">
+                            <div className="flex justify-between items-center px-1">
+                              <div className="text-[11px] font-black tracking-widest text-gray-800">
+                                {calendarViewDate.getFullYear()}年 {calendarViewDate.getMonth() + 1}月
+                              </div>
+                              <div className="flex gap-1">
+                                <button onClick={handlePrevMonth} className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center"><ChevronLeft className="w-3 h-3 text-gray-600" /></button>
+                                <button onClick={handleNextMonth} className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center"><ChevronRight className="w-3 h-3 text-gray-600" /></button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                               {['日', '一', '二', '三', '四', '五', '六'].map(d => (
+                                 <div key={d} className="text-center text-[9px] font-bold text-gray-400 py-1">{d}</div>
+                               ))}
+                               {Array.from({ length: getFirstDayOfMonth(calendarViewDate.getFullYear(), calendarViewDate.getMonth()) }).map((_, i) => (
+                                 <div key={`empty-${i}`} className="h-7" />
+                               ))}
+                               {Array.from({ length: getDaysInMonth(calendarViewDate.getFullYear(), calendarViewDate.getMonth()) }).map((_, i) => {
+                                 const day = i + 1;
+                                 const dateStr = `${calendarViewDate.getFullYear()}-${String(calendarViewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                 const hasEntry = entries.some(e => e.date === dateStr);
+                                 const isToday = day === new Date().getDate() && calendarViewDate.getMonth() === new Date().getMonth();
+                                 return (
+                                   <div key={day} className={`h-7 rounded-lg flex items-center justify-center text-[10px] font-bold cursor-default ${hasEntry ? 'bg-blue-500 text-white shadow-md' : isToday ? 'bg-blue-50 text-blue-500 ring-1 ring-blue-200' : 'text-gray-500 hover:bg-gray-100'}`}>
+                                     {day}
+                                   </div>
+                                 )
+                               })}
+                            </div>
+                            <button onClick={() => setProfileMenuStep('special_days')} className="w-full py-2.5 bg-gray-50 hover:bg-blue-50 text-[10px] font-bold text-blue-600 rounded-xl transition-all border border-blue-100 mb-1">⚙️ 管理纪念日 Special Days</button>
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'special_days' && (
+                          <div className="flex flex-col gap-2 p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <div className="flex justify-between items-center mb-1">
+                               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">记录清单</span>
+                               <button onClick={() => setProfileMenuStep('add_special_day')} className="text-[9px] font-bold text-pink-500 bg-pink-50 px-3 py-1 rounded-full">+ 新增</button>
+                            </div>
+                            {specialDays.length === 0 ? (
+                              <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <Clock className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+                                <span className="text-[10px] text-gray-400 font-bold">还没有记录重要的日子</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                {specialDays.map(sd => {
+                                  const targetDate = new Date(sd.date);
+                                  const today = new Date();
+                                  today.setHours(0,0,0,0);
+                                  targetDate.setHours(0,0,0,0);
+                                  
+                                  const diffTime = Math.abs(today.getTime() - targetDate.getTime());
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                  const isFuture = targetDate > today;
+
+                                  return (
+                                    <div key={sd.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-between group shadow-sm">
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-black text-gray-800">{sd.title}</span>
+                                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${sd.category === 'anniversary' ? 'bg-blue-50 text-blue-500' : sd.category === 'birthday' ? 'bg-pink-50 text-pink-500' : 'bg-gray-50 text-gray-500'}`}>
+                                            {sd.category === 'anniversary' ? '纪念' : sd.category === 'birthday' ? '生日' : '其他'}
+                                          </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-gray-400 mt-1">{sd.date}</span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex flex-col items-end">
+                                          <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">{isFuture ? '还有' : '已经'}</span>
+                                          <div className="flex items-baseline gap-0.5">
+                                            <span className={`text-lg font-black ${isFuture ? 'text-pink-500' : 'text-blue-500'}`}>{diffDays}</span>
+                                            <span className="text-[9px] font-bold text-gray-400">天</span>
+                                          </div>
+                                        </div>
+                                        <button 
+                                          onClick={() => setSpecialDays(specialDays.filter(day => day.id !== sd.id))}
+                                          className="p-1.5 bg-red-50 text-red-400 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'add_special_day' && (
+                          <div className="p-3 flex flex-col gap-4">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">事件名称 Event name</label>
+                              <input 
+                                type="text" 
+                                value={newSpecialDayTitle}
+                                onChange={e => setNewSpecialDayTitle(e.target.value)}
+                                placeholder="例：遇见你的第一天"
+                                className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-pink-100"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">日期 Date</label>
+                              <input 
+                                type="date" 
+                                value={newSpecialDayDate}
+                                onChange={e => setNewSpecialDayDate(e.target.value)}
+                                className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-pink-100"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">类型 Category</label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {(['anniversary', 'birthday', 'other'] as const).map(cat => (
+                                  <button
+                                    key={cat}
+                                    onClick={() => setNewSpecialDayCategory(cat)}
+                                    className={`py-2 text-[9px] font-bold rounded-xl transition-all border ${newSpecialDayCategory === cat ? 'bg-pink-50 border-pink-200 text-pink-600 ring-2 ring-pink-50' : 'bg-gray-50 border-gray-100 text-gray-500'}`}
+                                  >
+                                    {cat === 'anniversary' ? '纪念日' : cat === 'birthday' ? '生日' : '其他'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <button onClick={() => setProfileMenuStep('special_days')} className="flex-1 py-2.5 text-[10px] font-bold bg-gray-100 rounded-xl">取消</button>
+                              <button 
+                                onClick={() => {
+                                  if(!newSpecialDayTitle || !newSpecialDayDate) return;
+                                  setSpecialDays([{
+                                    id: Math.random().toString(36).substring(2, 9),
+                                    title: newSpecialDayTitle,
+                                    date: newSpecialDayDate,
+                                    category: newSpecialDayCategory,
+                                    isCountUp: new Date(newSpecialDayDate) < new Date()
+                                  }, ...specialDays]);
+                                  setProfileMenuStep('special_days');
+                                  setNewSpecialDayTitle('');
+                                  setNewSpecialDayDate('');
+                                }}
+                                className="flex-1 py-2.5 text-[10px] font-bold text-white bg-pink-500 rounded-xl shadow-lg shadow-pink-200 transition-all hover:scale-105"
+                              >
+                                保存记录
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'settings' && (
+                          <div className="flex flex-col gap-2 p-1">
+                            <div className="flex flex-col gap-1 p-3 bg-blue-50 rounded-2xl border border-blue-100/50 mb-2">
+                              <span className="text-[10px] font-black text-blue-900">屿·记 Island 记录空间</span>
+                              <span className="text-[9px] text-blue-500 tracking-wider">Version 2.0 - UI Renewed</span>
+                            </div>
+
+                            <button onClick={() => setProfileMenuStep('theme_picker')} className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition-all group">
+                              <div className="flex items-center gap-3">
+                                <Sparkles className="w-4 h-4 text-pink-500" />
+                                <span className="text-[11px] font-bold text-gray-700">背景 - 主题</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">{customBgUrl ? '自定义' : theme}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                              </div>
+                            </button>
+
+                            <button onClick={() => {
+                               const data = { entries, letters, profile, specialDays };
+                               const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                               const url = URL.createObjectURL(blob);
+                               const a = document.createElement('a');
+                               a.href = url; a.download = 'island_data.json'; a.click(); URL.revokeObjectURL(url);
+                            }} className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <Download className="w-4 h-4 text-gray-500" />
+                                <span className="text-[11px] font-bold text-gray-700">导出我的数据</span>
+                              </div>
+                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                            </button>
+                            <button onClick={() => {
+                                if(confirm('清除所有记录？此操作不可恢复')) {
+                                  setEntries([]); setLetters([]); setSpecialDays([]);
+                                }
+                              }} 
+                              className="w-full flex items-center gap-3 bg-red-50 hover:bg-red-100 rounded-xl px-4 py-3 transition-colors mt-2"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                              <span className="text-[11px] font-bold text-red-600">清除所有记录</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'theme_picker' && (
+                          <div className="flex flex-col gap-4 p-2">
+                            <div className="flex flex-col gap-1 px-1">
+                               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">预设主题 Presets</span>
+                               <div className="grid grid-cols-2 gap-2 mt-1">
+                                 <button 
+                                   onClick={() => { setTheme('day'); setCustomBgUrl(null); }}
+                                   className={`flex flex-col p-3 rounded-2xl border transition-all gap-2 ${theme === 'day' && !customBgUrl ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-gray-100 hover:border-blue-100'}`}
+                                 >
+                                   <div className="w-full h-10 bg-gradient-to-b from-[#b5e0f7] to-[#88c4f2] rounded-lg flex items-center justify-center text-lg">☀️</div>
+                                   <span className="text-[10px] font-bold text-gray-700 text-center">日间</span>
+                                 </button>
+                                 <button 
+                                   onClick={() => { setTheme('night'); setCustomBgUrl(null); }}
+                                   className={`flex flex-col p-3 rounded-2xl border transition-all gap-2 ${theme === 'night' && !customBgUrl ? 'bg-indigo-50 border-indigo-200 ring-2 ring-indigo-100' : 'bg-white border-gray-100 hover:border-indigo-100'}`}
+                                 >
+                                   <div className="w-full h-10 bg-gradient-to-b from-[#1a1a2e] to-[#0f3460] rounded-lg flex items-center justify-center text-lg">🌙</div>
+                                   <span className="text-[10px] font-bold text-gray-700 text-center">深夜</span>
+                                 </button>
+                                 <button 
+                                   onClick={() => { setTheme('sunset'); setCustomBgUrl(null); }}
+                                   className={`flex flex-col p-3 rounded-2xl border transition-all gap-2 ${theme === 'sunset' && !customBgUrl ? 'bg-orange-50 border-orange-200 ring-2 ring-orange-100' : 'bg-white border-gray-100 hover:border-orange-100'}`}
+                                 >
+                                   <div className="w-full h-10 bg-gradient-to-b from-[#ff9a9e] to-[#ffafbd] rounded-lg flex items-center justify-center text-lg">🌅</div>
+                                   <span className="text-[10px] font-bold text-gray-700 text-center">黄昏</span>
+                                 </button>
+                                 <button 
+                                   onClick={() => { setTheme('misty'); setCustomBgUrl(null); }}
+                                   className={`flex flex-col p-3 rounded-2xl border transition-all gap-2 ${theme === 'misty' && !customBgUrl ? 'bg-slate-100 border-slate-300 ring-2 ring-slate-100' : 'bg-white border-gray-100 hover:border-slate-200'}`}
+                                 >
+                                   <div className="w-full h-10 bg-gradient-to-b from-[#cbd5e1] to-[#64748b] rounded-lg flex items-center justify-center text-lg">🌫️</div>
+                                   <span className="text-[10px] font-bold text-gray-700 text-center">迷雾</span>
+                                 </button>
+                               </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 mx-2" />
+
+                            <div className="flex flex-col gap-3 px-1">
+                               <div className="flex justify-between items-center">
+                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">自定义背景 Custom Background</span>
+                                 {customBgUrl && (
+                                   <button onClick={() => setCustomBgUrl(null)} className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">重置</button>
+                                 )}
+                               </div>
+                               
+                               <button 
+                                 onClick={() => bgFileInputRef.current?.click()}
+                                 className={`w-full py-3.5 border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 transition-all group ${customBgUrl ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50'}`}
+                               >
+                                 <ImageIcon className={`w-4 h-4 ${customBgUrl ? 'text-blue-500' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                                 <span className={`text-[11px] font-bold ${customBgUrl ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`}>
+                                   {customBgUrl ? '更换背景图片' : '上传自定义背景图片'}
+                                 </span>
+                               </button>
+
+                               <div className="flex flex-col gap-2 p-1">
+                                 <div className="flex justify-between items-center">
+                                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">背景透明度 Opacity</span>
+                                   <span className="text-[10px] font-black text-blue-500">{Math.round(bgOpacity * 100)}%</span>
+                                 </div>
+                                 <input 
+                                   type="range" 
+                                   min="0.1" 
+                                   max="1" 
+                                   step="0.05" 
+                                   value={bgOpacity} 
+                                   onChange={e => setBgOpacity(parseFloat(e.target.value))}
+                                   className="w-full accent-blue-500 h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer"
+                                 />
+                               </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* avatar_options, url/sig input */}
+                        {profileMenuStep === 'avatar_options' && !showUrlInput && (
+                          <div className="flex flex-col gap-1 mt-1">
+                            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-left bg-white">从本地上传</button>
+                            <button onClick={() => { setTempProfileInput(''); setShowUrlInput(true); }} className="px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-left bg-white">通过链接修改</button>
+                          </div>
+                        )}
+
+                        {showUrlInput && (
+                          <div className="p-3 flex flex-col gap-3">
+                            <input type="text" value={tempProfileInput} onChange={e => setTempProfileInput(e.target.value)} placeholder="https://..." className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
+                            <div className="flex gap-2">
+                              <button onClick={() => setShowUrlInput(false)} className="flex-1 py-2 text-[10px] font-bold bg-gray-100 rounded-xl">取消</button>
+                              <button onClick={handleProfileUrlSubmit} className="flex-1 py-2 text-[10px] font-bold text-white bg-blue-500 rounded-xl">确定</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {showSigInput && (
+                          <div className="p-3 flex flex-col gap-3">
+                            <input type="text" value={tempProfileInput} onChange={e => setTempProfileInput(e.target.value)} placeholder="输入新签名..." className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
+                            <div className="flex gap-2">
+                              <button onClick={() => setShowSigInput(false)} className="flex-1 py-2 text-[10px] font-bold bg-gray-100 rounded-xl">取消</button>
+                              <button onClick={handleSigSubmit} className="flex-1 py-2 text-[10px] font-bold text-white bg-blue-500 rounded-xl">确定</button>
+                            </div>
+                          </div>
+                        )}
+                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleProfileFileChange} 
+            />
+            <input 
+              type="file" 
+              ref={bgFileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleBgFileChange} 
+            />
+          </div>
+        )}
         {!isIsland ? (
           <div className="max-w-4xl mx-auto flex flex-col gap-16 pb-20">
             {Array.from(new Set<string>(entries.map(e => e.date))).map(dateStr => {
@@ -371,286 +1098,91 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
             })}
           </div>
         ) : mainTab === 'memory' ? (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 h-full pb-20">
-            {/* Sidebar Calendar / Stats */}
-            <div className="flex flex-col gap-6 sticky top-0 py-4 hidden md:flex h-fit z-20">
-               <div className="bg-white/80 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] border border-white flex flex-col relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/40 to-pink-100/40 rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
-                  
-                  <div className="relative z-10 w-20 h-20 bg-gradient-to-tr from-white to-gray-50 rounded-[1.5rem] mb-6 flex items-center justify-center text-4xl shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border border-white mt-2 ring-1 ring-black/5 rotate-[-3deg] group-hover:rotate-0 transition-all duration-500">📔</div>
-                  
-                  <h3 className="font-extrabold text-gray-900 text-2xl tracking-tight relative z-10">定格记忆</h3>
-                  <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mt-1.5 relative z-10">Capture Moments</p>
-                  
-                  <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-8 relative z-10" />
-                  
-                  <div className="w-full grid grid-cols-2 gap-6 text-center relative z-10">
-                    <div className="flex flex-col items-center">
-                      <div className="text-3xl font-black text-gray-800 tracking-tighter">{entries.length}</div>
-                      <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">篇记录</div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-3xl font-black text-gray-800 tracking-tighter">{entries.filter(e => e.images?.length).length}</div>
-                      <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">张影像</div>
-                    </div>
-                  </div>
-                  
-                  <button 
-                     onClick={() => setIsAddingEntry(true)}
-                     className="mt-10 w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-sm transition-all shadow-[0_8px_20px_-8px_rgba(0,0,0,0.3)] hover:shadow-[0_16px_30px_-12px_rgba(0,0,0,0.4)] active:scale-95 flex items-center justify-center gap-2 relative z-10 group/btn"
-                  >
-                    <PenLine className="w-4 h-4 group-hover/btn:scale-110 transition-transform" /> 写新日记
-                  </button>
-               </div>
-               
-               {/* Mini Tags/Filters section */}
-               <div className="bg-white/80 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.06)] border border-white">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">筛选回忆</h4>
-                  <div className="flex flex-col gap-1.5">
-                    <button 
-                      onClick={() => setActiveFilter('all')}
-                      className={`flex items-center justify-between p-3.5 rounded-2xl text-sm font-bold transition-all duration-300 ${activeFilter === 'all' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-white/60 hover:shadow-sm hover:scale-[1.02]'}`}
-                    >
-                      <span className="flex items-center gap-2">全部日记</span>
-                      <span className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>{entries.length}</span>
-                    </button>
-                    <button 
-                      onClick={() => setActiveFilter('with_images')}
-                      className={`flex items-center justify-between p-3.5 rounded-2xl text-sm font-bold transition-all duration-300 ${activeFilter === 'with_images' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-white/60 hover:shadow-sm hover:scale-[1.02]'}`}
-                    >
-                      <span className="flex items-center gap-2">有图回忆</span>
-                      <span className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${activeFilter === 'with_images' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>{entries.filter(e => e.images?.length).length}</span>
-                    </button>
-                  </div>
-               </div>
+          <div className="max-w-2xl mx-auto flex flex-col gap-5 h-full pb-20 mt-4 relative z-20 w-full px-4">
+            <div className="flex justify-between items-end mb-4 px-2">
+              <div className="flex flex-col">
+                <h3 className="text-[28px] font-black text-gray-900 tracking-tighter leading-none">定格记忆</h3>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1.5">Tiny Diary Records</span>
+              </div>
+              <div className="text-xs font-bold text-gray-500 bg-white/50 px-3 py-1 rounded-full border border-white/60 shadow-sm">
+                共 {entries.length} 篇
+              </div>
             </div>
 
-            {/* Timeline & Custom Views */}
-            <div className="flex flex-col py-4 gap-8 relative z-10">
-              {/* Tab Switcher for Island Mode */}
-              <div className="flex gap-1.5 bg-white/50 backdrop-blur-2xl p-1.5 rounded-[1.5rem] w-fit self-center md:self-start mb-2 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] border border-white/60">
-                {[
-                  { id: 'timeline', label: '时间排序', icon: 'Timeline' },
-                  { id: 'gallery', label: '相册影像', icon: 'Gallery' },
-                  { id: 'stats', label: '我的足迹', icon: 'Footprints' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-[1.2rem] text-sm font-bold transition-all duration-300 ${
-                      activeTab === tab.id 
-                        ? 'bg-white text-gray-900 shadow-sm border border-gray-100/50' 
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-white/30'
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="md:hidden mb-6 flex justify-between items-center bg-white/80 backdrop-blur-3xl p-5 rounded-[2rem] shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)] border border-white">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-tr from-white to-gray-50 rounded-2xl flex items-center justify-center text-2xl shadow-[0_4px_10px_-4px_rgba(0,0,0,0.1)] border border-white">📔</div>
-                  <div>
-                    <h3 className="font-extrabold text-gray-900 text-lg leading-tight">定格记忆</h3>
-                    <p className="text-gray-400 text-xs font-bold mt-0.5">{entries.length} 篇记录</p>
-                  </div>
+            {entries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-20 text-gray-400 gap-6 w-full bg-white/40 backdrop-blur-3xl rounded-[3rem] border border-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)] mt-10">
+                <div className="w-20 h-20 bg-white/80 border border-white shadow-sm rounded-full flex items-center justify-center text-4xl">📝</div>
+                <div className="flex flex-col items-center">
+                  <p className="text-lg font-black text-gray-800 tracking-tight">记录当下的每一刻</p>
+                  <p className="text-[10px] font-bold tracking-widest uppercase mt-2">No Entries Yet</p>
                 </div>
-                <button onClick={() => setIsAddingEntry(true)} className="p-3.5 bg-gray-900 text-white rounded-[1.2rem] shadow-lg shadow-gray-900/20 active:scale-95 transition-transform">
-                  <PenLine className="w-4 h-4" />
-                </button>
               </div>
-              
-              <AnimatePresence mode="wait">
-                {activeTab === 'timeline' && (
-                  <motion.div 
-                    key="timeline"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="flex flex-col gap-6"
-                  >
-                    {filteredEntries.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-80 text-gray-400 gap-6 w-full">
-                        <div className="w-20 h-20 bg-white/60 backdrop-blur-xl border border-white shadow-xl text-gray-300 rounded-[2rem] flex items-center justify-center text-4xl rotate-[-5deg]">📝</div>
-                        <p className="text-sm font-bold tracking-widest uppercase">还没有任何记录，写下第一篇吧。</p>
+            ) : (
+              <div className="flex flex-col gap-6 relative">
+                {/* Visual Timeline Bar */}
+                <div className="absolute left-[35px] top-6 bottom-4 w-px bg-gradient-to-b from-blue-200 via-gray-200 to-transparent" />
+                
+                {entries.map((entry, index) => {
+                  const dateObj = new Date(entry.date);
+                  const day = dateObj.getDate();
+                  const monthStr = dateObj.toLocaleString('zh-CN', { month: 'short' });
+                  return (
+                    <motion.div 
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.2) }}
+                      className="flex gap-4 md:gap-6 relative group"
+                    >
+                      <div className="flex flex-col items-center w-[70px] shrink-0 z-10 pt-2">
+                        <div className="w-12 h-12 bg-white rounded-full flex flex-col items-center justify-center shadow-sm border border-gray-100 group-hover:scale-110 group-hover:shadow-md group-hover:border-blue-100 transition-all duration-300">
+                          <span className="text-lg font-black text-gray-900 leading-none">{day}</span>
+                          <span className="text-[8px] font-black uppercase text-blue-500 mt-0.5">{monthStr}</span>
+                        </div>
                       </div>
-                    ) : (
-                      filteredEntries.map((entry, index) => {
-                        const dateObj = new Date(entry.date);
-                        const day = dateObj.getDate();
-                        const month = dateObj.toLocaleString('zh-CN', { month: 'short' });
-                        const weekday = dateObj.toLocaleString('zh-CN', { weekday: 'short' });
-                        
-                        return (
-                          <motion.div
-                             key={entry.id}
-                             initial={{ opacity: 0, y: 30 }}
-                             whileInView={{ opacity: 1, y: 0 }}
-                             viewport={{ once: true, margin: "-50px" }}
-                             transition={{ duration: 0.6, delay: Math.min(index * 0.05, 0.2), ease: "easeOut" }}
-                             className="flex gap-4 md:gap-8 group"
-                           >
-                             {/* Timeline Marker */}
-                             <div className="flex flex-col items-center w-[50px] md:w-[70px] pt-4 md:pt-6 relative">
-                               <div className="text-3xl md:text-5xl font-black text-gray-800 leading-none mb-1.5 group-hover:scale-110 transition-transform duration-500 ease-out">{day < 10 ? `0${day}` : day}</div>
-                               <div className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-widest">{month}</div>
-                               <div className="absolute top-[100px] bottom-[-24px] w-[2px] bg-gradient-to-b from-gray-200 to-transparent group-last:opacity-0" />
+                      
+                      <div 
+                        onClick={() => setSelectedEntry(entry)}
+                        className="flex-1 bg-white/80 backdrop-blur-xl rounded-[2rem] p-5 border border-white shadow-[0_4px_20px_-8px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col sm:flex-row gap-4 justify-between"
+                      >
+                         <div className="flex flex-col flex-1 min-w-0">
+                           <div className="flex justify-between items-center mb-2">
+                             <div className="flex items-center gap-2">
+                               <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">{entry.time}</span>
+                               <span className="text-[10px] text-gray-500 font-bold">{entry.weather}</span>
                              </div>
-                             
-                             {/* Entry Card */}
-                             <div 
-                               onClick={() => setSelectedEntry(entry)}
-                               className="flex-1 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-7 md:p-10 cursor-pointer border border-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-500 group/card relative overflow-hidden"
-                             >
-                                {/* Decorative floating orb */}
-                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-bl from-pink-100/50 to-blue-100/50 rounded-full blur-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-                                <div className="flex justify-between items-start mb-6 gap-4 relative z-10">
-                                  <h4 className="text-2xl font-black text-gray-900 leading-tight tracking-tight group-hover/card:text-blue-600 transition-colors duration-300">{entry.title}</h4>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                     <span className="w-10 h-10 rounded-[1rem] bg-white/50 backdrop-blur-md border border-white shadow-sm flex items-center justify-center text-lg">{entry.mood}</span>
-                                     <span className="w-10 h-10 rounded-[1rem] bg-white/50 backdrop-blur-md border border-white shadow-sm flex items-center justify-center text-lg">{entry.weather}</span>
-                                  </div>
-                                </div>
-                                
-                                <p className="text-[15px] text-gray-600 leading-[1.8] line-clamp-3 mb-8 relative z-10" dangerouslySetInnerHTML={{ __html: entry.content }} />
-                                
-                                {entry.images && entry.images.length > 0 && (
-                                  <div className={`grid gap-2 mb-8 relative z-10 w-full ${entry.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'}`}>
-                                    {entry.images.slice(0, 3).map((img, i) => (
-                                      <div key={i} className={`relative overflow-hidden rounded-2xl shadow-sm border border-white/50 ${entry.images!.length === 1 ? 'aspect-[2/1]' : 'aspect-square'}`}>
-                                        <img src={img} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700" alt="" referrerPolicy="no-referrer" />
-                                      </div>
-                                    ))}
-                                    {entry.images.length > 3 && (
-                                      <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-white via-white/80 to-transparent flex items-center justify-end pr-6">
-                                        <div className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center border border-gray-100 text-gray-900 font-extrabold text-sm">
-                                          +{entry.images.length - 2}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                <div className="flex justify-between items-center text-xs text-gray-400 font-bold pt-5 border-t border-gray-100/50 relative z-10">
-                                  <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50/80">
-                                      <Clock className="w-3.5 h-3.5" />
-                                      {entry.time}
-                                    </div>
-                                    {entry.location && (
-                                      <div className="flex items-center gap-1.5 max-w-[200px] px-3 py-1.5 rounded-xl bg-gray-50/80">
-                                        <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                        <span className="truncate">{entry.location}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
+                             <span className="text-lg leading-none filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{entry.mood}</span>
+                           </div>
+                           <h4 className="text-[15px] font-bold text-gray-900 truncate mb-1.5 leading-tight">{entry.title}</h4>
+                           <div className="text-xs text-gray-500 font-medium leading-[1.6] line-clamp-2 md:line-clamp-3 mb-2" dangerouslySetInnerHTML={{ __html: entry.content }} />
+                           {entry.location && (
+                             <div className="mt-auto flex items-center gap-1 text-[9px] font-bold text-gray-400">
+                               <MapPin className="w-3 h-3" />
+                               {entry.location}
                              </div>
-                          </motion.div>
-                        )
-                      })
-                    )}
-                  </motion.div>
-                )}
-
-                {activeTab === 'gallery' && (
-                  <motion.div 
-                    key="gallery"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="columns-2 md:columns-3 gap-4 space-y-4"
-                  >
-                    {allImages.length === 0 ? (
-                      <div className="col-span-full flex flex-col items-center justify-center h-80 text-gray-400 gap-6 w-full">
-                        <div className="w-20 h-20 bg-white/60 backdrop-blur-xl border border-white shadow-xl text-gray-300 rounded-[2rem] flex items-center justify-center text-4xl">🖼️</div>
-                        <p className="text-sm font-bold tracking-widest uppercase">相册空空如也。</p>
+                           )}
+                         </div>
+                         {entry.images && entry.images.length > 0 && (
+                           <div className="w-full sm:w-[100px] h-[100px] shrink-0 rounded-2xl overflow-hidden shadow-sm self-start hidden sm:block">
+                             <img src={entry.images[0]} className="w-full h-full object-cover relative group-hover:scale-105 transition-transform duration-500" />
+                           </div>
+                         )}
                       </div>
-                    ) : (
-                      allImages.map((img, i) => (
-                        <motion.div 
-                          key={i}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: i * 0.05 }}
-                          className="break-inside-avoid w-full rounded-[2rem] overflow-hidden border border-white/60 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 cursor-pointer group"
-                          onClick={() => {
-                            const entry = entries.find(e => e.images?.includes(img));
-                            if (entry) setSelectedEntry(entry);
-                          }}
-                        >
-                          <img src={img} className="w-full object-cover group-hover:scale-105 transition-transform duration-700" alt="" referrerPolicy="no-referrer" />
-                        </motion.div>
-                      ))
-                    )}
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
 
-                {activeTab === 'stats' && (
-                  <motion.div 
-                    key="stats"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                  >
-                    <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[2.5rem] border border-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)]">
-                      <h4 className="font-extrabold text-gray-900 text-xl mb-8 flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 text-lg shadow-sm">📊</span> 心情分布
-                      </h4>
-                      <div className="grid grid-cols-3 gap-6">
-                        {Object.entries(moodStats).map(([mood, count]) => (
-                          <div key={mood} className="bg-white/60 p-4 rounded-[1.5rem] flex flex-col items-center gap-3 border border-white shadow-sm hover:scale-105 transition-transform">
-                             <span className="text-3xl filter drop-shadow-sm">{mood}</span>
-                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{count} 次</span>
-                          </div>
-                        ))}
-                        {Object.keys(moodStats).length === 0 && (
-                          <div className="col-span-full text-center text-gray-400 font-bold text-sm py-12">
-                            记录的第一篇日记将会开始统计心情哦
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[2.5rem] border border-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)]">
-                      <h4 className="font-extrabold text-gray-900 text-xl mb-8 flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100 text-lg shadow-sm">📍</span> 足迹清单
-                      </h4>
-                      <div className="flex flex-col gap-3">
-                        {allLocations.map((loc, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 bg-white/60 rounded-[1.2rem] border border-white shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-                              <span className="text-sm font-bold text-gray-700 truncate">{loc}</span>
-                            </div>
-                            <span className="text-xs font-black text-gray-900 bg-gray-100/80 px-3 py-1 rounded-xl shrink-0">
-                              {entries.filter(e => e.location === loc).length}
-                            </span>
-                          </div>
-                        ))}
-                        {allLocations.length === 0 && (
-                          <div className="text-center text-gray-400 font-bold text-sm py-12">
-                            带上位置记录你的足迹吧
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gradient-to-br from-blue-100/40 via-indigo-100/40 to-pink-100/40 backdrop-blur-2xl p-12 rounded-[3rem] border border-white shadow-[0_12px_40px_-12px_rgba(0,0,0,0.08)] md:col-span-2 flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-                       <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center text-4xl mb-6 relative z-10 rotate-[-5deg] group-hover:rotate-[5deg] transition-transform duration-500">🏆</div>
-                       <h5 className="font-black text-gray-900 text-2xl mb-4 relative z-10 tracking-tight">书写星空</h5>
-                       <p className="text-gray-600 font-medium text-base max-w-sm leading-relaxed relative z-10">
-                         你已经在日记中度过了 <span className="font-black text-gray-900 mx-1">{entries.length > 0 ? Math.ceil((new Date().getTime() - new Date(entries[entries.length-1].date).getTime()) / (1000 * 3600 * 24)) : 0}</span> 天之旅，每一页都是独一无二的星辰。
-                       </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsAddingEntry(true)} 
+              className="fixed bottom-28 right-6 md:right-12 w-14 h-14 bg-gradient-to-tr from-blue-600 to-blue-500 text-white rounded-[1.5rem] flex items-center justify-center shadow-[0_10px_30px_-10px_rgba(37,99,235,0.6)] z-50 border border-blue-400 group"
+            >
+               <PenLine className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+            </motion.button>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto w-full h-full flex flex-col items-center pb-20 relative z-10">
@@ -684,8 +1216,17 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                       initial={{ opacity: 0, scale: 0.9, y: 30 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       transition={{ delay: i * 0.1, type: "spring", stiffness: 100, damping: 20 }}
-                      onClick={() => isReady && setSelectedLetter(letter)}
-                      className={`relative overflow-hidden rounded-[2.5rem] p-8 border shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col h-[280px] transition-all duration-500 ${isReady ? 'bg-white/90 backdrop-blur-xl border-white cursor-pointer hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.15)] hover:-translate-y-2 group' : 'bg-[#f4f4f5]/50 border-white/50 backdrop-blur-sm grayscale-[0.2] opacity-80'}`}
+                      onClick={() => {
+                        if (isReady) {
+                          setSelectedLetter(letter);
+                          if (!letter.isOpened) {
+                            const newLetters = letters.map(l => l.id === letter.id ? { ...l, isOpened: true } : l);
+                            setLetters(newLetters);
+                            safeSetItem(letterStorageKey, JSON.stringify(newLetters));
+                          }
+                        }
+                      }}
+                      className={`relative overflow-hidden rounded-[2.5rem] p-8 border shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col h-[280px] transition-all duration-500 ${isReady ? (letter.isOpened ? 'bg-white/80 backdrop-blur-xl border-white cursor-pointer hover:shadow-md' : 'bg-white backdrop-blur-3xl border-white cursor-pointer shadow-[0_15px_40px_-12px_rgba(37,99,235,0.15)] hover:shadow-[0_20px_50px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-2 group ring-2 ring-blue-500/20') : 'bg-[#f4f4f5]/50 border-white/50 backdrop-blur-sm grayscale-[0.2] opacity-80'}`}
                     >
                       {/* Decorative Envelope Elements */}
                       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -694,26 +1235,31 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                            <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.02)_10px,rgba(0,0,0,0.02)_20px)]" />
                          )}
                          {/* Flap Illusion */}
-                         <svg className={`absolute top-0 w-full h-[120px] left-0 transition-opacity ${isReady ? 'opacity-30' : 'opacity-10'}`} viewBox="0 0 100 100" preserveAspectRatio="none">
+                         <svg className={`absolute top-0 w-full h-[120px] left-0 transition-all duration-700 ${isReady ? (letter.isOpened ? 'opacity-10 -translate-y-full' : 'opacity-30') : 'opacity-10'}`} viewBox="0 0 100 100" preserveAspectRatio="none">
                            <path d="M0,0 L50,80 L100,0" fill="none" stroke="currentColor" className="text-gray-200" strokeWidth="1" />
                          </svg>
                       </div>
                       
                       <div className="flex justify-between items-start mb-auto relative z-10">
-                        <div className="text-5xl filter drop-shadow-sm transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6 bg-white w-16 h-16 rounded-[1.2rem] flex items-center justify-center border border-gray-100 shadow-sm">
-                          {isReady ? letter.stamp : '💌'}
+                        <div className="relative">
+                          <div className={`text-5xl filter drop-shadow-sm transition-transform duration-700 ${!letter.isOpened ? 'group-hover:scale-110 group-hover:rotate-6' : ''} bg-white w-16 h-16 rounded-[1.2rem] flex items-center justify-center border border-gray-100 shadow-sm`}>
+                            {isReady ? letter.stamp : '💌'}
+                          </div>
+                          {isReady && !letter.isOpened && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                          )}
                         </div>
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm backdrop-blur-md ${isReady ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-gray-200/50 text-gray-500 border border-gray-300/50'}`}>
-                           {isReady ? 'Delivered' : 'Locked'}
+                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm backdrop-blur-md ${isReady ? (letter.isOpened ? 'bg-gray-50 text-gray-400 border border-gray-100' : 'bg-blue-500 text-white border border-blue-600 shadow-blue-500/20') : 'bg-gray-200/50 text-gray-500 border border-gray-300/50'}`}>
+                           {isReady ? (letter.isOpened ? 'Opened' : 'New Letter') : 'Locked'}
                         </div>
                       </div>
                       
                       <div className="relative z-10 flex flex-col mb-6 mt-8">
                         <h4 className={`font-black text-2xl tracking-tight mb-2 truncate ${isReady ? 'text-gray-900 group-hover:text-blue-600 transition-colors' : 'text-gray-400 blur-[1px]'}`}>
-                          {isReady ? letter.title : 'Time Encrypted'}
+                          {isReady ? (letter.isOpened ? letter.title : '你有新的信件') : 'Time Encrypted'}
                         </h4>
                         <p className={`text-[15px] line-clamp-2 leading-relaxed font-medium ${isReady ? 'text-gray-500' : 'text-gray-400 blur-[2px]'}`}>
-                          {isReady ? letter.content : '这是一封写给未来的信，时光还没解开它的蜡封...'}
+                          {isReady ? (letter.isOpened ? letter.content : '时光寄来了一封信，快来拆阅吧...') : '这是一封写给未来的信，时光还没解开它的蜡封...'}
                         </p>
                       </div>
                       
@@ -723,8 +1269,8 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                           <span>{letter.writeDate.replace(/-/g, '.')}</span>
                         </div>
                         {isReady ? (
-                          <div className="flex items-center gap-2 text-blue-600 bg-blue-50/80 px-4 py-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                             拆阅 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${letter.isOpened ? 'text-gray-400 bg-gray-50' : 'text-blue-600 bg-blue-50/80 group-hover:bg-blue-600 group-hover:text-white'}`}>
+                             {letter.isOpened ? '重温' : '拆阅'} <ArrowRight className={`w-3.5 h-3.5 ${!letter.isOpened && 'group-hover:translate-x-1'} transition-transform`} />
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1 items-end text-gray-500 bg-gray-100/50 px-3 py-1.5 rounded-xl">
@@ -752,26 +1298,29 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
         )}
       </div>
 
+      {/* Bottom Bar for Island Mode */}      {/* Bottom Bar for Island Mode */}
       {isIsland && (
-        <div className="w-full shrink-0 bg-white/80 backdrop-blur-3xl border-t border-gray-100/50 pb-safe pt-2 px-6 flex justify-center relative z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
-          <div className="flex w-full max-w-md justify-between">
+        <div className="w-full shrink-0 bg-white/90 backdrop-blur-3xl border-t border-gray-100/50 pb-safe pt-1.5 flex justify-center relative z-40 shadow-[0_-15px_50px_rgba(0,0,0,0.03)]">
+          <div className="grid grid-cols-2 w-full max-w-lg divide-x divide-gray-100/30">
             <button
               onClick={() => setMainTab('memory')}
-              className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 transition-all duration-300 ${mainTab === 'memory' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex flex-col items-center justify-center gap-1 py-3 transition-all duration-500 w-full relative ${mainTab === 'memory' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              <div className={`w-12 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${mainTab === 'memory' ? 'bg-gray-100 scale-110' : 'bg-transparent'}`}>
-                <Camera className="w-[18px] h-[18px]" strokeWidth={2.5} />
+              <div className={`w-14 h-9 flex items-center justify-center rounded-2xl transition-all duration-500 ${mainTab === 'memory' ? 'bg-blue-50/80 scale-110 shadow-inner' : 'bg-transparent'}`}>
+                <Camera className="w-[20px] h-[20px]" strokeWidth={2.5} />
               </div>
-              <span className="font-bold text-[10px] tracking-widest uppercase">定格记忆</span>
+              <span className={`font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-300 ${mainTab === 'memory' ? 'opacity-100 translate-y-0' : 'opacity-60 translate-y-0.5'}`}>定格记忆</span>
+              {mainTab === 'memory' && <motion.div layoutId="bottom-indicator" className="absolute bottom-1 w-6 h-[3px] bg-blue-500 rounded-full" />}
             </button>
             <button
               onClick={() => setMainTab('letter')}
-              className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 transition-all duration-300 ${mainTab === 'letter' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex flex-col items-center justify-center gap-1 py-3 transition-all duration-500 w-full relative ${mainTab === 'letter' ? 'text-pink-500' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              <div className={`w-12 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${mainTab === 'letter' ? 'bg-gray-100 scale-110' : 'bg-transparent'}`}>
-                <Sparkles className="w-[18px] h-[18px]" strokeWidth={2.5} />
+              <div className={`w-14 h-9 flex items-center justify-center rounded-2xl transition-all duration-500 ${mainTab === 'letter' ? 'bg-pink-50/80 scale-110 shadow-inner' : 'bg-transparent'}`}>
+                <Sparkles className="w-[20px] h-[20px]" strokeWidth={2.5} />
               </div>
-              <span className="font-bold text-[10px] tracking-widest uppercase">岛屿来信</span>
+              <span className={`font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-300 ${mainTab === 'letter' ? 'opacity-100 translate-y-0' : 'opacity-60 translate-y-0.5'}`}>岛屿来信</span>
+              {mainTab === 'letter' && <motion.div layoutId="bottom-indicator" className="absolute bottom-1 w-6 h-[3px] bg-pink-400 rounded-full" />}
             </button>
           </div>
         </div>
@@ -1106,12 +1655,7 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={`fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-md bg-black/30`}
-            onClick={() => {
-                if (!selectedLetter.isOpened) {
-                    setLetters(prev => prev.map(l => l.id === selectedLetter.id ? { ...l, isOpened: true } : l));
-                }
-                setSelectedLetter(null);
-            }}
+            onClick={() => setSelectedLetter(null)}
           >
             <motion.div
                initial={{ scale: 0.9, y: 30, opacity: 0, rotateX: 20 }}
@@ -1131,12 +1675,7 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                </div>
                
                <button 
-                 onClick={() => {
-                   if (!selectedLetter.isOpened) {
-                     setLetters(prev => prev.map(l => l.id === selectedLetter.id ? { ...l, isOpened: true } : l));
-                   }
-                   setSelectedLetter(null);
-                 }} 
+                 onClick={() => setSelectedLetter(null)} 
                  className="absolute top-6 left-6 p-3 rounded-full hover:bg-gray-100 transition-colors z-30 group"
                >
                  <X className="w-5 h-5 text-gray-400 group-hover:text-gray-800 transition-colors" />
