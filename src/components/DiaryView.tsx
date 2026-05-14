@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles, ChevronRight, Search, Settings, ChevronLeft, Trash2, Download, LogOut } from 'lucide-react';
+import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles, ChevronRight, Search, Settings, ChevronLeft, Trash2, Download, LogOut, Folder, Check } from 'lucide-react';
 
 const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -18,6 +18,7 @@ interface DiaryEntry {
   images?: string[];
   location?: string;
   folder?: string;
+  isLocked?: boolean;
 }
 
 interface FutureLetter {
@@ -105,6 +106,11 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const [newMood, setNewMood] = useState('😊');
   const [newWeather, setNewWeather] = useState('☀️');
   const [newLocation, setNewLocation] = useState('');
+  const [newFolder, setNewFolder] = useState('生活');
+  const [isLocked, setIsLocked] = useState(false);
+  const [showMoodPicker, setShowMoodPicker] = useState(false);
+  const [showWeatherPicker, setShowWeatherPicker] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
 
   const moodOptions = ['😊', '🥰', '😔', '😤', '😴', '✨', '☁️', '🌙', '🍃'];
   const weatherOptions = ['☀️', '☁️', '🌧️', '❄️', '🌪️', '🌫️', '🌤️', '🌙'];
@@ -145,10 +151,20 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const initProfile = () => {
     const saved = safeGetItem(profileStorageKey);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved); 
+        return {
+          username: parsed.username || "岛主",
+          signature: parsed.signature || "记录点滴，不负韶华",
+          startupGreeting: parsed.startupGreeting || "屿 · 记",
+          avatarUrl: parsed.avatarUrl || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg"
+        };
+      } catch (e) {}
     }
     return {
+      username: "岛主",
       signature: "记录点滴，不负韶华",
+      startupGreeting: "屿 · 记",
       avatarUrl: "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg"
     }
   };
@@ -163,8 +179,23 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
 
   const [profile, setProfile] = useState(initProfile());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [profileMenuStep, setProfileMenuStep] = useState<'main' | 'avatar_options' | 'calendar' | 'settings' | 'theme_picker' | 'special_days' | 'add_special_day'>('main');
+  const [profileMenuStep, setProfileMenuStep] = useState<'main' | 'edit_profile' | 'avatar_options' | 'calendar' | 'settings' | 'theme_picker' | 'special_days' | 'add_special_day'>('main');
   
+  const [menuPosition, setMenuPosition] = useState({ top: 160, left: 32 });
+
+  const openMenu = (e: React.MouseEvent, step: typeof profileMenuStep) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 340;
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth - 20) {
+      left = window.innerWidth - menuWidth - 20;
+    }
+    setMenuPosition({ top: rect.bottom + 12, left: Math.max(20, left) });
+    setProfileMenuStep(step);
+    setShowProfileMenu(true);
+  };
+
   const [customBgUrl, setCustomBgUrl] = useState<string | null>(() => safeGetItem('island_custom_bg'));
   const [bgOpacity, setBgOpacity] = useState<number>(() => {
     const saved = safeGetItem('island_bg_opacity');
@@ -201,6 +232,7 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const [showSigInput, setShowSigInput] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [tempProfileInput, setTempProfileInput] = useState('');
+  const [editProfileForm, setEditProfileForm] = useState({ username: '', signature: '', startupGreeting: '' });
   const [calendarViewDate, setCalendarViewDate] = useState(new Date());
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const bgFileInputRef = React.useRef<HTMLInputElement>(null);
@@ -226,8 +258,10 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         setProfile({ ...profile, avatarUrl: event.target?.result as string });
-        setShowProfileMenu(false);
-        setProfileMenuStep('main');
+        if (profileMenuStep !== 'edit_profile') {
+          setShowProfileMenu(false);
+          setProfileMenuStep('main');
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -248,9 +282,11 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
     if (tempProfileInput.trim()) {
       setProfile({ ...profile, avatarUrl: tempProfileInput.trim() });
     }
-    setShowProfileMenu(false);
+    if (profileMenuStep !== 'edit_profile') {
+      setShowProfileMenu(false);
+      setProfileMenuStep('main');
+    }
     setShowUrlInput(false);
-    setProfileMenuStep('main');
     setTempProfileInput('');
   };
 
@@ -286,7 +322,7 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
+      const url = URL.createObjectURL(e.target.files[0] as Blob);
       setNewImages([...newImages, url]);
     }
   };
@@ -304,7 +340,9 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
       mood: newMood,
       weather: newWeather,
       images: newImages,
-      location: newLocation
+      location: newLocation,
+      folder: newFolder,
+      isLocked: isLocked
     };
 
     setEntries([newEntry, ...entries]);
@@ -316,6 +354,8 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
     setNewMood('😊');
     setNewWeather('☀️');
     setNewLocation('');
+    setNewFolder('生活');
+    setIsLocked(false);
   };
 
   const handleSaveLetter = () => {
@@ -435,13 +475,88 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
           <div className="max-w-4xl mx-auto flex flex-col gap-6 w-full">
             <div className="flex justify-between items-center w-full">
                <div className="flex flex-col gap-4">
-                  <h1 className={`text-[42px] font-cute-zh ${t.text} tracking-tight leading-none`}>屿 · 记</h1>
+                  <div className="relative group/greeting">
+                    <motion.h1 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      className={`text-[54px] font-elegant-zh ${t.text} tracking-[0.1em] leading-none cursor-default select-none flex items-center gap-1 py-2`}
+                    >
+                      {profile.startupGreeting.split('').map((char, index) => (
+                        <motion.span
+                          key={index}
+                          initial={{ opacity: 0, y: 20, rotate: -20 }}
+                          animate={{ opacity: 1, y: 0, rotate: 0 }}
+                          transition={{ 
+                            delay: index * 0.1,
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20 
+                          }}
+                          whileHover={{ 
+                            y: -12,
+                            scale: 1.3,
+                            rotate: index % 2 === 0 ? 8 : -8,
+                            filter: "drop-shadow(0 0 12px rgba(255,191,0,0.4))",
+                          }}
+                          className="inline-block relative"
+                        >
+                          {char === ' ' ? '\u00A0' : char}
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0 }}
+                            whileHover={{ opacity: 1, scale: 1 }}
+                            className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none"
+                          >
+                            <div className="w-1 h-1 rounded-full bg-amber-400 animate-ping" />
+                          </motion.div>
+                        </motion.span>
+                      ))}
+                      <motion.div
+                        animate={{ 
+                          y: [0, -8, 0],
+                          rotate: [0, 15, -15, 0],
+                          scale: [1, 1.2, 1]
+                        }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        className="ml-3 group-hover/greeting:scale-125 transition-transform"
+                      >
+                        <div className="relative">
+                          <Sparkles className="w-6 h-6 text-amber-500/80" />
+                          <div className="absolute inset-0 blur-sm bg-amber-400/20 rounded-full scale-150 animate-pulse" />
+                        </div>
+                      </motion.div>
+                    </motion.h1>
+                    
+                    {/* Decorative floating leaves/petals */}
+                    <div className="absolute -top-4 -right-8 pointer-events-none overflow-visible">
+                      {[...Array(3)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          animate={{ 
+                            x: [0, 10 + i * 5, 0],
+                            y: [0, i * 10 - 5, 0],
+                            rotate: [0, 360],
+                            opacity: [0, 0.6, 0]
+                          }}
+                          transition={{ 
+                            duration: 10 + i * 2, 
+                            repeat: Infinity, 
+                            delay: i * 3,
+                            ease: "linear"
+                          }}
+                          className="absolute"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-amber-200/40 blur-[1px]" />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                   
                   {/* Profile + Stats Row */}
                   <div className="flex items-center gap-8">
                      <div className="flex items-center gap-3 relative group">
                         <div 
-                           onClick={() => { setProfileMenuStep('main'); setShowProfileMenu(true); }}
+                           onClick={(e) => openMenu(e, 'main')}
                            className="relative cursor-pointer"
                         >
                            <img 
@@ -455,9 +570,16 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                            </div>
                         </div>
                         <div className="flex flex-col">
-                           <span className={`text-[12px] font-black ${t.text} uppercase tracking-tight`}>岛民个人资料</span>
+                           <span className={`text-[12px] font-black ${t.text} uppercase tracking-tight`}>{profile.username || '岛民个人资料'}</span>
                            <span 
-                              onClick={() => { setTempProfileInput(profile.signature); setShowSigInput(true); setShowProfileMenu(true); setProfileMenuStep('main'); }}
+                              onClick={(e) => {
+                                setEditProfileForm({
+                                  username: profile.username || '',
+                                  signature: profile.signature || '',
+                                  startupGreeting: profile.startupGreeting || '屿 · 记'
+                                });
+                                openMenu(e, 'edit_profile');
+                              }}
                               className={`text-[10px] ${t.secondary} font-medium opacity-80 cursor-pointer hover:${t.accentText} transition-colors flex items-center gap-1 mt-0.5`}
                            >
                               {profile.signature || '点击设置签名...'}
@@ -470,14 +592,14 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
 
                      <div className="flex items-center gap-6">
                         <div 
-                          onClick={() => { setProfileMenuStep('entries_stats'); setShowProfileMenu(true); }}
+                          onClick={(e) => openMenu(e, 'entries_stats')}
                           className="flex flex-col items-start cursor-pointer group"
                         >
                            <span className={`text-[18px] font-black ${t.text} group-hover:${t.accentText} transition-colors`}>{entries.length}</span>
                            <span className={`text-[9px] font-bold ${t.secondary} uppercase tracking-widest opacity-60`}>笔触</span>
                         </div>
                         <div 
-                          onClick={() => { setProfileMenuStep('letters_stats'); setShowProfileMenu(true); }}
+                          onClick={(e) => openMenu(e, 'letters_stats')}
                           className="flex flex-col items-start cursor-pointer group"
                         >
                            <span className={`text-[18px] font-black ${t.text} group-hover:${t.accentText} transition-colors`}>{letters.length}</span>
@@ -488,16 +610,16 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                </div>
                
                <div className={`flex items-center gap-2 md:gap-3 ${t.text} self-end pb-1`}>
-                  <button onClick={() => { setProfileMenuStep('calendar'); setShowProfileMenu(true); }} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm`}>
+                  <button onClick={(e) => openMenu(e, 'calendar')} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm`}>
                      <Calendar className={`w-4 h-4 ${t.secondary} group-hover:text-amber-600 transition-colors`} />
                      <span className={`text-[11px] font-bold ${t.secondary} group-hover:${t.text} hidden md:inline`}>回忆录</span>
                   </button>
-                  <button onClick={() => { setProfileMenuStep('special_days'); setShowProfileMenu(true); }} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm relative`}>
+                  <button onClick={(e) => openMenu(e, 'special_days')} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm relative`}>
                      <Clock className={`w-4 h-4 ${t.secondary} group-hover:text-pink-500 transition-colors`} />
                      <span className={`text-[11px] font-bold ${t.secondary} group-hover:${t.text} hidden md:inline`}>纪念日</span>
                      {specialDays.length > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse shadow-sm" />}
                   </button>
-                  <button onClick={() => { setProfileMenuStep('settings'); setShowProfileMenu(true); }} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm`}>
+                  <button onClick={(e) => openMenu(e, 'settings')} className={`flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/5 md:px-4 hover:-translate-y-0.5 transition-all group border border-white/10 backdrop-blur-md shadow-sm`}>
                      <Settings className={`w-4 h-4 ${t.secondary} group-hover:text-blue-500 transition-colors`} />
                      <span className={`text-[11px] font-bold ${t.secondary} group-hover:${t.text} hidden md:inline`}>设置</span>
                   </button>
@@ -532,23 +654,33 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
 
           <AnimatePresence mode="wait">
                 {showProfileMenu && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className={`absolute top-[160px] left-[32px] w-[340px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col z-[100]`}
-                  >
-                    <div className="fixed inset-0 z-[-1]" onClick={() => {
-                        setShowProfileMenu(false);
-                        setProfileMenuStep('main');
-                        setShowUrlInput(false);
-                        setShowSigInput(false);
-                    }} />
-                    
+                  <>
+                    <motion.div 
+                      key="profile-menu-overlay"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-[90]" 
+                      onClick={() => {
+                          setShowProfileMenu(false);
+                          setProfileMenuStep('main');
+                          setShowUrlInput(false);
+                          setShowSigInput(false);
+                      }}
+                    />
+                    <motion.div 
+                      key="profile-menu-content"
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className={`fixed w-[340px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col z-[100]`}
+                      style={{ top: menuPosition.top, left: menuPosition.left }}
+                    >
                     {/* Header showing current step */}
                     <div className={`bg-black/5 px-6 py-4 border-b border-white/10 flex items-center justify-between`}>
                       <span className={`text-[11px] font-black ${t.text} uppercase tracking-[0.15em] gap-2 flex items-center`}>
                         {profileMenuStep === 'main' && '岛心档案 Profile'}
+                        {profileMenuStep === 'edit_profile' && '编辑档案 Edit Profile'}
                         {profileMenuStep === 'entries_stats' && '我的笔触统计 Stats'}
                         {profileMenuStep === 'letters_stats' && '飞鸽传书概览 Letters'}
                         {profileMenuStep === 'calendar' && '回忆录 Calendar'}
@@ -558,8 +690,8 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                         {profileMenuStep === 'theme_picker' && '岛屿气象 Theme'}
                         {profileMenuStep === 'avatar_options' && '修改形象'}
                       </span>
-                      {['add_special_day', 'theme_picker'].includes(profileMenuStep) ? (
-                        <button onClick={(e) => { e.stopPropagation(); setProfileMenuStep(profileMenuStep === 'add_special_day' ? 'special_days' : 'settings'); }} className={`text-[10px] font-black text-white bg-black px-3 py-1 rounded-full transition-transform active:scale-95`}>返回</button>
+                      {['add_special_day', 'theme_picker', 'edit_profile'].includes(profileMenuStep) ? (
+                        <button onClick={(e) => { e.stopPropagation(); setProfileMenuStep(profileMenuStep === 'add_special_day' ? 'special_days' : profileMenuStep === 'edit_profile' ? 'main' : 'settings'); }} className={`text-[10px] font-black text-white bg-black px-3 py-1 rounded-full transition-transform active:scale-95`}>返回</button>
                       ) : (
                         <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(false); }} className={`p-1.5 hover:bg-black/5 rounded-full transition-colors`}><X className="w-3.5 h-3.5" /></button>
                       )}
@@ -575,21 +707,69 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                                   alt="Avatar"
                                 />
                                 <div className="flex flex-col">
-                                   <span className={`text-base font-black ${t.text}`}>岛主您好</span>
+                                   <span className={`text-base font-black ${t.text}`}>{profile.username || '岛主'}，您好</span>
                                    <span className={`text-[10px] ${t.secondary} opacity-60 font-medium`}>正在由你定义的岛屿上漫游</span>
                                 </div>
                              </div>
 
                              <div className="flex flex-col gap-1">
-                                <button onClick={() => setProfileMenuStep('avatar_options')} className="w-full h-11 flex items-center gap-3 px-4 rounded-2xl hover:bg-black/5 transition-colors group">
-                                   <Camera className="w-4 h-4 opacity-40 group-hover:opacity-100" />
-                                   <span className="text-[11px] font-bold">更新形象</span>
-                                </button>
-                                <button onClick={() => { setTempProfileInput(profile.signature); setShowSigInput(true); }} className="w-full h-11 flex items-center gap-3 px-4 rounded-2xl hover:bg-black/5 transition-colors group">
+                                <button onClick={() => {
+                                  setEditProfileForm({
+                                    username: profile.username || '',
+                                    signature: profile.signature || '',
+                                    startupGreeting: profile.startupGreeting || ''
+                                  });
+                                  setProfileMenuStep('edit_profile');
+                                }} className="w-full h-11 flex items-center gap-3 px-4 rounded-2xl hover:bg-black/5 transition-colors group">
                                    <PenLine className="w-4 h-4 opacity-40 group-hover:opacity-100" />
-                                   <span className="text-[11px] font-bold">编辑签名</span>
+                                   <span className="text-[11px] font-bold">编辑个人资料</span>
                                 </button>
                              </div>
+                          </div>
+                        )}
+
+                        {profileMenuStep === 'edit_profile' && !showUrlInput && (
+                          <div className="flex flex-col gap-4 p-2">
+                            <div className="flex flex-col gap-1 items-center">
+                                <img 
+                                  src={profile.avatarUrl} 
+                                  className="w-16 h-16 rounded-3xl object-cover ring-2 ring-white/20 mb-2" 
+                                  alt="Avatar"
+                                />
+                                <div className="flex gap-2">
+                                  <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 rounded-xl transition-colors shadow-sm">上传本地头像</button>
+                                  <button onClick={() => { setTempProfileInput(''); setShowUrlInput(true); }} className="px-3 py-1.5 text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 rounded-xl transition-colors shadow-sm">使用链接修改</button>
+                                </div>
+                            </div>
+                            
+                            <div className="h-px bg-white/20 w-full my-1"></div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">用户名 Username</label>
+                              <input type="text" value={editProfileForm.username} onChange={e => setEditProfileForm({...editProfileForm, username: e.target.value})} placeholder="例如：岛主" className="w-full bg-white/50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">个性签名 Signature</label>
+                              <input type="text" value={editProfileForm.signature} onChange={e => setEditProfileForm({...editProfileForm, signature: e.target.value})} placeholder="例如：记录点滴，不负韶华" className="w-full bg-white/50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase ml-1">题头启动语 Startup Greeting</label>
+                              <input type="text" value={editProfileForm.startupGreeting} onChange={e => setEditProfileForm({...editProfileForm, startupGreeting: e.target.value})} placeholder="例如：屿 · 记" className="w-full bg-white/50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
+                            </div>
+
+                            <button onClick={() => {
+                              setProfile({
+                                ...profile,
+                                username: editProfileForm.username,
+                                signature: editProfileForm.signature,
+                                startupGreeting: editProfileForm.startupGreeting || '屿 · 记'
+                              });
+                              setProfileMenuStep('main');
+                            }} className="w-full py-2.5 mt-2 text-[11px] font-bold text-white bg-blue-500 rounded-xl shadow-md transition-all hover:scale-[1.02]">
+                              保存个人资料
+                            </button>
                           </div>
                         )}
 
@@ -926,34 +1106,25 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                         )}
 
                         {/* avatar_options, url/sig input */}
-                        {profileMenuStep === 'avatar_options' && !showUrlInput && (
-                          <div className="flex flex-col gap-1 mt-1">
-                            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-left bg-white">从本地上传</button>
-                            <button onClick={() => { setTempProfileInput(''); setShowUrlInput(true); }} className="px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-left bg-white">通过链接修改</button>
-                          </div>
-                        )}
-
                         {showUrlInput && (
                           <div className="p-3 flex flex-col gap-3">
                             <input type="text" value={tempProfileInput} onChange={e => setTempProfileInput(e.target.value)} placeholder="https://..." className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
                             <div className="flex gap-2">
                               <button onClick={() => setShowUrlInput(false)} className="flex-1 py-2 text-[10px] font-bold bg-gray-100 rounded-xl">取消</button>
-                              <button onClick={handleProfileUrlSubmit} className="flex-1 py-2 text-[10px] font-bold text-white bg-blue-500 rounded-xl">确定</button>
-                            </div>
-                          </div>
-                        )}
-
-                        {showSigInput && (
-                          <div className="p-3 flex flex-col gap-3">
-                            <input type="text" value={tempProfileInput} onChange={e => setTempProfileInput(e.target.value)} placeholder="输入新签名..." className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-100" />
-                            <div className="flex gap-2">
-                              <button onClick={() => setShowSigInput(false)} className="flex-1 py-2 text-[10px] font-bold bg-gray-100 rounded-xl">取消</button>
-                              <button onClick={handleSigSubmit} className="flex-1 py-2 text-[10px] font-bold text-white bg-blue-500 rounded-xl">确定</button>
+                              <button onClick={() => {
+                                handleProfileUrlSubmit();
+                                if (profileMenuStep === 'edit_profile') {
+                                  setShowProfileMenu(true);
+                                  setProfileMenuStep('edit_profile');
+                                  setShowUrlInput(false);
+                                }
+                              }} className="flex-1 py-2 text-[10px] font-bold text-white bg-blue-500 rounded-xl">确定</button>
                             </div>
                           </div>
                         )}
                      </div>
                   </motion.div>
+                  </>
                 )}
               </AnimatePresence>
            <input 
@@ -1529,149 +1700,281 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm bg-black/20`}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-white"
           >
             <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className={`w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border ${t.panelBg} ${t.border}`}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="w-full h-full flex flex-col bg-white overflow-hidden"
             >
-              <div className={`px-8 py-6 border-b flex justify-between items-center ${t.panelBg} sticky top-0 z-20 ${t.line}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${t.accent} text-white`}>
-                    <PenLine className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className={`font-bold leading-tight ${t.text} font-cute-zh text-xl`}>
-                      笔耕不辍
-                    </h3>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${t.secondary}`}>Write down the moment</p>
-                  </div>
+              {/* Apple-style Header */}
+              <div className="px-5 pt-12 pb-4 flex justify-between items-center border-b border-gray-50 shrink-0">
+                <button 
+                  onClick={() => setIsAddingEntry(false)}
+                  className="text-gray-400 hover:text-gray-600 p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+                <div className="flex flex-col items-center">
+                  <span className="text-[15px] font-bold text-gray-900">
+                    {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setIsAddingEntry(false)} className={`px-5 py-2.5 rounded-2xl font-bold text-sm transition-colors ${t.secondary} hover:opacity-80`}>
-                    取消
-                  </button>
-                  <button 
-                    onClick={handleSaveEntry}
-                    className={`flex items-center gap-2 px-8 py-2.5 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 ${t.accent} text-white hover:opacity-90`}
-                  >
-                    存入记忆
-                  </button>
-                </div>
+                <button 
+                  onClick={handleSaveEntry}
+                  disabled={!newContent.trim()}
+                  className={`p-2 transition-all ${newContent.trim() ? 'text-amber-500' : 'text-amber-200 cursor-not-allowed'}`}
+                >
+                  <Check className="w-6 h-6" />
+                </button>
               </div>
-              <div className={`p-8 md:p-12 overflow-y-auto max-h-[75vh] flex flex-col gap-8 custom-scrollbar ${t.panelBg}`}>
+
+              {/* Editing Area */}
+              <div className="flex-1 overflow-y-auto px-6 py-8 flex flex-col gap-6 custom-scrollbar">
+                {/* Title */}
                 <input 
                   type="text" 
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="给此页起个名字 (可选)" 
-                  className={`w-full bg-transparent text-3xl font-bold focus:outline-none ${isIsland ? `font-cute-zh ${t.text} placeholder:${t.text}/20` : 'font-serif text-amber-950 placeholder:text-amber-900/20'}`}
+                  placeholder="标题 (可选)" 
+                  className="w-full text-2xl font-bold placeholder:text-gray-200 outline-none border-none text-gray-900 bg-transparent"
                 />
-                
-                <div className={`flex flex-col gap-6 py-6 border-y ${isIsland ? t.border : 'border-amber-900/10'}`}>
-                  <div className="flex flex-col gap-4">
-                    <label className={`text-[11px] font-bold ${t.secondary} uppercase tracking-widest flex items-center gap-2 opacity-60`}>
-                       <Smile className="w-3.5 h-3.5" /> 此刻心情
-                    </label>
-                    <div className="flex flex-wrap gap-2.5">
-                      {moodOptions.map(mood => (
-                        <button
-                          key={mood}
-                          onClick={() => setNewMood(mood)}
-                          className={`w-11 h-11 rounded-[0.8rem] flex items-center justify-center text-xl transition-all duration-300 ${newMood === mood ? `${t.accent} text-white shadow-md scale-110` : 'bg-gray-50/50 border border-[#e5e0d8] hover:border-[#a3b18a]'}`}
-                        >
-                          {mood}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-4">
-                    <label className={`text-[11px] font-bold ${t.secondary} uppercase tracking-widest flex items-center gap-2 opacity-60`}>
-                       <Cloud className="w-3.5 h-3.5" /> 天气如何
-                    </label>
-                    <div className="flex flex-wrap gap-2.5">
-                      {weatherOptions.map(weather => (
-                        <button
-                          key={weather}
-                          onClick={() => setNewWeather(weather)}
-                          className={`w-11 h-11 rounded-[0.8rem] flex items-center justify-center text-xl transition-all duration-300 ${newWeather === weather ? `${t.accent} text-white shadow-md scale-110` : 'bg-gray-50/50 border border-[#e5e0d8] hover:border-[#a3b18a]'}`}
-                        >
-                          {weather}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <label className={`text-[11px] font-bold ${t.secondary} uppercase tracking-widest flex items-center gap-2 opacity-60`}>
-                       <MapPin className="w-3.5 h-3.5" /> 此刻身在何处
-                    </label>
-                    <input 
-                      type="text" 
-                      value={newLocation}
-                      onChange={(e) => setNewLocation(e.target.value)}
-                      className={`w-full bg-[#fcfaf7] p-3.5 rounded-xl text-sm focus:outline-none border border-[#e5e0d8] transition-all ${isIsland ? `${t.text} placeholder:${t.text}/20` : 'font-serif text-amber-900/80 placeholder:text-amber-900/20'}`} 
-                      placeholder="例：在午后的窗边..."
-                    />
-                  </div>
-                </div>
-
-                <div className="relative group/edit">
+                {/* Content Container */}
+                <div className="relative flex-1 flex flex-col min-h-[300px]">
                   <textarea 
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
-                    placeholder="在这页纸上写下你的故事..." 
-                    className={`w-full min-h-[400px] bg-transparent text-lg focus:outline-none resize-none leading-[2.4] font-serif notebook-lines ${isIsland ? `${t.text} placeholder:${t.text}/20` : 'font-serif text-amber-900/80 placeholder:text-amber-900/20'}`}
+                    placeholder="开始记录你的生活..."
+                    className="w-full flex-1 text-[17px] leading-[1.8] text-gray-700 placeholder:text-gray-200 outline-none border-none resize-none bg-transparent whitespace-pre-wrap"
+                    autoFocus
                   />
-                  {/* Decorative notebook binding effect for island mode */}
-                  {isIsland && (
-                    <div className="absolute top-0 -left-12 bottom-0 w-8 flex flex-col justify-around py-4 opacity-5 pointer-events-none">
-                      {Array.from({length: 12}).map((_, i) => (
-                        <div key={i} className="w-4 h-4 border-2 border-[#5a544e] rounded-full" />
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                <div className="flex flex-col gap-3">
-                  {newImages.length > 0 && (
-                    <div className="flex flex-wrap gap-4 mb-4">
-                      {newImages.map((img, i) => (
-                        <div key={i} className={`relative w-32 h-32 rounded-xl overflow-hidden border shadow-sm group ${isIsland ? 'border-gray-100' : 'border-amber-900/10'}`}>
-                          <img src={img} alt="upload preview" className="w-full h-full object-cover" />
-                          <button 
-                            onClick={() => setNewImages(newImages.filter((_, idx) => idx !== i))}
-                            className="absolute top-2 right-2 w-6 h-6 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div>
+                {/* Images Preview Area */}
+                {newImages.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+                    {newImages.map((img, i) => (
+                      <div key={i} className="relative aspect-square rounded-2xl overflow-hidden group border border-gray-100 shadow-sm">
+                        <img src={img} alt="preview" className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => setNewImages(newImages.filter((_, idx) => idx !== i))}
+                          className="absolute top-2 right-2 w-6 h-6 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Bar: Mood, Weather, Location Tags */}
+              <div className="px-6 py-2 flex flex-wrap gap-2 shrink-0">
+                {newMood && (
+                  <button 
+                    onClick={() => setShowMoodPicker(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
+                  >
+                    <span className="text-sm">{newMood}</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">心情</span>
+                  </button>
+                )}
+                {newWeather && (
+                  <button 
+                    onClick={() => setShowWeatherPicker(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
+                  >
+                    <span className="text-sm">{newWeather}</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">天气</span>
+                  </button>
+                )}
+                <button 
+                  onClick={() => {
+                    const loc = prompt("你在哪里？", newLocation);
+                    if (loc !== null) setNewLocation(loc);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${newLocation ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100/50'}`}
+                >
+                  <MapPin className={`w-3 h-3 ${newLocation ? 'text-amber-500' : 'text-gray-400'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-tight ${newLocation ? 'text-amber-700' : 'text-gray-400'}`}>
+                    {newLocation || '添加地点'}
+                  </span>
+                </button>
+                <button 
+                  onClick={() => setShowFolderPicker(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
+                >
+                  <Folder className="w-3 h-3 text-gray-400" />
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{newFolder}</span>
+                </button>
+              </div>
+
+              {/* Bottom Function Bar */}
+              <div className="px-6 pb-12 pt-4 flex items-center justify-between border-t border-gray-50 shrink-0 bg-white">
+                <div className="flex items-center gap-6">
+                  {/* Photo Button */}
+                  <label htmlFor="diary-image-upload" className="cursor-pointer group flex flex-col items-center gap-1">
                     <input 
                       type="file" 
-                      id="diary-image" 
+                      id="diary-image-upload" 
                       className="hidden" 
                       accept="image/*"
-                      onChange={handleImageUpload}
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          const files = Array.from(e.target.files) as File[];
+                          const urls = files.map(file => URL.createObjectURL(file as Blob));
+                          setNewImages([...newImages, ...urls]);
+                        }
+                      }}
                     />
-                    <label 
-                      htmlFor="diary-image"
-                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium cursor-pointer transition-colors shadow-sm ${isIsland ? 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50' : 'bg-white border-amber-900/10 text-amber-900/60 font-serif hover:bg-amber-50'}`}
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      添加图片
-                    </label>
-                  </div>
+                    <ImageIcon className="w-6 h-6 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                  </label>
+
+                  {/* Camera Button */}
+                  <button className="group flex flex-col items-center gap-1">
+                    <Camera className="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  </button>
+
+                  {/* Mood Button */}
+                  <button 
+                    onClick={() => setShowMoodPicker(true)}
+                    className="group flex flex-col items-center gap-1"
+                  >
+                    <Smile className="w-6 h-6 text-gray-400 group-hover:text-pink-500 transition-colors" />
+                  </button>
+
+                  {/* Weather Button */}
+                  <button 
+                    onClick={() => setShowWeatherPicker(true)}
+                    className="group flex flex-col items-center gap-1"
+                  >
+                    <Cloud className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors" />
+                  </button>
                 </div>
 
+                <div className="flex items-center gap-6">
+                  <button 
+                    onClick={() => setIsLocked(!isLocked)}
+                    className="group flex flex-col items-center gap-1"
+                  >
+                    {isLocked ? (
+                      <Lock className="w-6 h-6 text-amber-500" />
+                    ) : (
+                      <Unlock className="w-6 h-6 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* Modals for Pickers */}
+              <AnimatePresence>
+                {showMoodPicker && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    onClick={() => setShowMoodPicker(false)}
+                  >
+                    <motion.div 
+                      initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">选择当前心情</span>
+                        <button onClick={() => setShowMoodPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-4">
+                        {moodOptions.map(mood => (
+                          <button
+                            key={mood}
+                            onClick={() => { setNewMood(mood); setShowMoodPicker(false); }}
+                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all ${newMood === mood ? 'bg-amber-50 text-amber-600 shadow-inner' : 'bg-gray-50 hover:bg-gray-100'}`}
+                          >
+                            {mood}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+
+                {showWeatherPicker && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    onClick={() => setShowWeatherPicker(false)}
+                  >
+                    <motion.div 
+                      initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">选择当前天气</span>
+                        <button onClick={() => setShowWeatherPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-4">
+                        {weatherOptions.map(weather => (
+                          <button
+                            key={weather}
+                            onClick={() => { setNewWeather(weather); setShowWeatherPicker(false); }}
+                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all ${newWeather === weather ? 'bg-emerald-50 text-emerald-600 shadow-inner' : 'bg-gray-50 hover:bg-gray-100'}`}
+                          >
+                            {weather}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+
+                {showFolderPicker && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    onClick={() => setShowFolderPicker(false)}
+                  >
+                    <motion.div 
+                      initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">选择日记本</span>
+                        <button onClick={() => setShowFolderPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {['生活', '工作', '情感', '旅行', '灵感'].map(folder => (
+                          <button
+                            key={folder}
+                            onClick={() => { setNewFolder(folder); setShowFolderPicker(false); }}
+                            className={`w-full px-6 py-4 rounded-2xl flex items-center justify-between text-[15px] font-bold transition-all ${newFolder === folder ? 'bg-gray-900 text-white shadow-xl' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
+                          >
+                            <span>{folder}</span>
+                            {newFolder === folder && <Check className="w-5 h-5" />}
+                          </button>
+                        ))}
+                        <button 
+                          onClick={() => {
+                            const name = prompt("新建日记本名称？");
+                            if (name) { setNewFolder(name); setShowFolderPicker(false); }
+                          }}
+                          className="w-full px-6 py-4 rounded-2xl bg-white border border-dashed border-gray-200 text-gray-400 text-[14px] font-bold hover:border-gray-400 hover:text-gray-600 transition-all font-sans"
+                        >
+                          + 新建日记本
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
