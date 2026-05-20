@@ -117,7 +117,7 @@ const XiaohongshuHomepage = () => {
   return (
     <div 
       className="max-w-3xl mx-auto min-h-full p-6 bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323205927_74_2-imagetourl.cloud-1774346276006-57l8o2.png")' }}
+      style={{ backgroundImage: 'url("https://s3.uuu.ovh/2026/05/20/9KLXPpRF.png")' }}
     >
       {/* Header */}
       <div className="relative">
@@ -302,7 +302,7 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
       >
         <div 
           className="absolute inset-0 bg-cover bg-center blur-[2px] brightness-90"
-          style={{ backgroundImage: "url('https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222156_23_569-imagetourl.cloud-1774191915118-6ywdlv.png')" }}
+          style={{ backgroundImage: "url('https://s3.uuu.ovh/2026/05/20/WBc2dl3Q.png')" }}
         />
         <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg" alt="Profile" className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg" referrerPolicy="no-referrer" />
         <div className="relative p-3">
@@ -818,7 +818,7 @@ const LifeContent = () => {
   const [openWindow, setOpenWindow] = useState<string | null>(null);
   const [isComputerOn, setIsComputerOn] = useState(false);
   const recentBooks = [
-    { title: '倒影映射出的你/我/他', author: 'NotANumberO_', progress: 23, cover: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222226_25_569-imagetourl.cloud-1774683345038-ekf9il.png' },
+    { title: '倒影映射出的你/我/他', author: 'NotANumberO_', progress: 23, cover: 'https://s3.uuu.ovh/2026/05/20/6hZSvyGw.png' },
     { title: '发现平凡中的不平凡', author: 'NotANumberO_', progress: 12, cover: 'https://picsum.photos/seed/k2/300/450' },
     { title: '春日漫步随笔', author: 'NotANumberO_', progress: 100, cover: 'https://picsum.photos/seed/k3/300/450' },
   ];
@@ -838,7 +838,7 @@ const LifeContent = () => {
           {/* Avatar */}
           <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100 cursor-pointer">
             <img 
-              src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774681518731-ajx7b8.jpg" 
+              src="https://s3.uuu.ovh/2026/05/20/6lYMFAMm.jpg" 
               alt="avatar" 
               className="w-full h-full object-cover" 
               referrerPolicy="no-referrer" 
@@ -1199,7 +1199,7 @@ const LifeContent = () => {
                                 <div 
                                   className="absolute inset-0 z-0"
                                   style={{ 
-                                    backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774683355704-ttq8cs.png")',
+                                    backgroundImage: 'url("https://s3.uuu.ovh/2026/05/20/Q1V5BCII.png")',
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
                                     filter: 'blur(3px)'
@@ -1247,7 +1247,7 @@ const LifeContent = () => {
                                 transition={{ duration: 1.2, ease: "easeInOut" }}
                                 className="flex-1 m-1 flex items-center justify-center relative overflow-hidden"
                                 style={{
-                                backgroundImage: 'url("https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222331_27_569-imagetourl.cloud-1774690774047-jzt6ue.png")',
+                                backgroundImage: 'url("https://s3.uuu.ovh/2026/05/20/Q1V5BCII.png")',
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center'
                               }}
@@ -1352,27 +1352,1101 @@ const LifeContent = () => {
   );
 };
 
-const PortfolioContent = () => (
-  <div className="h-full bg-white/60 backdrop-blur-3xl p-8 overflow-auto">
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">创意集</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="group cursor-pointer bg-white/50 rounded-2xl p-4 border border-white/40 hover:bg-white/80 hover:shadow-xl transition-all duration-300">
-            <div className="w-full h-56 rounded-xl mb-4 overflow-hidden relative">
-              <img src={`https://picsum.photos/seed/project${i}/800/600`} alt="Project" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                <span className="text-white font-medium px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-sm">查看详情</span>
+const PortfolioContent = () => {
+  const [activeTab, setActiveTab] = useState('ALL');
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [galleryTheme, setGalleryTheme] = useState<'studio' | 'gallery'>('studio'); // studio: beige linen, gallery: dark gallery
+  const [activeStudioTab, setActiveStudioTab] = useState<'exhibition' | 'drawing' | 'timeline'>('exhibition');
+  
+  // Audio narration state
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // Drawing Canvas States
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushType, setBrushType] = useState<'charcoal' | 'ink' | 'watercolor' | 'spray'>('charcoal');
+  const [brushColor, setBrushColor] = useState('#2B2B2A');
+  const [brushSize, setBrushSize] = useState(6);
+  const [brushOpacity, setBrushOpacity] = useState(0.8);
+  const [placedStamps, setPlacedStamps] = useState<any[]>([]);
+  const [selectedStamp, setSelectedStamp] = useState<string | null>(null);
+
+  // Interactive comparative view (Project 1: Draft vs Final Slider)
+  const [sliderPos, setSliderPos] = useState(50);
+  const sliderRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Interactive spotlight view (Project 2: Shadow illumination sandbox)
+  const [spotlightPos, setSpotlightPos] = useState({ x: 150, y: 150 });
+  const spotlightContainerRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Virtual commentators notebook
+  const [visitorNotes, setVisitorNotes] = useState([
+    { name: "严楚秋 (美院纯艺系)", content: "炭粉的颗粒质感在数字屏幕上得到了绝佳的还原！狂暴的线条之下藏着东方写意的温润。", date: "05/18 22:15", stamp: "肆意生长" },
+    { name: "Curator Claire", content: "Amazing contrast of physical mycelium growth and laser telemetry in 'Material Sentience'. Breathtaking archive.", date: "05/17 09:30", stamp: "EXHIBITION PASS" },
+    { name: "林一木 (设计师)", content: "互动光影模拟太好玩了，在明暗间能真切感受到雕塑表面的肌理起伏，设计好有温度！", date: "05/16 14:10", stamp: "屿记" }
+  ]);
+  const [newNote, setNewNote] = useState({ name: '', content: '' });
+
+  // Custom Art Palettes curated from fine arts
+  const palettes = [
+    { name: '烟雨江南 (Misty River)', colors: ['#2B2B2A', '#4F5D54', '#8E9C91', '#C6D7CB', '#E6EAE5'] },
+    { name: '莫奈花园 (Monet Sunset)', colors: ['#2A3656', '#5E4B8B', '#D16D8A', '#EFA080', '#FCF3C6'] },
+    { name: '极简玄青 (Obsidian Edge)', colors: ['#0A0B0D', '#1D3B32', '#3D6B57', '#F3ECE0', '#DFA375'] }
+  ];
+
+  // Stamps curated for sign-in / certification
+  const stampOptions = [
+    { label: "屿记 ✦", text: "屿记" },
+    { label: "肆意生长", text: "肆意生长" },
+    { label: "BEYOND LIMIT", text: "RAW" },
+    { label: "CURATOR", text: "CURATOR" }
+  ];
+
+  const categories = ['ALL', 'FINE ART', 'INTERACTIVE', 'BIO-MATERIAL'];
+
+  const projects = [
+    {
+      id: 1,
+      title: '《碳心循环与永恒流变》 (Carbon Cycles & Flux)',
+      category: 'FINE ART',
+      year: '2026',
+      medium: '炭粉、石墨、麻纸挂轴、激光打孔 (Charcoal, Graphite & Laser perforations on Linen Paper)',
+      dimensions: '180 x 240 cm',
+      cover: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1000&auto=format&fit=crop',
+      draft: 'https://images.unsplash.com/photo-1627398240316-ea3900115de2?q=80&w=1000&auto=format&fit=crop', // Beautiful charcoal prototype sketch
+      images: [
+        'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=1000&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=1000&auto=format&fit=crop'
+      ],
+      desc: '本作品试图将传统东方水墨皴法与硬质炭笔画融合，在生宣与亚麻纸本上创造出如山洪倾泻、宇宙坍缩般宏丽粗粝的质感。探求在数字时代，天然炭矿颗粒的物理摩擦感怎样触动观者的原始生命知觉。'
+    },
+    {
+      id: 2,
+      title: '《流光重塑之相》 (Spotlight & Void Relief)',
+      category: 'INTERACTIVE',
+      year: '2026',
+      medium: '水泥浮雕、超声波电调光传感、动态激光投影 (Acoustic Relievo, Kinetic Projection & Shadow Catcher)',
+      dimensions: '300 x 300 x 50 c㎡',
+      cover: 'https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=1000&auto=format&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1550684376-efcbd6e3f031?q=80&w=1000&auto=format&fit=crop'
+      ],
+      desc: '交互式物理浮雕装置。墙体采用粗钢纤维水泥灌录，当观众走近拉扯调光装置，浮雕由于侧向光源的微动，展现出戏剧般的影向变幻。虚与实、物理触感与算法激光在起伏的水泥沟壑中完成了神圣的纠缠。'
+    },
+    {
+      id: 3,
+      title: '《菌丝共生体》 (Sentient Mycelium Assembly)',
+      category: 'BIO-MATERIAL',
+      year: '2025',
+      medium: '黄芪药渣、活体灵芝菌丝、活性生物骨架、IoT温湿度共感器 (Bio-composite Mycelium, IoT Micro-controllers)',
+      dimensions: '尺寸可变 (Variable Dimensions)',
+      cover: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop'
+      ],
+      desc: '探索非人类视角的“材料自主性”。利用中药废渣发酵物培养活体真菌菌丝体，使其在预设的数码异形骨架上自然蔓延出乳白、斑驳的皮革状外壳。现场辅以微型传感器实时监控菌集群落的微弱阻抗，将其声化为环境白噪音。'
+    },
+    {
+      id: 4,
+      title: '《静水溢流》 (Continuous Overflow of Deep Gray)',
+      category: 'FINE ART',
+      year: '2025',
+      medium: '坦培拉、矿物色料、蜂蜡、多层胡桃木木板 (Tempera, Mineral Pigments & Beeswax on walnut boards)',
+      dimensions: '120 x 160 cm',
+      cover: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=1000&auto=format&fit=crop',
+      images: [],
+      desc: '利用古老坦培拉敷彩手法，以鸡蛋黄与天然云母粉、松烟石混合，在木板上历经上百次地刷底、层层薄染。画作表面形成一种通透却深邃的漫射质感，仿佛冬日深林冰封湖水深处的积郁，带有一股古朴而苍凉的仪式感。'
+    }
+  ];
+
+  const filteredProjects = activeTab === 'ALL' ? projects : projects.filter(p => p.category === activeTab);
+
+  // Drawing Canvas Core Mechanics
+  useEffect(() => {
+    if (activeStudioTab === 'drawing') {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Clean start or load background
+      ctx.fillStyle = galleryTheme === 'studio' ? '#F7F3EB' : '#1E1E1E';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw standard texture dots for real art paper feel
+      ctx.fillStyle = galleryTheme === 'studio' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.02)';
+      for (let i = 0; i < canvas.width; i += 4) {
+        for (let j = 0; j < canvas.height; j += 4) {
+          if (Math.random() > 0.8) {
+            ctx.fillRect(i, j, 1, 1);
+          }
+        }
+      }
+    }
+  }, [activeStudioTab, galleryTheme]);
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (selectedStamp) {
+      // Place Stamp Seal instead of drawing
+      setPlacedStamps([...placedStamps, {
+        text: selectedStamp,
+        x,
+        y,
+        size: Math.random() * 10 + 35,
+        rotation: (Math.random() - 0.5) * 20
+      }]);
+      setSelectedStamp(null);
+      return;
+    }
+
+    setIsDrawing(true);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.strokeStyle = brushColor;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    switch (brushType) {
+      case 'charcoal': // Rough carbon texture
+        ctx.lineWidth = brushSize;
+        ctx.globalAlpha = brushOpacity * 0.7;
+        ctx.shadowBlur = 1;
+        ctx.shadowColor = brushColor;
+        ctx.lineTo(x + (Math.random() - 0.5) * 1.5, y + (Math.random() - 0.5) * 1.5);
+        ctx.stroke();
+        break;
+      case 'watercolor': // Soft blended path
+        ctx.lineWidth = brushSize * 2.2;
+        ctx.globalAlpha = brushOpacity * 0.15;
+        ctx.shadowBlur = brushSize;
+        ctx.shadowColor = brushColor;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        break;
+      case 'ink': // Sharp bold flow lines
+        ctx.lineWidth = brushSize * 1.5;
+        ctx.globalAlpha = brushOpacity * 0.95;
+        ctx.shadowBlur = 0;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        break;
+      case 'spray': // Random high dispersion spray effect
+        const numParticles = 14 + brushSize;
+        ctx.fillStyle = brushColor;
+        ctx.globalAlpha = brushOpacity * 0.3;
+        for (let i = 0; i < numParticles; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * brushSize * 3;
+          const px = x + Math.cos(angle) * radius;
+          const py = y + Math.sin(angle) * radius;
+          ctx.fillRect(px, py, 1.5, 1.5);
+        }
+        break;
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = galleryTheme === 'studio' ? '#F7F3EB' : '#1E1E1E';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw base texture dots again
+    ctx.fillStyle = galleryTheme === 'studio' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.02)';
+    for (let i = 0; i < canvas.width; i += 4) {
+      for (let j = 0; j < canvas.height; j += 4) {
+        if (Math.random() > 0.8) {
+          ctx.fillRect(i, j, 1, 1);
+        }
+      }
+    }
+    setPlacedStamps([]);
+  };
+
+  const downloadCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    // To embed stamps onto canvas for downloading
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = canvas.width;
+    finalCanvas.height = canvas.height;
+    const finalCtx = finalCanvas.getContext('2d');
+    if (!finalCtx) return;
+    
+    finalCtx.drawImage(canvas, 0, 0);
+    
+    // Draw seals
+    placedStamps.forEach(stamp => {
+      finalCtx.save();
+      finalCtx.translate(stamp.x, stamp.y);
+      finalCtx.rotate((stamp.rotation * Math.PI) / 180);
+      finalCtx.strokeStyle = '#D1352A';
+      finalCtx.lineWidth = 1.5;
+      finalCtx.font = `bold ${stamp.size * 0.45}px "ZCOOL KuaiLe", cursive, serif`;
+      
+      // Draw standard double-lined red seal box
+      finalCtx.strokeRect(-stamp.size/2 - 2, -stamp.size/2 - 2, stamp.size + 4, stamp.size + 4);
+      finalCtx.fillStyle = '#D1352A';
+      finalCtx.textAlign = 'center';
+      finalCtx.textBaseline = 'middle';
+      finalCtx.fillText(stamp.text, 0, 0);
+      finalCtx.restore();
+    });
+
+    const link = document.createElement('a');
+    link.download = `art_sketch_${Date.now()}.png`;
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
+
+  // Draft-vs-Final comparison slider behavior
+  const handleSliderMouseMove = (e: React.MouseEvent) => {
+    const container = sliderRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    setSliderPos((x / rect.width) * 100);
+  };
+
+  const handleSliderTouchMove = (e: React.TouchEvent) => {
+    const container = sliderRef.current;
+    if (!container || !e.touches[0]) return;
+    const rect = container.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.touches[0].clientX - rect.left, rect.width));
+    setSliderPos((x / rect.width) * 100);
+  };
+
+  // Interactive shadow projection box coordinate tracking
+  const handleSpotlightMove = (e: React.MouseEvent) => {
+    const container = spotlightContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    setSpotlightPos({ x, y });
+  };
+
+  const addVisitorNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNote.name.trim() || !newNote.content.trim()) return;
+    const stamps = ['RAW', 'CURATED', '屿记', '艺术PASS'];
+    const randomStamp = stamps[Math.floor(Math.random() * stamps.length)];
+    setVisitorNotes([
+      {
+        name: newNote.name,
+        content: newNote.content,
+        date: "刚刚",
+        stamp: randomStamp
+      },
+      ...visitorNotes
+    ]);
+    setNewNote({ name: '', content: '' });
+  };
+
+  // Simulated Voice Narration Track duration update
+  useEffect(() => {
+    let interval: any;
+    if (audioPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime((prev) => {
+          if (prev >= 174) {
+            setAudioPlaying(false);
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [audioPlaying]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // Colors based on current theme selector
+  const c = {
+    bg: galleryTheme === 'studio' ? 'bg-[#FAF6EE] text-[#2C2925]' : 'bg-[#0E0E0F] text-[#EAEAEA]',
+    border: galleryTheme === 'studio' ? 'border-[#E2DCCE]' : 'border-[#222224]',
+    gridItem: galleryTheme === 'studio' ? 'bg-white border-[#E9E4D8]' : 'bg-[#151516] border-[#222224]',
+    inputBg: galleryTheme === 'studio' ? 'bg-[#FCFAF7]' : 'bg-[#1E1E1F]',
+    textSec: galleryTheme === 'studio' ? 'text-[#7B7264]' : 'text-[#8C8C90]',
+    accent: 'bg-[#C15C3C]'
+  };
+
+  return (
+    <div className={`h-full min-h-screen ${c.bg} flex flex-col font-sans transition-colors duration-500 overflow-hidden relative rounded-lg border ${c.border}`}>
+      
+      {/* Upper Navigation & Studio Mode Toggles */}
+      <div className={`px-6 py-4 flex flex-col sm:flex-row items-center justify-between border-b ${c.border} shrink-0 bg-opacity-80 backdrop-blur-md sticky top-0 z-40 gap-4`}>
+        <div className="flex items-center gap-4">
+          <Palette className="w-5 h-5 text-[#C15C3C] animate-pulse" />
+          <div className="flex flex-col">
+            <span className="font-serif font-bold text-lg tracking-wide uppercase">屿·记 ✦ 肆意空间</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider opacity-60">Fine Art Studio & Curation</span>
+          </div>
+        </div>
+
+        {/* Dynamic Studio Tabs */}
+        <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-black/10 dark:border-white/10">
+          <button 
+            onClick={() => setActiveStudioTab('exhibition')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeStudioTab === 'exhibition' ? 'bg-[#C15C3C] text-white shadow-md' : 'opacity-65 hover:opacity-100'}`}
+          >
+            毕设展厅 (Exhibition)
+          </button>
+          <button 
+            onClick={() => setActiveStudioTab('drawing')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeStudioTab === 'drawing' ? 'bg-[#C15C3C] text-white shadow-md' : 'opacity-65 hover:opacity-100'}`}
+          >
+            互动写生画室 (Sketch)
+          </button>
+          <button 
+            onClick={() => setActiveStudioTab('timeline')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeStudioTab === 'timeline' ? 'bg-[#C15C3C] text-white shadow-md' : 'opacity-65 hover:opacity-100'}`}
+          >
+            心路历程 (About/CV)
+          </button>
+        </div>
+
+        {/* Light & Shadow Ambient Toggle for the Curation Gallery */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono tracking-widest uppercase hidden md:inline opacity-50">CURATOR SPACE LIGHT:</span>
+          <button 
+            onClick={() => setGalleryTheme(galleryTheme === 'studio' ? 'gallery' : 'studio')}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border font-mono flex items-center gap-1.5 transition-all ${c.border} ${galleryTheme === 'studio' ? 'bg-amber-100/50 text-[#C15C3C]' : 'bg-[#222] text-[#FCF3C6]'}`}
+          >
+            {galleryTheme === 'studio' ? '💡 经典暖和白 (Studio-Light)' : '🌙 美术馆黑夜 (Gallery-Dark)'}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Body */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+
+        {/* TAB 1: EXHIBITION GRAPHIC */}
+        {activeStudioTab === 'exhibition' && (
+          <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-10">
+            
+            {/* Header / Editorial Intro */}
+            <div className="flex flex-col lg:flex-row gap-8 justify-between border-b pb-8 border-dashed border-black/10 dark:border-white/10 items-start">
+              <div className="max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#C15C3C]/30 text-[#C15C3C] text-[10px] font-bold uppercase tracking-wider mb-3">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C15C3C] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#C15C3C]"></span>
+                  </span>
+                  “边界的折叠” - 美院艺术毕业生作品集
+                </div>
+                <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight leading-tight">
+                  THE FOLDING BOUNDARIES <br />
+                  <span className="text-xl md:text-3xl font-normal font-sans italic opacity-60">当物性复归在数字星空之下</span>
+                </h1>
+                <p className="mt-4 text-xs md:text-sm leading-relaxed opacity-75">
+                  “如果一切物理记忆终将坍塌为光电序列，我的炭灰、生锈的铁丝和野生的菌丝，能否作为一种原始、笨重却执拗的实体锚点，拽住下沉的数码幻象？”
+                </p>
+                <div className="mt-4 text-[11px] font-mono opacity-50 flex items-center gap-4 flex-wrap">
+                  <span>CURATOR: NOTANUMBERO_</span>
+                  <span>/</span>
+                  <span>LOCATION: 屿·记虚拟第三展墙</span>
+                  <span>/</span>
+                  <span>TIMELINE: 2026.05</span>
+                </div>
+              </div>
+
+              {/* CURATOR commentary mini audio track player */}
+              <div className={`p-4 rounded-2xl border ${c.border} bg-white/5 backdrop-blur-md w-full lg:max-w-xs flex flex-col gap-2.5`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold font-serif text-[#C15C3C] tracking-wide uppercase">✦ 艺术声音导览 Commentary</span>
+                  <span className="text-[9px] font-mono text-gray-400">AUDIO-GUIDE</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setAudioPlaying(!audioPlaying)}
+                    className="w-10 h-10 rounded-full bg-[#C15C3C] hover:scale-105 active:scale-95 text-white flex items-center justify-center transition-all shrink-0 shadow-lg shadow-[#C15C3C]/20"
+                  >
+                    {audioPlaying ? '⏸' : '▶'}
+                  </button>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold truncate">作品集全景自述 - 创作者独白</div>
+                    <div className="text-[9px] opacity-40">COMMENTATOR: NOTANUMBERO_</div>
+                    {/* Visualizer bars */}
+                    <div className="flex items-end gap-0.5 h-3 mt-1.5">
+                      {[...Array(24)].map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="flex-1 bg-[#C15C3C] rounded-sm transition-all duration-300"
+                          style={{ 
+                            height: audioPlaying ? `${Math.floor(Math.sin((currentTime + i) * 0.8) * 60) + 40}%` : '20%' 
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-mono opacity-50">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>2:54</span>
+                </div>
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors">交互设计探索 #{i}</h3>
-            <p className="text-gray-500 mt-2 text-sm leading-relaxed">这是一个关于探索未知与创新的设计项目，结合了最新的前端技术与交互理念，旨在提供极致的用户体验。</p>
+
+            {/* Filter tags panel */}
+            <div className="flex flex-wrap gap-2 uppercase tracking-widest text-[11px] font-mono font-bold justify-center">
+              {['ALL', 'FINE ART', 'INTERACTIVE', 'BIO-MATERIAL'].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveTab(cat)}
+                  className={`px-4 py-2 rounded-full border transition-all ${activeTab === cat ? 'bg-[#C15C3C] text-white border-transparent' : `${c.border} hover:opacity-100 opacity-60 bg-white/5`}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Asymmetrical Masonry Exhibition Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+              {filteredProjects.map((proj, index) => {
+                const isTall = index % 2 === 1;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    key={proj.id}
+                    className={`rounded-2xl border ${c.gridItem} p-4 md:p-6 flex flex-col group justify-between hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}
+                  >
+                    <div className="flex flex-col gap-4">
+                      {/* Image container frame */}
+                      <div className={`relative aspect-[16/10] overflow-hidden bg-[#1E1E1F] rounded-xl border ${c.border}`}>
+                        <img 
+                          src={proj.cover} 
+                          alt={proj.title} 
+                          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 filter saturate-[0.8] hover:saturate-100"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute top-2 left-2 px-2.5 py-1 bg-black/60 backdrop-blur-md text-white rounded text-[9px] font-mono font-bold uppercase tracking-widest">
+                          {proj.category}
+                        </div>
+                        <div className="absolute top-2 right-2 px-2.5 py-1 bg-white text-black rounded text-[9px] font-mono font-bold">
+                          {proj.year}
+                        </div>
+                      </div>
+
+                      {/* Info and artist specs labels */}
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-mono text-[#C15C3C] font-semibold">CAT-NO. 0{proj.id}</span>
+                        <h3 className="text-lg font-serif font-black tracking-tight">{proj.title}</h3>
+                        <div className="flex flex-col gap-0.5 border-l-2 border-[#C15C3C] pl-2 py-0.5 my-1 text-[11px] font-mono opacity-80">
+                          <div><span className="opacity-50">MEDIUM:</span> {proj.medium}</div>
+                          <div><span className="opacity-50">DIMENSIONS:</span> {proj.dimensions}</div>
+                        </div>
+                        <p className="text-xs leading-relaxed opacity-75 line-clamp-3 mt-1">{proj.desc}</p>
+                      </div>
+                    </div>
+
+                    {/* Interactive showcase actions trigger within direct page without popups */}
+                    <div className="mt-6 pt-4 border-t border-dashed border-black/5 dark:border-white/5 flex justify-between items-center">
+                      <span className="text-[10px] uppercase font-mono opacity-50 tracking-wider">NOTANUMBERO_ ARCHIVE</span>
+                      <button 
+                        onClick={() => setSelectedProject(proj)}
+                        className="px-4 py-2 hover:bg-[#C15C3C] hover:text-white rounded-lg border border-[#C15C3C] text-[#C15C3C] text-xs font-bold transition-colors font-mono"
+                      >
+                        观摩细节 / EXAMINE WORK ✦
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* ARTIST COMMENTATOR NOTEBOOK (艺术家与留言墙) */}
+            <div className={`mt-12 rounded-3xl border border-dashed ${c.border} p-6 md:p-8 flex flex-col gap-6`}>
+              <div>
+                <h3 className="text-xl font-serif font-black tracking-tight flex items-center gap-2">
+                  <span>访客写生评弹与签留</span> 
+                  <span className="text-xs font-mono font-normal opacity-50 uppercase tracking-widest">/ Visitor Curators</span>
+                </h3>
+                <p className="text-xs opacity-75 mt-1">
+                  欢迎在这本电子艺术手记中，留下您对毕设作品最粗粝、最直白的反馈意见。
+                </p>
+              </div>
+
+              {/* Form Input leave a critique */}
+              <form onSubmit={addVisitorNote} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="flex flex-col gap-2 md:col-span-1">
+                  <label className="text-[10px] font-mono uppercase tracking-widest opacity-60">署名 / Signature</label>
+                  <input 
+                    type="text" 
+                    value={newNote.name}
+                    onChange={(e) => setNewNote({ ...newNote, name: e.target.value })}
+                    placeholder="美院纯艺 严同学..."
+                    className={`p-3 rounded-xl focus:ring-1 focus:ring-[#C15C3C] focus:outline-none text-xs ${c.inputBg} border ${c.border}`}
+                  />
+                </div>
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-[10px] font-mono uppercase tracking-widest opacity-60">评弹手记 / Critique Content</label>
+                  <input 
+                    type="text" 
+                    value={newNote.content}
+                    onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                    placeholder="在这里记录你的共鸣与洞见..."
+                    className={`p-3 rounded-xl focus:ring-1 focus:ring-[#C15C3C] focus:outline-none text-xs ${c.inputBg} border ${c.border}`}
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="px-6 py-3 rounded-xl bg-[#C15C3C] text-white font-bold text-xs hover:scale-[1.02] active:scale-95 transition-all text-center w-full"
+                >
+                  钤印/留评 LEAVE NOTE
+                </button>
+              </form>
+
+              {/* Note scroll list */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                {visitorNotes.map((note, index) => (
+                  <div key={index} className={`p-4 rounded-2xl border ${c.gridItem} relative overflow-hidden flex flex-col justify-between min-h-[140px]`}>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-xs">{note.name}</span>
+                        <span className="text-[9px] font-mono opacity-40">{note.date}</span>
+                      </div>
+                      <p className="text-xs leading-relaxed opacity-80">{note.content}</p>
+                    </div>
+
+                    {/* Fictive aesthetic red wax stamps */}
+                    <div className="absolute right-2 bottom-2 font-serif select-none pointer-events-none opacity-20 transform rotate-12 scale-95">
+                      <div className="border border-red-500 rounded text-red-500 font-bold px-1.5 py-0.5 text-[8px] uppercase tracking-wide">
+                        {note.stamp}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
-        ))}
+        )}
+
+        {/* TAB 2: DETAILED PROJECTS WORK VIEW MODAL */}
+        <AnimatePresence>
+          {selectedProject && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-[#0E0E0F]/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+            >
+              <motion.div 
+                initial={{ y: 80, scale: 0.95 }}
+                animate={{ y: 0, scale: 1 }}
+                exit={{ y: 80, scale: 0.95 }}
+                className="w-full max-w-5xl rounded-3xl bg-[#151516] border border-[#222224] overflow-hidden text-gray-200 flex flex-col max-h-[90vh] shadow-2xl"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 border-b border-[#222224]">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono text-[#C15C3C] tracking-widest uppercase">/ FINE ART ANALYSIS</span>
+                    <h2 className="text-xl md:text-2xl font-serif font-black text-white">{selectedProject.title}</h2>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedProject(null)}
+                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Sub-body scroll content */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-8 custom-scrollbar">
+
+                  {/* SPECIAL APP SECTION 1: DRAFT VS WORKS IMAGE SLIDER IN PROJECT 1 */}
+                  {selectedProject.id === 1 && (
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <span className="text-xs font-mono text-[#C15C3C] font-extrabold uppercase">Interactive Feature: Line Draft vs Masterpiece Contrast (纸本草图层交互)</span>
+                        <h4 className="text-sm opacity-80 mt-1">拽动中心白色把手看清炭笔底稿与最终多层材料皴染的笔绘融合：</h4>
+                      </div>
+                      
+                      <div 
+                        ref={sliderRef}
+                        onMouseMove={handleSliderMouseMove}
+                        onTouchMove={handleSliderTouchMove}
+                        className="relative w-full aspect-[16/10] overflow-hidden rounded-2xl select-none cursor-ew-resize border border-[#222224] bg-neutral-900"
+                      >
+                        {/* Draft (Bottom Image) */}
+                        <div className="absolute inset-0">
+                          <img 
+                            src={selectedProject.draft} 
+                            alt="Carbon Draft Sketch" 
+                            className="w-full h-full object-cover grayscale" 
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute left-4 bottom-4 bg-black/60 px-3 py-1 text-[10px] text-gray-300 rounded font-mono">
+                            DRAFT SHEET 【初始炭笔草稿】
+                          </div>
+                        </div>
+
+                        {/* Masterpiece (Top Image - Width adjusted by pos) */}
+                        <div 
+                          className="absolute inset-y-0 left-0 right-0 overflow-hidden"
+                          style={{ width: `${sliderPos}%` }}
+                        >
+                          <img 
+                            src={selectedProject.cover} 
+                            alt="Final Artwork" 
+                            className="absolute inset-y-0 left-0 w-full h-full object-cover" 
+                            style={{ width: sliderRef.current?.getBoundingClientRect().width }}
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute left-4 bottom-4 bg-[#C15C3C] px-3 py-1 text-[10px] text-white rounded font-mono">
+                            FINAL WORK 【坦培拉与矿物岩彩成品】
+                          </div>
+                        </div>
+
+                        {/* Drag Handle Indicator */}
+                        <div 
+                          className="absolute inset-y-0 w-1 bg-white cursor-ew-resize flex items-center justify-center z-10"
+                          style={{ left: `${sliderPos}%` }}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-white shadow-xl flex items-center justify-center text-black font-extrabold text-sm border-2 border-[#C15C3C]">
+                            ↔
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SPECIAL APP SECTION 2: SHADOW & LIGHT SIMULATOR FOR INSTALLATION IN PROJECT 2 */}
+                  {selectedProject.id === 2 && (
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <span className="text-xs font-mono text-[#C15C3C] font-extrabold uppercase">Interactive Feature: Relieving Shadows Simulator (水泥浮雕虚拟投光模拟)</span>
+                        <h4 className="text-sm opacity-80 mt-1">在底下的灰阶浮雕展画上任意挪动橘黄色投光灯，感受光线倾斜角如何即时重构物理浮雕的冷暖明暗感：</h4>
+                      </div>
+
+                      <div 
+                        ref={spotlightContainerRef}
+                        onMouseMove={handleSpotlightMove}
+                        className="relative w-full aspect-[16/10] bg-[#1E1E1F] rounded-2xl select-none overflow-hidden border border-[#222224] p-8 flex items-center justify-center"
+                      >
+                        {/* Artwork backdrop */}
+                        <div 
+                          className="w-[85%] h-[85%] rounded-lg transition-all duration-300 relative shadow-inner overflow-hidden"
+                          style={{
+                            backgroundImage: `url(${selectedProject.cover})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                          }}
+                        >
+                          {/* Inner CSS Shadow overlays depending on spotlightPos coordinates */}
+                          <div 
+                            className="absolute inset-0 mix-blend-multiply opacity-80"
+                            style={{
+                              background: `radial-gradient(circle 350px at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(239, 160, 128, 0) 10%, rgba(10, 10, 11, 0.95) 80%)`
+                            }}
+                          />
+                          <div 
+                            className="absolute inset-0 mix-blend-overlay opacity-60"
+                            style={{
+                              background: `radial-gradient(circle 180px at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(252, 243, 198, 0.6) 0%, rgba(0,0,0,0) 80%)`
+                            }}
+                          />
+                        </div>
+
+                        {/* Interactive drag-following light bulb indicator */}
+                        <div 
+                          className="absolute w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center text-black font-bold animate-pulse shadow-lg scale-110 pointer-events-none"
+                          style={{ 
+                            left: spotlightPos.x - 16, 
+                            top: spotlightPos.y - 16,
+                            boxShadow: '0 0 40px rgba(251, 191, 36, 0.9)'
+                          }}
+                        >
+                          💡
+                        </div>
+                        <div className="absolute top-2 right-2 bg-black/60 px-2.5 py-1 text-[9px] text-amber-400 font-mono rounded">
+                          LIGHT X: {Math.floor(spotlightPos.x)} | Y: {Math.floor(spotlightPos.y)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standard Image Gallery fallback for general pieces */}
+                  {selectedProject.id !== 1 && selectedProject.id !== 2 && (
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-[#1E1E1F]">
+                      <img src={selectedProject.cover} alt="Work Cover" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  )}
+
+                  {/* Analysis Specs & Decriptions */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1 bg-white/5 p-4 rounded-2xl flex flex-col gap-3 text-xs font-mono border border-white/5">
+                      <div>
+                        <span className="opacity-50">CURATOR ID:</span>
+                        <div className="font-bold text-white">#ARCHIVE-00{selectedProject.id}</div>
+                      </div>
+                      <div>
+                        <span className="opacity-50">DIMENSIONS:</span>
+                        <div className="font-bold text-white">{selectedProject.dimensions}</div>
+                      </div>
+                      <div>
+                        <span className="opacity-50">MEDIUM:</span>
+                        <div className="font-bold text-white">{selectedProject.medium}</div>
+                      </div>
+                      <div>
+                        <span className="opacity-50">STATUS:</span>
+                        <div className="text-emerald-400 font-bold">● 已布展在虚拟第三展墙</div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 text-sm leading-relaxed opacity-85 flex flex-col gap-4">
+                      <h4 className="text-semibold text-white font-serif border-b border-[#222224] pb-2 text-base">学术策展手记 Annotation</h4>
+                      <p>{selectedProject.desc}</p>
+                      <p>
+                        在对这一装置的考察中，我们可以观察到媒介特性的极限。通过多媒体和传感器交互，作品引导观者跳脱出传统的“看”，转而进入由重力、振动与回声编织的整体感官网络。这正是我们这一代新媒体艺术家与传统绘画艺术产生的某种不可分割的技术继承关系。
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Footer buttons */}
+                <div className="p-6 border-t border-[#222224] flex justify-end">
+                  <button 
+                    onClick={() => setSelectedProject(null)}
+                    className="px-6 py-2 bg-[#C15C3C] text-white rounded-xl text-xs font-bold font-mono hover:bg-opacity-95 active:scale-95 transition-all"
+                  >
+                    确认收拢 EXAMINE DONE
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+
+        {/* TAB 2: INTERACTIVE PAINTING CANVAS WORKSHOP */}
+        {activeStudioTab === 'drawing' && (
+          <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
+            
+            {/* Left Control Column */}
+            <div className={`lg:w-80 shrink-0 p-5 rounded-2xl border ${c.border} bg-white/5 flex flex-col gap-6`}>
+              <div>
+                <h3 className="text-base font-serif font-black tracking-tight flex items-center gap-1.5/2">
+                  <span>画案操控台 Studio Rig</span>
+                </h3>
+                <p className="text-[11px] opacity-60">请挑选画笔、配色，并在右侧宣纸上随心涂鸦。</p>
+              </div>
+
+              {/* Brush Selector */}
+              <div className="flex flex-col gap-2.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-60">1. 选择画刷笔触 (Brushes)</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'charcoal', label: 'Rough 粗粝炭笔', icon: '✏️' },
+                    { id: 'water', label: 'Watercolor 泼彩', icon: '🎨' },
+                    { id: 'ink', label: 'Ink Flow 狂草行墨', icon: '🖌️' },
+                    { id: 'spray', label: 'Spray 颗粒喷绘', icon: '💨' }
+                  ].map(brush => (
+                    <button
+                      key={brush.id}
+                      onClick={() => {
+                        setBrushType(brush.id as any);
+                        setSelectedStamp(null);
+                        // Sensible default size per brush format
+                        setBrushSize(brush.id === 'watercolor' ? 14 : brush.id === 'spray' ? 8 : 5);
+                      }}
+                      className={`p-2 rounded-xl text-left border text-xs font-bold transition-all ${brushType === brush.id && !selectedStamp ? 'bg-[#C15C3C] text-white border-transparent scale-102' : `${c.border} hover:bg-[#C15C3C]/10`}`}
+                    >
+                      <div className="text-base mb-1">{brush.icon}</div>
+                      <div>{brush.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slider variables */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-60">2. 参数调节 (Brush Details)</span>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span>画笔粗细 (Size)</span>
+                    <span>{brushSize}px</span>
+                  </div>
+                  <input 
+                    type="range" min="1" max="40" 
+                    value={brushSize} 
+                    onChange={e => setBrushSize(parseInt(e.target.value))}
+                    className="w-full accent-[#C15C3C] cursor-pointer"
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span>颜料饱和 (Opacity)</span>
+                    <span>{Math.floor(brushOpacity * 100)}%</span>
+                  </div>
+                  <input 
+                    type="range" min="0.1" max="1.0" step="0.1" 
+                    value={brushOpacity} 
+                    onChange={e => setBrushOpacity(parseFloat(e.target.value))}
+                    className="w-full accent-[#C15C3C] cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Palette curation selections */}
+              <div className="flex flex-col gap-2.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-60">3. 提取名画油彩 (Color Palette)</span>
+                <div className="flex flex-col gap-3">
+                  {palettes.map((pal, idx) => (
+                    <div key={idx} className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold opacity-50">{pal.name}</span>
+                      <div className="flex gap-1.5">
+                        {pal.colors.map(col => (
+                          <button
+                            key={col}
+                            onClick={() => {
+                              setBrushColor(col);
+                              setSelectedStamp(null);
+                            }}
+                            className={`w-6 h-6 rounded-full border border-black/10 transition-transform ${brushColor === col ? 'scale-125 border-gray-400 outline-2 outline-[#C15C3C] outline' : 'hover:scale-110'}`}
+                            style={{ backgroundColor: col }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Placed Stamp sticker picker */}
+              <div className="flex flex-col gap-2.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-60">4. 盖制大漆红印 (Red Wax Stamps)</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {stampOptions.map(st => (
+                    <button
+                      key={st.text}
+                      onClick={() => setSelectedStamp(st.text)}
+                      className={`p-2 border rounded-lg text-xs font-bold transition-all text-center uppercase tracking-wider ${selectedStamp === st.text ? 'bg-red-600 text-white border-transparent' : 'border-dashed border-red-500/30 text-red-500 bg-red-500/5 hover:bg-red-500/10'}`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+                {selectedStamp && (
+                  <span className="text-[9px] text-red-500 font-mono italic animate-pulse text-center">
+                    ✦ 已挂起印章！下一次点击画布将在落笔点钤下红色盖印
+                  </span>
+                )}
+              </div>
+
+              {/* Utility Clear Draw Actions */}
+              <div className="grid grid-cols-2 gap-2 border-t border-dashed border-black/10 dark:border-white/10 pt-4 mt-2">
+                <button 
+                  onClick={clearCanvas}
+                  className="p-2.5 border border-dashed border-[#C15C3C]/40 text-[#C15C3C] font-bold rounded-xl text-xs hover:bg-[#C15C3C]/5"
+                >
+                  洗墨 / 清空 RE-START
+                </button>
+                <button 
+                  onClick={downloadCanvas}
+                  className="p-2.5 bg-[#C15C3C] text-white font-bold rounded-xl text-xs hover:scale-102 active:scale-95 transition-transform text-center shadow-lg shadow-[#C15C3C]/10"
+                >
+                  存入相册 / DOWNLOAD
+                </button>
+              </div>
+
+            </div>
+
+            {/* Right Interactive Canvas Sheet */}
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-mono font-extrabold text-[#C15C3C] uppercase">Interactive Painting Canvas (在线互动宣纸)</span>
+                  <p className="text-xs opacity-75 mt-0.5">
+                    拖拽鼠标/手指写生；点击空白处盖朱红大印。
+                  </p>
+                </div>
+                {selectedStamp ? (
+                  <span className="px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-full animate-bounce">
+                    📍 印章盖模中: {selectedStamp}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-[#C15C3C]/10 text-[#C15C3C] text-[10px] font-bold font-mono rounded-full">
+                    🖌️ 画刷模式: {brushType.toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Tactile Canvas Paper Border */}
+              <div className="relative w-full aspect-[4/3] max-w-3xl border border-[#D5CDBC] bg-[#FAF6EE] rounded-2xl shadow-xl shadow-black/5 overflow-hidden group">
+                
+                {/* HTML Canvas */}
+                <canvas
+                  ref={canvasRef}
+                  width={800}
+                  height={600}
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
+                  className="w-full h-full cursor-crosshair bg-transparent"
+                />
+
+                {/* Overlaid placed stamps rendering layer */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {placedStamps.map((stamp, idx) => (
+                    <div
+                      key={idx}
+                      className="absolute border border-red-500/80 rounded select-none font-[#D1352A] p-1 font-serif text-center font-bold break-all flex flex-col items-center justify-center pointer-events-none animate-ping-once bg-red-500/5"
+                      style={{
+                        left: `${(stamp.x / 800) * 100}%`,
+                        top: `${(stamp.y / 600) * 100}%`,
+                        transform: `translate(-50%, -50%) rotate(${stamp.rotation}deg)`,
+                        width: stamp.size,
+                        height: stamp.size,
+                        borderColor: '#D1352A',
+                        color: '#D1352A',
+                        fontSize: stamp.size * 0.28,
+                      }}
+                    >
+                      <div className="border border-[#D1352A] w-full h-full flex items-center justify-center p-0.5 border-double border-4">
+                        {stamp.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Aesthetic edge shadows resembling physical paper */}
+                <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-[#E2DCCE]/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-[#E2DCCE]/25 to-transparent pointer-events-none" />
+              </div>
+            </div>
+
+          </div>
+        )}
+
+
+        {/* TAB 3: ART STUDENT TIMELINE & CURRICULUM VITAE */}
+        {activeStudioTab === 'timeline' && (
+          <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col gap-8">
+            <div className="border-b pb-6 border-dashed border-black/10 dark:border-white/10 text-center">
+              <h3 className="text-3xl font-serif font-black tracking-tight uppercase">NOTANUMBERO_</h3>
+              <p className="text-xs font-mono opacity-50 mt-1 uppercase">Born 2003 / New Media Arts Graduate / Digital Painter & Sculptor</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              {/* Education and statement */}
+              <div className="md:col-span-1 flex flex-col gap-6">
+                <div className={`p-5 rounded-2xl border ${c.border} bg-white/5`}>
+                  <h4 className="text-sm font-serif font-bold border-b pb-2 mb-3 border-[#C15C3C]/30 text-[#C15C3C]">主要参展经历 (Exhibitions)</h4>
+                  <ul className="text-xs flex flex-col gap-4 font-mono leading-relaxed">
+                    <li>
+                      <div className="font-bold text-white">2026 美院毕业展</div>
+                      <div className="text-gray-400 text-[10px]">《边界的折叠》/ 广美虚拟艺术厅</div>
+                    </li>
+                    <li>
+                      <div className="font-bold text-white">2025 呼吸大理石青年展</div>
+                      <div className="text-gray-400 text-[10px]">《菌丝与铁器》/ 深圳海上世界艺术馆</div>
+                    </li>
+                    <li>
+                      <div className="font-bold text-white">2024 中法数字青年周</div>
+                      <div className="text-gray-400 text-[10px]">《音像反应：多重重影》/ 巴黎104创意空间</div>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${c.border} bg-white/5`}>
+                  <h4 className="text-sm font-serif font-bold border-b pb-2 mb-3 border-[#C15C3C]/30 text-[#C15C3C]">研究流派与志向 (Discipline)</h4>
+                  <p className="text-xs leading-relaxed opacity-75">
+                    致力于将“中草药废渣、活体高聚真菌、宣纸麻布、自然生锈材料”等传统重体力自然实体，同“IoT多路控制、TouchDesigner实时环境算法、微距高倍电子追踪探头”纠缠。创造出带有原始萨满野性、却又散发高级算法极简冷绝气质的数字巴洛克浮雕。
+                  </p>
+                </div>
+              </div>
+
+              {/* Central Timeline */}
+              <div className="md:col-span-2 flex flex-col gap-6">
+                <h4 className="text-sm font-serif font-bold text-white tracking-widest uppercase">创作手记与心路心电图 Creation Logs</h4>
+                
+                <div className="flex flex-col gap-8 border-l border-[#C15C3C]/20 pl-4 ml-2 my-2 text-xs">
+                  
+                  {/* Timeline 1 */}
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#C15C3C] border-2 border-white dark:border-black shadow" />
+                    <div className="font-bold text-sm text-white">
+                      2026.04.18 - 手记《炭渣与触屏的第一次摩擦》
+                    </div>
+                    <p className="mt-2 leading-relaxed opacity-75">
+                      炭粉是非常奇妙的东西。因为它的松散，它可以被手指无休止地涂抹：形成烟雾、尘埃、微型星系。但在数字手写平板上，摩擦阻尼总是光滑得有些令人反胃。我尝试把一张粗糙的宣纸直接蒙在数码触屏上，用硬木炭笔使劲刮蹭落笔。笔尖刺进屏幕的那一刻，物理与数码的隔离终于坍缩了。
+                    </p>
+                  </div>
+
+                  {/* Timeline 2 */}
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-gray-400 border-2 border-white dark:border-black shadow" />
+                    <div className="font-bold text-sm text-white">
+                      2025.11.02 - 论辩《真菌是有灵魂的吗？》
+                    </div>
+                    <p className="mt-2 leading-relaxed opacity-75">
+                      实验室里的灵芝菌丝完全是不遵照预设指令的。我在电脑里好不容易用GCode算好了漂亮的流线异性骨架，让机械臂注液。结果十天过后的菌丝直接野性蔓延，像野草一样侵略，将对称骨架咬噬得一塌糊涂。我觉得被冒犯了，却在这疯狂当中找到了大自然天然的混沌美感——那是材料在对代码说不。
+                    </p>
+                  </div>
+
+                  {/* Timeline 3 */}
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-gray-400 border-2 border-white dark:border-black shadow" />
+                    <div className="font-bold text-sm text-white">
+                      2025.04.10 - 学术《在虚拟中锚定泥土》
+                    </div>
+                    <p className="mt-2 leading-relaxed opacity-75">
+                      “屿·记”是一本盛放各种电子情感的容器。作为艺术生的我，给“创意集”赋予这样一个美术生作品集的内核，是想告诉所有走进来的人——记忆不只是微信朋友圈里的JPG，更是像矿物坦培拉般坚硬却带着细密裂纹的，不完美的纸本物理刻痕。
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const QLinkAContent = () => {
   const [loading, setLoading] = useState(true);
@@ -2910,17 +3984,17 @@ const StickyNotes = () => {
             >
               {/* Header Cover */}
               <div className="h-40 bg-gray-200 relative">
-                <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222330_26_569-imagetourl.cloud-1774760503999-zj6cq0.png" className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
+                <img src="https://s3.uuu.ovh/2026/05/20/WDeGuuve.jpg" className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
                 <div className="absolute -bottom-6 right-4 flex items-end gap-3 z-10">
                   <span className="text-white font-bold text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-6">未命名诗集</span>
-                  <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/---imagetourl.cloud-1774760497006-tgtvus.jpg" className="w-16 h-16 rounded-xl border-2 border-white object-cover bg-white shadow-sm" alt="Avatar" referrerPolicy="no-referrer" />
+                  <img src="https://s3.uuu.ovh/2026/05/20/QQkgMK8x.jpg" className="w-16 h-16 rounded-xl border-2 border-white object-cover bg-white shadow-sm" alt="Avatar" referrerPolicy="no-referrer" />
                 </div>
               </div>
               
               {/* Content */}
               <div className="p-4 pt-10 flex gap-3">
                 {/* Avatar Left */}
-                <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/---imagetourl.cloud-1774760497006-tgtvus.jpg" className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="Avatar" referrerPolicy="no-referrer" />
+                <img src="https://s3.uuu.ovh/2026/05/20/QQkgMK8x.jpg" className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="Avatar" referrerPolicy="no-referrer" />
                 
                 {/* Post Content */}
                 <div className="flex-1 min-w-0">

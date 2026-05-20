@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles, ChevronRight, Search, Settings, ChevronLeft, Trash2, Download, LogOut, Folder, Check } from 'lucide-react';
+import { PenLine, Image as ImageIcon, X, MapPin, Calendar, Clock, Smile, Cloud, Camera, Mail, Send, Lock, Unlock, MailOpen, Navigation, ArrowRight, Sparkles, ChevronRight, Search, Settings, ChevronLeft, Trash2, Download, LogOut, Folder, Check, Music, Volume2, VolumeX, Wand2, Palette, Type, AlignLeft, AlignCenter, AlignRight, Bold, Italic, RotateCcw, ChevronUp } from 'lucide-react';
 
 const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -40,6 +40,88 @@ interface SpecialDay {
   category: 'anniversary' | 'birthday' | 'other';
   isCountUp: boolean;
 }
+
+const DiaryPasscodeCard = ({ entry, onUnlock, correctPin, t, theme }: any) => {
+  const [pin, setPin] = useState('');
+  const [shake, setShake] = useState(false);
+
+  const handleKeyPress = (num: string) => {
+    if (pin.length < 4) {
+      const nextPin = pin + num;
+      setPin(nextPin);
+      
+      if (nextPin.length === 4) {
+        if (nextPin === correctPin) {
+          onUnlock();
+        } else {
+          setShake(true);
+          setTimeout(() => {
+            setShake(false);
+            setPin('');
+          }, 600);
+        }
+      }
+    }
+  };
+
+  const handleClear = () => setPin('');
+  const handleBackspace = () => setPin(pin.slice(0, -1));
+
+  return (
+    <motion.div 
+      animate={shake ? { x: [-10, 10, -8, 8, -4, 4, 0] } : {}}
+      transition={{ duration: 0.5 }}
+      className={`flex flex-col w-full relative p-6 md:p-8 ${theme === 'night' ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/40'} border-[1.5px] backdrop-blur-[20px] rounded-[2rem] shadow-sm overflow-hidden text-center items-center justify-center`}
+    >
+      <div className={`w-12 h-12 rounded-full ${t.accent} text-white flex items-center justify-center shadow-md mb-3`}>
+        <Lock className="w-5 h-5 animate-pulse" />
+      </div>
+      <h4 className={`text-lg font-black ${t.text} mb-1 font-cute-zh`}>已被锁定的日记</h4>
+      <p className={`text-[10px] ${t.secondary} opacity-60 mb-4`}>请输入四位密码开启回忆</p>
+      
+      {/* Dot Indicators */}
+      <div className="flex gap-2.5 mb-5 select-none">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div 
+            key={i} 
+            className={`w-3.5 h-3.5 rounded-full border border-pink-200 transition-all duration-300 ${i < pin.length ? 'bg-pink-400 scale-110 shadow-sm' : 'bg-transparent'}`} 
+          />
+        ))}
+      </div>
+
+      {/* Retro Pastel Circular Pad */}
+      <div className="grid grid-cols-3 gap-2 w-full max-w-[180px] select-none">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
+          <button
+            key={num}
+            onClick={() => handleKeyPress(num)}
+            className="w-10 h-10 rounded-full bg-white/60 hover:bg-white active:scale-95 text-xs font-bold text-gray-700 font-mono shadow-sm border border-gray-100/50 flex items-center justify-center transition-all"
+          >
+            {num}
+          </button>
+        ))}
+        <button
+          onClick={handleClear}
+          className="w-10 h-10 rounded-full bg-rose-50 hover:bg-rose-100 active:scale-95 text-[10px] font-bold text-rose-500 shadow-sm border border-rose-100/30 flex items-center justify-center transition-all"
+        >
+          C
+        </button>
+        <button
+          onClick={() => handleKeyPress('0')}
+          className="w-10 h-10 rounded-full bg-white/60 hover:bg-white active:scale-90 text-xs font-bold text-gray-700 font-mono shadow-sm border border-gray-100/50 flex items-center justify-center transition-all"
+        >
+          0
+        </button>
+        <button
+          onClick={handleBackspace}
+          className="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 active:scale-95 text-[10px] font-bold text-gray-400 shadow-sm border border-gray-100/50 flex items-center justify-center transition-all"
+        >
+          ⌫
+        </button>
+      </div>
+    </motion.div>
+  );
+};
 
 export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const isIsland = mode === 'island';
@@ -111,6 +193,259 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showWeatherPicker, setShowWeatherPicker] = useState(false);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
+
+  // "小小日记" custom styled states
+  const [newPaperStyle, setNewPaperStyle] = useState<'minimal' | 'milktea' | 'sakura' | 'forest' | 'midnight' | 'vintage'>('minimal');
+  const [editorFontSize, setEditorFontSize] = useState<number>(16);
+  const [editorFontFamily, setEditorFontFamily] = useState<string>('font-serif');
+  const [editorTextAlign, setEditorTextAlign] = useState<'left' | 'center' | 'right'>('left');
+  
+  // Immersive physical feedback & Web Audio Synthesizers
+  const [isTypewriterSoundActive, setIsTypewriterSoundActive] = useState<boolean>(true);
+  const [editorBgmType, setEditorBgmType] = useState<'none' | 'lofi' | 'rain' | 'forest'>('none');
+  const [editorStickers, setEditorStickers] = useState<string[]>([]);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [unlockedEntries, setUnlockedEntries] = useState<Record<string, boolean>>({});
+  const [customPinCode, setCustomPinCode] = useState<string>(() => safeGetItem('diary_custom_pin') || '1234');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioNodesRef = useRef<any[]>([]);
+
+  // Function to save/update local PIN
+  const handleSavePin = (newPin: string) => {
+    if (newPin.length === 4) {
+      setCustomPinCode(newPin);
+      safeSetItem('diary_custom_pin', newPin);
+    }
+  };
+
+  // Web Audio on-the-fly crisp Typewriter clack mechanical-keyboard synthesizer!
+  const playTypewriterSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800 + Math.random() * 400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.04);
+      
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.005, ctx.currentTime + 0.035);
+      
+      const noise = ctx.createOscillator();
+      const noiseGain = ctx.createGain();
+      noise.type = 'sine';
+      noise.frequency.setValueAtTime(3200 + Math.random() * 800, ctx.currentTime);
+      noiseGain.gain.setValueAtTime(0.06, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.002, ctx.currentTime + 0.012);
+      
+      osc.connect(gain);
+      noise.connect(noiseGain);
+      
+      gain.connect(ctx.destination);
+      noiseGain.connect(ctx.destination);
+      
+      osc.start();
+      noise.start();
+      osc.stop(ctx.currentTime + 0.045);
+      noise.stop(ctx.currentTime + 0.015);
+    } catch (e) {}
+  };
+
+  // Continuous relaxing atmospheric sound/ambient music generator
+  const startContinuousSynth = (type: 'none' | 'lofi' | 'rain' | 'forest') => {
+    try {
+      stopContinuousSynth();
+      if (type === 'none') return;
+
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+
+      const nodes: any[] = [];
+
+      if (type === 'rain') {
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+          output[i] *= 0.11;
+          b6 = white * 0.115926;
+        }
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(650, ctx.currentTime);
+
+        const source = ctx.createBufferSource();
+        source.buffer = noiseBuffer;
+        source.loop = true;
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.start();
+        nodes.push(source, filter, gainNode);
+      } else if (type === 'lofi') {
+        const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0.07, ctx.currentTime);
+        gainNode.connect(ctx.destination);
+
+        let noteCount = 0;
+        const intervalId = setInterval(() => {
+          if (ctx.state === 'closed') return;
+          const oscIndex = noteCount % 4;
+          const rootFreq = scale[oscIndex];
+          const thirdIndex = (oscIndex + 2) % scale.length;
+          const fifthIndex = (oscIndex + 4) % scale.length;
+          const freqs = [rootFreq, scale[thirdIndex], scale[fifthIndex]];
+
+          freqs.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const noteGain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq / 2, ctx.currentTime);
+            
+            noteGain.gain.setValueAtTime(0, ctx.currentTime);
+            noteGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 0.4 + idx * 0.15);
+            noteGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.3);
+
+            osc.connect(noteGain);
+            noteGain.connect(gainNode);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 2.4);
+          });
+
+          noteCount++;
+        }, 2500);
+
+        nodes.push({ stop: () => clearInterval(intervalId) });
+      } else if (type === 'forest') {
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0.04, ctx.currentTime);
+        gainNode.connect(ctx.destination);
+
+        const intervalId = setInterval(() => {
+          if (ctx.state === 'closed') return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const chirpGain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(4600 + Math.random() * 400, now);
+          
+          chirpGain.gain.setValueAtTime(0, now);
+          for (let i = 0; i < 4; i++) {
+            chirpGain.gain.linearRampToValueAtTime(0.02, now + i * 0.04 + 0.01);
+            chirpGain.gain.linearRampToValueAtTime(0, now + i * 0.04 + 0.03);
+          }
+
+          osc.connect(chirpGain);
+          chirpGain.connect(gainNode);
+          osc.start();
+          osc.stop(now + 0.3);
+        }, 1800);
+
+        nodes.push({ stop: () => clearInterval(intervalId) });
+      }
+
+      audioNodesRef.current = nodes;
+    } catch (e) {}
+  };
+
+  const stopContinuousSynth = () => {
+    if (audioNodesRef.current && audioNodesRef.current.length > 0) {
+      audioNodesRef.current.forEach(node => {
+        try {
+          if (node.stop) node.stop();
+          if (node.disconnect) node.disconnect();
+        } catch (e) {}
+      });
+      audioNodesRef.current = [];
+    }
+    if (audioCtxRef.current) {
+      try {
+        audioCtxRef.current.close();
+      } catch (e) {}
+      audioCtxRef.current = null;
+    }
+  };
+
+  // Safe release of audio on unmount
+  useEffect(() => {
+    return () => {
+      stopContinuousSynth();
+    };
+  }, []);
+
+  // Sync synthesizer state changes
+  useEffect(() => {
+    startContinuousSynth(editorBgmType);
+  }, [editorBgmType]);
+
+  // AI style text-polisher library
+  const applyAiPolish = (style: 'poetic' | 'nonsense' | 'sassy' | 'warm') => {
+    if (!newContent.trim()) return;
+    
+    let polished = newContent.trim();
+    
+    // Poetic Prose Enhancing
+    if (style === 'poetic') {
+      const headers = [
+        "「在日光的缝隙中，日子被轻声写成了诗。」\n\n",
+        "「当风拂过岛屿，有些细碎的思绪如潮水般涌来。」\n\n",
+        "「星光不言，在时光的褶皱里，我写下这些句子。」\n\n"
+      ];
+      const footers = [
+        "\n\n—— 愿所有的碎屑，都能在时光中开出温柔的花朵。🍂",
+        "\n\n—— 时间很慢，我们慢慢走，在文字里相遇。🕯️",
+        "\n\n—— 静守一隅，让那些微弱的心跳，在此处恒温。✨"
+      ];
+      const randomHead = headers[Math.floor(Math.random() * headers.length)];
+      const randomFoot = footers[Math.floor(Math.random() * footers.length)];
+      polished = randomHead + polished.replace(/[。！]/g, " —— ") + randomFoot;
+      
+    // Sassy Excitement Drama Formatter
+    } else if (style === 'sassy') {
+      const spammed = polished.split("\n").map(line => {
+        if (!line.trim()) return line;
+        return `${line} ！！！💅💃✨ 真的一整个被治愈到了（或者大动作）！👀💖💥`;
+      }).join("\n");
+      polished = `啊啊啊啊啊！救命！！！👇👇👇\n\n${spammed}\n\n天呐！今天的精神状况依然超级好！！！🌈🍕🥳`;
+      
+    // Nonsensical Rambling Literals
+    } else if (style === 'nonsense') {
+      const ramblingIntro = "「关于我正在写的这篇日记，其实质就是一件关于我写下内容的事情。俗话说得好，听君一席话，如听一席话...」\n\n";
+      const ramblingOutro = "\n\n「总而言之，以上这些话讲完之后就是我讲的所有话，至于究竟讲了什么，大概就是大家看到的这一段文字所表达的主旨吧。」";
+      polished = ramblingIntro + polished.split("。").join("，也就是说这确实就是这样。") + ramblingOutro;
+      
+    // Warm Affectionate Whispers
+    } else if (style === 'warm') {
+      polished = `⭐ 亲爱的你，辛苦啦。在这个温暖的世界里，请听我温柔地告诉你：\n\n${polished}\n\n希望今天做个好梦，生活虽然辛苦，但你已经亮得像星星一样啦！🧸🧁🌷🌙`;
+    }
+
+    setNewContent(polished);
+  };
 
   const moodOptions = ['😊', '🥰', '😔', '😤', '😴', '✨', '☁️', '🌙', '🍃'];
   const weatherOptions = ['☀️', '☁️', '🌧️', '❄️', '🌪️', '🌫️', '🌤️', '🌙'];
@@ -342,7 +677,13 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
       images: newImages,
       location: newLocation,
       folder: newFolder,
-      isLocked: isLocked
+      isLocked: isLocked,
+      // @ts-ignore
+      paperStyle: newPaperStyle,
+      fontSize: editorFontSize,
+      fontFamily: editorFontFamily,
+      textAlign: editorTextAlign,
+      stickers: editorStickers,
     };
 
     setEntries([newEntry, ...entries]);
@@ -356,6 +697,12 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
     setNewLocation('');
     setNewFolder('生活');
     setIsLocked(false);
+    setNewPaperStyle('minimal');
+    setEditorFontSize(16);
+    setEditorFontFamily('font-serif');
+    setEditorTextAlign('left');
+    setEditorBgmType('none');
+    setEditorStickers([]);
   };
 
   const handleSaveLetter = () => {
@@ -1311,51 +1658,61 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                          
                          {/* Card Side (Right) */}
                          <div className="flex-1 min-w-0">
-                           <div className={`flex flex-col w-full relative p-6 md:p-8 ${theme === 'night' ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/40'} border-[1.5px] backdrop-blur-[20px] rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden`}>
-                             {/* Paper Texture Accent */}
-                             <div className="absolute top-0 right-0 w-24 h-24 opacity-5 pointer-events-none">
-                                <Sparkles className={`w-full h-full ${t.accentText}`} />
-                             </div>
+                           {entry.isLocked && !unlockedEntries[entry.id] ? (
+                             <DiaryPasscodeCard 
+                               entry={entry}
+                               onUnlock={() => setUnlockedEntries(prev => ({ ...prev, [entry.id]: true }))}
+                               correctPin={customPinCode || '1234'}
+                               t={t}
+                               theme={theme}
+                             />
+                           ) : (
+                             <div className={`flex flex-col w-full relative p-6 md:p-8 ${theme === 'night' ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/40'} border-[1.5px] backdrop-blur-[20px] rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden`}>
+                               {/* Paper Texture Accent */}
+                               <div className="absolute top-0 right-0 w-24 h-24 opacity-5 pointer-events-none">
+                                  <Sparkles className={`w-full h-full ${t.accentText}`} />
+                               </div>
 
-                             <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                   <span className="text-xl filter grayscale-[0.3]">{entry.mood}</span>
-                                   <span className="text-xl filter grayscale-[0.3]">{entry.weather}</span>
-                                </div>
-                                {entry.location && (
-                                   <div className={`flex items-center gap-2 px-3 py-1 ${t.panelBg} border ${t.line} rounded-lg text-[9px] font-bold ${t.secondary} tracking-wider bg-white/40 backdrop-blur-sm shadow-sm`}>
-                                     <MapPin className="w-3 h-3 opacity-50" />
-                                     {entry.location}
-                                   </div>
-                                )}
-                             </div>
-
-                             <div 
-                               onClick={() => setSelectedEntry(entry)}
-                               className="cursor-pointer flex flex-col relative"
-                             >
-                                <h4 className={`text-2xl font-bold ${t.text} mb-4 leading-tight font-cute-zh group-hover:${t.accentText} transition-colors`}>{entry.title}</h4>
-                                <div className={`text-[16px] md:text-[17px] ${t.text} leading-[2] text-justify font-serif opacity-90 mb-6 line-clamp-3`} dangerouslySetInnerHTML={{ __html: entry.content }} />
-
-                                {entry.images && entry.images.length > 0 && (
-                                  <div className="flex gap-4 overflow-x-auto pb-4 pt-2 w-full custom-scrollbar relative z-20">
-                                    {entry.images.map((img, i) => (
-                                      <div key={i} className={`w-40 h-52 shrink-0 ${theme === 'night' ? 'bg-white/10' : 'bg-white/60'} p-2 pb-8 shadow-sm rotate-[1deg] hover:rotate-0 transition-all border ${t.line} relative`}>
-                                        <div className="w-full h-full overflow-hidden rounded-sm">
-                                          <img src={img} className="w-full h-full object-cover" alt="diary" referrerPolicy="no-referrer" />
-                                        </div>
-                                        <div className={`absolute bottom-2 left-0 right-0 text-center text-[8px] font-bold font-serif opacity-30 ${t.secondary}`}>P.{i+1}</div>
-                                      </div>
-                                    ))}
+                               <div className="flex items-start justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                     <span className="text-xl filter grayscale-[0.3]">{entry.mood}</span>
+                                     <span className="text-xl filter grayscale-[0.3]">{entry.weather}</span>
                                   </div>
-                                )}
-                             </div>
+                                  {entry.location && (
+                                     <div className={`flex items-center gap-2 px-3 py-1 ${t.panelBg} border ${t.line} rounded-lg text-[9px] font-bold ${t.secondary} tracking-wider bg-white/40 backdrop-blur-sm shadow-sm`}>
+                                       <MapPin className="w-3 h-3 opacity-50" />
+                                       {entry.location}
+                                     </div>
+                                  )}
+                               </div>
 
-                             <div className="mt-4 flex justify-between items-center opacity-30">
-                                <div className={`h-[1px] flex-1 ${t.line} mr-4`} />
-                                <ArrowRight className="w-4 h-4" />
+                               <div 
+                                 onClick={() => setSelectedEntry(entry)}
+                                 className="cursor-pointer flex flex-col relative"
+                               >
+                                  <h4 className={`text-2xl font-bold ${t.text} mb-4 leading-tight font-cute-zh group-hover:${t.accentText} transition-colors`}>{entry.title}</h4>
+                                  <div className={`text-[16px] md:text-[17px] ${t.text} leading-[2] text-justify font-serif opacity-90 mb-6 line-clamp-3`} dangerouslySetInnerHTML={{ __html: entry.content }} />
+
+                                  {entry.images && entry.images.length > 0 && (
+                                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 w-full custom-scrollbar relative z-20">
+                                      {entry.images.map((img, i) => (
+                                        <div key={i} className={`w-40 h-52 shrink-0 ${theme === 'night' ? 'bg-white/10' : 'bg-white/60'} p-2 pb-8 shadow-sm rotate-[1deg] hover:rotate-0 transition-all border ${t.line} relative`}>
+                                          <div className="w-full h-full overflow-hidden rounded-sm">
+                                            <img src={img} className="w-full h-full object-cover" alt="diary" referrerPolicy="no-referrer" />
+                                          </div>
+                                          <div className={`absolute bottom-2 left-0 right-0 text-center text-[8px] font-bold font-serif opacity-30 ${t.secondary}`}>P.{i+1}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                               </div>
+
+                               <div className="mt-4 flex justify-between items-center opacity-30">
+                                  <div className={`h-[1px] flex-1 ${t.line} mr-4`} />
+                                  <ArrowRight className="w-4 h-4" />
+                                </div>
                              </div>
-                           </div>
+                           )}
                          </div>
                       </motion.div>
                     );
@@ -1700,126 +2057,271 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-white"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-md p-4 md:p-8"
           >
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-full h-full flex flex-col bg-white overflow-hidden"
+              initial={{ scale: 0.9, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 50, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="w-full max-w-4xl h-[95vh] md:h-[90vh] bg-[#fdfbfc] rounded-[2.5rem] shadow-2xl border border-pink-100/50 flex flex-col overflow-hidden relative"
             >
-              {/* Apple-style Header */}
-              <div className="px-5 pt-12 pb-4 flex justify-between items-center border-b border-gray-50 shrink-0">
-                <button 
-                  onClick={() => setIsAddingEntry(false)}
-                  className="text-gray-400 hover:text-gray-600 p-2 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <div className="flex flex-col items-center">
-                  <span className="text-[15px] font-bold text-gray-900">
-                    {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+              {/* Paper Selection Header Swapper Tray */}
+              <div className="px-6 py-4 bg-white border-b border-gray-100 flex flex-wrap gap-4 items-center justify-between shrink-0 select-none">
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => {
+                      if (newContent.trim() && !confirm("确定要放弃当前编写的日记吗？")) return;
+                      setIsAddingEntry(false);
+                    }}
+                    className="text-gray-400 hover:text-rose-500 hover:bg-rose-50 p-2.5 rounded-full transition-all"
+                    title="丢弃"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div className="h-4 w-px bg-gray-200" />
+                  <span className="text-xs font-black tracking-widest text-amber-900/40 uppercase hidden sm:inline-block">小小手账本 // 岁月素锦</span>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    {(['minimal', 'milktea', 'sakura', 'forest', 'midnight', 'vintage'] as const).map(styleKey => {
+                      const styleLabels = {
+                        minimal: '极简白', milktea: '暖奶茶', sakura: '落樱粉', forest: '常青森', midnight: '星空灰', vintage: '旧牛皮'
+                      };
+                      const styleColors = {
+                        minimal: 'bg-[#FCFAF7] border-gray-300', milktea: 'bg-[#FAF3E0] border-amber-200', sakura: 'bg-[#FFF0F5] border-pink-200', forest: 'bg-[#F2F6F2] border-emerald-200', midnight: 'bg-[#0F172A] border-slate-700', vintage: 'bg-[#F4EAE1] border-[#d6ccc2]'
+                      };
+                      return (
+                        <button
+                          key={styleKey}
+                          onClick={() => setNewPaperStyle(styleKey)}
+                          className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-115 ${styleColors[styleKey]} ${newPaperStyle === styleKey ? 'ring-2 ring-pink-400 scale-110 shadow-md' : 'opacity-80'}`}
+                          title={styleLabels[styleKey]}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-                <button 
-                  onClick={handleSaveEntry}
-                  disabled={!newContent.trim()}
-                  className={`p-2 transition-all ${newContent.trim() ? 'text-amber-500' : 'text-amber-200 cursor-not-allowed'}`}
-                >
-                  <Check className="w-6 h-6" />
-                </button>
+
+                <div className="flex items-center gap-3">
+                  {/* BGM Disc visual widget inside header */}
+                  <motion.div 
+                    animate={{ rotate: editorBgmType !== 'none' ? 360 : 0 }}
+                    transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                    onClick={() => setEditorBgmType(editorBgmType === 'none' ? 'lofi' : 'none')}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border shadow-sm transition-all relative ${editorBgmType !== 'none' ? 'bg-[#ffccd5] border-pink-300' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}
+                    title="白噪音伴奏（Lo-Fi / 森林 / 雨声）"
+                  >
+                    <Music className={`w-3.5 h-3.5 ${editorBgmType !== 'none' ? 'text-pink-600' : 'text-gray-400'}`} />
+                    {editorBgmType !== 'none' && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-pink-500 rounded-full animate-ping" />
+                    )}
+                  </motion.div>
+
+                  <button 
+                    onClick={handleSaveEntry}
+                    disabled={!newContent.trim()}
+                    className={`flex items-center gap-1.5 px-5 py-2 rounded-full font-bold text-xs shadow-md transition-all active:scale-95 ${newContent.trim() ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white hover:opacity-90 hover:shadow-lg' : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'}`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>定格发布</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Editing Area */}
-              <div className="flex-1 overflow-y-auto px-6 py-8 flex flex-col gap-6 custom-scrollbar">
-                {/* Title */}
-                <input 
-                  type="text" 
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="标题 (可选)" 
-                  className="w-full text-2xl font-bold placeholder:text-gray-200 outline-none border-none text-gray-900 bg-transparent"
-                />
+              {/* Redesigned Journal Writing Paper */}
+              {(() => {
+                const colors = {
+                  minimal: { bg: 'bg-[#FCFAF7]', line: 'border-amber-900/10', title: 'text-amber-950 placeholder:text-amber-900/20', content: 'text-amber-950/80 placeholder:text-amber-950/20', textGlow: 'bg-[#f5f1ea]/30', font: 'font-serif' },
+                  milktea: { bg: 'bg-[#FAF3E0]', line: 'border-[#ebdcb9]', title: 'text-[#5a3825] placeholder:text-[#5a3825]/20', content: 'text-[#6d4c3d] placeholder:text-[#6d4c3d]/20', textGlow: 'bg-[#ebdcb9]/20', font: 'font-sans' },
+                  sakura: { bg: 'bg-[#FFF0F5]', line: 'border-[#fbc4d8]', title: 'text-[#5c0632] placeholder:text-[#5c0632]/20', content: 'text-[#851c50] placeholder:text-[#851c50]/20', textGlow: 'bg-[#fbc4d8]/15', font: 'font-cute-zh' },
+                  forest: { bg: 'bg-[#F2F6F2]', line: 'border-[#c8e2c8]', title: 'text-[#1a3a1a] placeholder:text-[#1a3a1a]/20', content: 'text-[#2b572b] placeholder:text-[#2b572b]/20', textGlow: 'bg-[#c8e2c8]/15', font: 'font-sans' },
+                  midnight: { bg: 'bg-[#0F172A]', line: 'border-slate-800', title: 'text-slate-100 placeholder:text-slate-700', content: 'text-slate-300 placeholder:text-slate-700', textGlow: 'bg-slate-900/50', font: 'font-mono' },
+                  vintage: { bg: 'bg-[#F4EAE1]', line: 'border-[#d6ccc2]', title: 'text-[#4e3c30] placeholder:text-[#4e3c30]/20', content: 'text-[#6c584c] placeholder:text-[#6c584c]/20', textGlow: 'bg-[#d6ccc2]/15', font: 'font-serif' }
+                }[newPaperStyle];
 
-                {/* Content Container */}
-                <div className="relative flex-1 flex flex-col min-h-[300px]">
-                  <textarea 
-                    value={newContent}
-                    onChange={(e) => setNewContent(e.target.value)}
-                    placeholder="开始记录你的生活..."
-                    className="w-full flex-1 text-[17px] leading-[1.8] text-gray-700 placeholder:text-gray-200 outline-none border-none resize-none bg-transparent whitespace-pre-wrap"
-                    autoFocus
-                  />
-                </div>
+                return (
+                  <div className={`flex-1 relative overflow-y-auto p-4 sm:p-8 custom-scrollbar transition-colors duration-500 ${colors.bg} paper-grain flex flex-col`}>
+                    
+                    {/* Retro Metal Ring Notebook Spiral Binder (Visual Accent representing a real Handbound Journal) */}
+                    <div className="absolute top-0 bottom-0 left-4 w-6 flex flex-col justify-around pointer-events-none z-20 opacity-30">
+                      {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="w-5 h-2 bg-gradient-to-r from-gray-400 to-gray-200 rounded-full shadow-inner transform -translate-x-1" />
+                      ))}
+                    </div>
 
-                {/* Images Preview Area */}
-                {newImages.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
-                    {newImages.map((img, i) => (
-                      <div key={i} className="relative aspect-square rounded-2xl overflow-hidden group border border-gray-100 shadow-sm">
-                        <img src={img} alt="preview" className="w-full h-full object-cover" />
+                    {/* Cute Letter ribbon / Header Tagline */}
+                    <div className="pl-6 flex flex-wrap gap-3 items-center justify-between mb-6 shrink-0 relative z-10 border-b border-dashed border-gray-300/50 pb-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 bg-white/60 backdrop-blur-sm rounded-lg text-[10px] font-bold text-amber-900/60 shadow-sm border border-amber-900/5 font-mono">
+                          📅 {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                        <span className="px-3 py-1 bg-white/60 backdrop-blur-sm rounded-lg text-[10px] font-bold text-amber-900/60 shadow-sm border border-amber-900/5 font-mono">
+                          ⏰ {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                        
+                        {/* Folder Tab Sticker */}
+                        <div className="relative group">
+                          <button 
+                            onClick={() => setShowFolderPicker(true)}
+                            className="px-3 py-1 bg-gradient-to-r from-teal-400 to-emerald-400 text-white rounded-lg text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1 hover:brightness-95 active:scale-95 transition-all"
+                          >
+                            <Folder className="w-3 h-3" />
+                            <span>{newFolder}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        {/* Interactive Mood sticker stamp */}
                         <button 
-                          onClick={() => setNewImages(newImages.filter((_, idx) => idx !== i))}
-                          className="absolute top-2 right-2 w-6 h-6 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white"
+                          onClick={() => setShowMoodPicker(true)} 
+                          className="w-8 h-8 rounded-full bg-white border border-gray-100 hover:scale-105 active:scale-95 transition-all flex items-center justify-center text-lg shadow-sm"
+                          title="心情标签"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          {newMood}
+                        </button>
+                        {/* Interactive Weather sticker stamp */}
+                        <button 
+                          onClick={() => setShowWeatherPicker(true)} 
+                          className="w-8 h-8 rounded-full bg-white border border-gray-100 hover:scale-105 active:scale-95 transition-all flex items-center justify-center text-lg shadow-sm"
+                          title="天气标签"
+                        >
+                          {newWeather}
+                        </button>
+                        {/* Add map pin */}
+                        <button
+                          onClick={() => {
+                            const name = prompt("添加情境位置：", newLocation);
+                            if (name !== null) setNewLocation(name);
+                          }}
+                          className={`h-8 px-3 rounded-full border flex items-center gap-1 text-[10px] font-bold active:scale-95 transition-all shadow-sm ${newLocation ? 'bg-amber-100/50 border-amber-200 text-amber-800' : 'bg-white border-gray-100 text-gray-400 hover:text-gray-600'}`}
+                        >
+                          <MapPin className="w-3 h-3" />
+                          <span>{newLocation || "添加情境"}</span>
                         </button>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Left margin visual rules guiding */}
+                    <div className="pl-6 w-full flex-1 flex flex-col relative min-h-[350px]">
+                      
+                      {/* Notebook Horizontal ruled guidelines */}
+                      <div className="absolute inset-0 pt-16 pr-4 pointer-events-none opacity-40 select-none">
+                        {Array.from({ length: 18 }).map((_, i) => (
+                          <div key={i} className={`h-8 w-full border-b ${colors.line}`} />
+                        ))}
+                      </div>
+
+                      {/* Floating Stickers Box (Hand-taped cute graphics added to notebook!) */}
+                      {editorStickers.length > 0 && (
+                        <div className="absolute top-2 right-4 flex flex-wrap gap-2 z-10 pointer-events-auto">
+                          {editorStickers.map((sticker, idx) => (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: (idx % 2 === 0 ? 6 : -6) }}
+                              onClick={() => {
+                                setEditorStickers(editorStickers.filter((_, i) => i !== idx));
+                              }}
+                              className="w-10 h-10 hover:brightness-90 active:scale-90 cursor-pointer bg-white/70 backdrop-blur-sm rounded-lg shadow-inner flex items-center justify-center text-2xl border border-dashed border-gray-300 relative group"
+                              title="点击揭下贴纸"
+                              key={idx}
+                            >
+                              <span className="select-none">{sticker}</span>
+                              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <X className="w-2.5 h-2.5" />
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Title input */}
+                      <input 
+                        type="text" 
+                        value={newTitle}
+                        onChange={(e) => {
+                          if (isTypewriterSoundActive) playTypewriterSound();
+                          setNewTitle(e.target.value);
+                        }}
+                        placeholder="给今日的瞬间起个标题罢..." 
+                        className={`w-full bg-transparent border-none text-2xl font-black focus:outline-none mb-4 relative z-10 ${colors.title} ${colors.font}`}
+                      />
+
+                      {/* Ruled Textarea editor with custom font family, size and alignments! */}
+                      <textarea 
+                        value={newContent}
+                        onChange={(e) => {
+                          if (isTypewriterSoundActive) playTypewriterSound();
+                          setNewContent(e.target.value);
+                        }}
+                        style={{ 
+                          fontSize: `${editorFontSize}px`,
+                          lineHeight: '2rem',
+                          textAlign: editorTextAlign,
+                        }}
+                        placeholder="开始记录你的故事与岛屿低吟..."
+                        className={`w-full flex-1 bg-transparent border-none focus:outline-none resize-none leading-8 relative z-10 overflow-y-hidden ${colors.content} ${editorFontFamily}`}
+                        autoFocus
+                      />
+
+                      {/* Polaroid photographic frame tray */}
+                      {newImages.length > 0 && (
+                        <div className="flex flex-wrap gap-6 py-6 border-t border-dashed border-gray-200 mt-6 relative z-10 select-none">
+                          {newImages.map((img, i) => (
+                            <motion.div 
+                              key={i} 
+                              initial={{ scale: 0.9, rotate: (i % 2 === 0 ? 2 : -2) }}
+                              whileHover={{ scale: 1.05, rotate: 0 }}
+                              className="bg-white p-3 pb-8 rounded-none border border-gray-200/60 shadow-md flex flex-col items-center gap-1.5 relative w-40 shrink-0 select-none"
+                            >
+                              {/* Overlay tape element */}
+                              <div className="w-14 h-4 bg-yellow-200/50 absolute -top-2 left-1/2 -translate-x-1/2 rotate-[-3deg] border border-yellow-300/30" />
+                              
+                              <div className="w-full aspect-[3/4] overflow-hidden rounded-sm relative bg-gray-50">
+                                <img src={img} alt="polaroid-shoot" className="w-full h-full object-cover select-none" referrerPolicy="no-referrer" />
+                              </div>
+
+                              <div className="text-[8px] font-mono font-medium text-gray-400 mt-1 select-none">
+                                PHOTO P.{i + 1} ✦ 岛屿
+                              </div>
+
+                              <button 
+                                onClick={() => setNewImages(newImages.filter((_, idx) => idx !== i))}
+                                className="absolute top-2 right-2 w-5 h-5 bg-rose-500/80 backdrop-blur-md hover:bg-rose-600 transition-colors rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:opacity-100 border border-white/20 shadow-sm"
+                                title="取下照片"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Floating Info ribbon bottom */}
+                    <div className="pl-6 pr-4 pt-4 border-t border-dashed border-gray-200/50 flex flex-wrap gap-4 items-center justify-between shrink-0 text-[10px] font-medium text-amber-900/40 font-mono select-none">
+                      <div className="flex items-center gap-4">
+                        <span>✏️ {newContent.length} 字符数</span>
+                        <span>💡 预计阅读 {Math.max(1, Math.ceil(newContent.length / 300))} 分钟</span>
+                        {editorBgmType !== 'none' && (
+                          <span className="flex items-center gap-1 text-pink-600 animate-pulse">
+                            <Music className="w-3 h-3" />
+                            <span>白噪音放音中</span>
+                          </span>
+                        )}
+                      </div>
+                      <span className="opacity-60">小小手记 ✦ 写你所见，爱你所选</span>
+                    </div>
+
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
-              {/* Status Bar: Mood, Weather, Location Tags */}
-              <div className="px-6 py-2 flex flex-wrap gap-2 shrink-0">
-                {newMood && (
-                  <button 
-                    onClick={() => setShowMoodPicker(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
-                  >
-                    <span className="text-sm">{newMood}</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">心情</span>
-                  </button>
-                )}
-                {newWeather && (
-                  <button 
-                    onClick={() => setShowWeatherPicker(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
-                  >
-                    <span className="text-sm">{newWeather}</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">天气</span>
-                  </button>
-                )}
-                <button 
-                  onClick={() => {
-                    const loc = prompt("你在哪里？", newLocation);
-                    if (loc !== null) setNewLocation(loc);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${newLocation ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100/50'}`}
-                >
-                  <MapPin className={`w-3 h-3 ${newLocation ? 'text-amber-500' : 'text-gray-400'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-tight ${newLocation ? 'text-amber-700' : 'text-gray-400'}`}>
-                    {newLocation || '添加地点'}
-                  </span>
-                </button>
-                <button 
-                  onClick={() => setShowFolderPicker(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100/50"
-                >
-                  <Folder className="w-3 h-3 text-gray-400" />
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{newFolder}</span>
-                </button>
-              </div>
-
-              {/* Bottom Function Bar */}
-              <div className="px-6 pb-12 pt-4 flex items-center justify-between border-t border-gray-50 shrink-0 bg-white">
-                <div className="flex items-center gap-6">
-                  {/* Photo Button */}
-                  <label htmlFor="diary-image-upload" className="cursor-pointer group flex flex-col items-center gap-1">
+              {/* Immersive Controls dock for Hand-手账 (Stamps, Sounds, Fonts, AI Wizards) */}
+              <div className="p-4 bg-white border-t border-gray-100 flex flex-wrap items-center justify-between shrink-0 select-none z-30">
+                <div className="flex flex-wrap items-center gap-4">
+                  
+                  {/* Polaroid camera roll trigger */}
+                  <label htmlFor="diary-image-upload" className="cursor-pointer group h-10 px-3.5 bg-gray-50 border border-gray-200/50 rounded-2xl flex items-center justify-center hover:bg-pink-50 hover:border-pink-200 transition-colors">
                     <input 
                       type="file" 
                       id="diary-image-upload" 
@@ -1834,68 +2336,210 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                         }
                       }}
                     />
-                    <ImageIcon className="w-6 h-6 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                    <Camera className="w-5 h-5 text-gray-500 group-hover:text-pink-500 transition-colors" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-pink-600 transition-colors ml-1.5 uppercase tracking-wide">添加拍立得</span>
                   </label>
 
-                  {/* Camera Button */}
-                  <button className="group flex flex-col items-center gap-1">
-                    <Camera className="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  {/* Stamp Sticker Sticker Popover */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowStickerPicker(!showStickerPicker)}
+                      className={`h-10 px-3.5 rounded-2xl flex items-center justify-center gap-1.5 transition-all text-xs font-bold active:scale-95 ${showStickerPicker ? 'bg-pink-100 text-pink-600 border-pink-200' : 'bg-gray-50 border border-gray-200/50 text-gray-500 hover:bg-gray-100'}`}
+                    >
+                      <Smile className="w-5 h-5" />
+                      <span>我的贴纸</span>
+                    </button>
+
+                    <AnimatePresence>
+                      {showStickerPicker && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 15 }}
+                          className="absolute bottom-12 left-0 w-64 bg-white rounded-2xl p-4 shadow-2xl border border-pink-100 grid grid-cols-5 gap-2 z-50 select-none pb-5"
+                        >
+                          <div className="col-span-1 border-b pb-2 mb-2 w-full flex items-center justify-between text-[11px] font-bold text-gray-400">
+                            <span>贴纸库</span>
+                          </div>
+                          <div className="col-span-5 grid grid-cols-5 gap-2.5">
+                            {['🧸', '🍒', '🍓', '🍰', '🧁', '🍟', '🍭', '🌸', '🌼', '🌷', '🐾', '🍀', '🌟', '🍼', '🎨', '🎠', '🛸', '🪁', '💭', '🔑'].map(sticker => (
+                              <button
+                                key={sticker}
+                                onClick={() => {
+                                  if (editorStickers.length >= 8) {
+                                    alert("一页最多贴8张贴纸哦~");
+                                    return;
+                                  }
+                                  setEditorStickers([...editorStickers, sticker]);
+                                }}
+                                className="w-full aspect-square text-xl hover:scale-120 active:scale-90 transition-all flex items-center justify-center p-1 rounded-xl bg-gray-50 hover:bg-pink-50"
+                              >
+                                {sticker}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Font Typography Adjuster */}
+                  <div className="flex items-center bg-gray-50/50 border border-gray-200/50 rounded-2xl h-10 px-2 gap-1.5">
+                    <button 
+                      onClick={() => setEditorFontFamily(editorFontFamily === 'font-serif' ? 'font-cute-zh font-bold' : editorFontFamily === 'font-cute-zh font-bold' ? 'font-mono' : 'font-serif')}
+                      className="p-1 px-2.5 rounded-lg text-[10px] font-bold text-gray-600 bg-white shadow-sm hover:bg-gray-50"
+                      title="切换手写/宋体/等宽"
+                    >
+                      字形: {editorFontFamily === 'font-serif' ? '宋' : editorFontFamily === 'font-mono' ? '等' : '萌'}
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        setEditorTextAlign(editorTextAlign === 'left' ? 'center' : editorTextAlign === 'center' ? 'right' : 'left');
+                      }}
+                      className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500"
+                      title="文本对齐"
+                    >
+                      {editorTextAlign === 'left' && <AlignLeft className="w-4 h-4" />}
+                      {editorTextAlign === 'center' && <AlignCenter className="w-4 h-4" />}
+                      {editorTextAlign === 'right' && <AlignRight className="w-4 h-4" />}
+                    </button>
+
+                    <div className="flex items-center gap-1 pl-1 border-l border-gray-200">
+                      <button 
+                        onClick={() => setEditorFontSize(Math.max(12, editorFontSize - 1))}
+                        className="p-1 text-xs font-bold text-gray-400 hover:text-gray-900"
+                        title="减小字号"
+                      >
+                        A-
+                      </button>
+                      <span className="text-[10px] font-bold text-gray-600 w-5 text-center font-mono">{editorFontSize}</span>
+                      <button 
+                        onClick={() => setEditorFontSize(Math.min(24, editorFontSize + 1))}
+                        className="p-1 text-xs font-bold text-gray-400 hover:text-gray-900"
+                        title="增加字号"
+                      >
+                        A+
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BGM Ambient Choose */}
+                  <div className="flex items-center bg-gray-50/50 border border-gray-200/50 rounded-2xl h-10 px-2 gap-1">
+                    <button
+                      onClick={() => setEditorBgmType(editorBgmType === 'lofi' ? 'none' : 'lofi')}
+                      className={`px-2 py-1 text-[10px] rounded-lg font-bold transition-all ${editorBgmType === 'lofi' ? 'bg-pink-100 text-pink-600' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Lo-Fi ☕
+                    </button>
+                    <button
+                      onClick={() => setEditorBgmType(editorBgmType === 'rain' ? 'none' : 'rain')}
+                      className={`px-2 py-1 text-[10px] rounded-lg font-bold transition-all ${editorBgmType === 'rain' ? 'bg-teal-100 text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      听雨 🌦️
+                    </button>
+                    <button
+                      onClick={() => setEditorBgmType(editorBgmType === 'forest' ? 'none' : 'forest')}
+                      className={`px-2 py-1 text-[10px] rounded-lg font-bold transition-all ${editorBgmType === 'forest' ? 'bg-emerald-100 text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      虫鸣 🌲
+                    </button>
+                    <button
+                      onClick={() => setIsTypewriterSoundActive(!isTypewriterSoundActive)}
+                      className={`p-1.5 rounded-lg transition-all ${isTypewriterSoundActive ? 'text-pink-500 hover:bg-gray-100' : 'text-gray-300'}`}
+                      title={isTypewriterSoundActive ? "机械键盘音: 已开启" : "机械键盘音: 已关闭"}
+                    >
+                      {isTypewriterSoundActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Custom Privacy Pin Toggle */}
+                  <button 
+                    onClick={() => {
+                      if (!isLocked) {
+                        const pin = prompt("设置访问此日记的4位数字解锁密码（留空默认为 1234）：", customPinCode) || "1234";
+                        if (pin && pin.length === 4 && /^\d+$/.test(pin)) {
+                          handleSavePin(pin);
+                          setIsLocked(true);
+                          alert(`隐私锁启用成功！访问密码为 [${pin}]。`);
+                        } else if (pin) {
+                          alert("密码不符合规定（必须是4位纯数字）！");
+                        }
+                      } else {
+                        setIsLocked(false);
+                        alert("已关闭隐私锁");
+                      }
+                    }}
+                    className={`h-10 px-3.5 rounded-2xl flex items-center justify-center gap-1.5 transition-all text-xs font-bold active:scale-95 ${isLocked ? 'bg-rose-100 text-rose-600 border-rose-200' : 'bg-gray-50 border border-gray-200/50 text-gray-500'}`}
+                  >
+                    {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    <span>隐私密码锁</span>
                   </button>
 
-                  {/* Mood Button */}
-                  <button 
-                    onClick={() => setShowMoodPicker(true)}
-                    className="group flex flex-col items-center gap-1"
-                  >
-                    <Smile className="w-6 h-6 text-gray-400 group-hover:text-pink-500 transition-colors" />
-                  </button>
-
-                  {/* Weather Button */}
-                  <button 
-                    onClick={() => setShowWeatherPicker(true)}
-                    className="group flex flex-col items-center gap-1"
-                  >
-                    <Cloud className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors" />
-                  </button>
                 </div>
 
-                <div className="flex items-center gap-6">
-                  <button 
-                    onClick={() => setIsLocked(!isLocked)}
-                    className="group flex flex-col items-center gap-1"
-                  >
-                    {isLocked ? (
-                      <Lock className="w-6 h-6 text-amber-500" />
-                    ) : (
-                      <Unlock className="w-6 h-6 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    )}
-                  </button>
+                {/* Magical AI Generative Polish Assistant */}
+                <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                  <div className="text-[10px] font-extrabold tracking-wider text-amber-900/40 uppercase font-mono">
+                    🤖 AI 一键智能修辞:
+                  </div>
+                  <div className="flex bg-[#FCFAF7] border border-amber-900/10 rounded-2xl p-0.5 gap-1 shadow-inner">
+                    <button
+                      onClick={() => applyAiPolish('poetic')}
+                      disabled={!newContent.trim()}
+                      className="px-2.5 py-1.5 text-[9px] font-bold rounded-xl bg-white hover:bg-pink-50 active:scale-95 transition-all text-pink-600 leading-none flex items-center gap-0.5"
+                    >
+                      🌷 婉约文艺
+                    </button>
+                    <button
+                      onClick={() => applyAiPolish('warm')}
+                      disabled={!newContent.trim()}
+                      className="px-2.5 py-1.5 text-[9px] font-bold rounded-xl bg-white hover:bg-amber-50 active:scale-95 transition-all text-amber-600 leading-none flex items-center gap-0.5"
+                    >
+                      🧁 温暖治愈
+                    </button>
+                    <button
+                      onClick={() => applyAiPolish('sassy')}
+                      disabled={!newContent.trim()}
+                      className="px-2.5 py-1.5 text-[9px] font-bold rounded-xl bg-white hover:bg-rose-50 active:scale-95 transition-all text-rose-600 leading-none flex items-center gap-0.5"
+                    >
+                      🔥 夸张发疯
+                    </button>
+                    <button
+                      onClick={() => applyAiPolish('nonsense')}
+                      disabled={!newContent.trim()}
+                      className="px-2.5 py-1.5 text-[9px] font-bold rounded-xl bg-white hover:bg-gray-100 active:scale-95 transition-all text-gray-600 leading-none flex items-center gap-0.5"
+                    >
+                      💫 废话随笔
+                    </button>
+                  </div>
                 </div>
+
               </div>
 
-              {/* Modals for Pickers */}
+              {/* Dropdown pickers container */}
               <AnimatePresence>
                 {showMoodPicker && (
                   <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    className="fixed inset-0 z-[120] flex items-end justify-center bg-black/30 backdrop-blur-sm"
                     onClick={() => setShowMoodPicker(false)}
                   >
                     <motion.div 
                       initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative z-10"
                       onClick={e => e.stopPropagation()}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900">选择当前心情</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                        <span className="text-base font-black text-amber-950 font-cute-zh">✨ 挑选一个心灵印章</span>
                         <button onClick={() => setShowMoodPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
                       </div>
-                      <div className="grid grid-cols-4 gap-4">
-                        {moodOptions.map(mood => (
+                      <div className="grid grid-cols-5 gap-3.5 pb-6">
+                        {['😊', '🥰', '😔', '😤', '😴', '✨', '☁️', '🌙', '🍃', '🥳', '😭', '🤯', '🍕', '🧸', '🌈'].map(mood => (
                           <button
                             key={mood}
                             onClick={() => { setNewMood(mood); setShowMoodPicker(false); }}
-                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all ${newMood === mood ? 'bg-amber-50 text-amber-600 shadow-inner' : 'bg-gray-50 hover:bg-gray-100'}`}
+                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all hover:scale-105 active:scale-95 ${newMood === mood ? 'bg-pink-100 text-pink-600 shadow-inner ring-2 ring-pink-300' : 'bg-gray-50 hover:bg-gray-100'}`}
                           >
                             {mood}
                           </button>
@@ -1908,24 +2552,24 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                 {showWeatherPicker && (
                   <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    className="fixed inset-0 z-[120] flex items-end justify-center bg-black/30 backdrop-blur-sm"
                     onClick={() => setShowWeatherPicker(false)}
                   >
                     <motion.div 
                       initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative z-10"
                       onClick={e => e.stopPropagation()}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900">选择当前天气</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                        <span className="text-base font-black text-amber-950 font-cute-zh">🌤️ 挑选一个当日气象</span>
                         <button onClick={() => setShowWeatherPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
                       </div>
-                      <div className="grid grid-cols-4 gap-4">
-                        {weatherOptions.map(weather => (
+                      <div className="grid grid-cols-4 gap-4 pb-6">
+                        {['☀️', '☁️', '🌧️', '❄️', '🌪️', '🌫️', '🌤️', '🌙', '⚡', '🌈'].map(weather => (
                           <button
                             key={weather}
                             onClick={() => { setNewWeather(weather); setShowWeatherPicker(false); }}
-                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all ${newWeather === weather ? 'bg-emerald-50 text-emerald-600 shadow-inner' : 'bg-gray-50 hover:bg-gray-100'}`}
+                            className={`w-full aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all hover:scale-105 active:scale-95 ${newWeather === weather ? 'bg-teal-100 text-teal-600 shadow-inner ring-2 ring-teal-300' : 'bg-gray-50 hover:bg-gray-100'}`}
                           >
                             {weather}
                           </button>
@@ -1938,24 +2582,24 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                 {showFolderPicker && (
                   <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[110] flex items-end justify-center bg-black/20"
+                    className="fixed inset-0 z-[120] flex items-end justify-center bg-black/30 backdrop-blur-sm"
                     onClick={() => setShowFolderPicker(false)}
                   >
                     <motion.div 
                       initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl"
+                      className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative z-10 text-sans"
                       onClick={e => e.stopPropagation()}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900">选择日记本</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                        <span className="text-base font-black text-amber-950 font-cute-zh">🏷️ 选择你的专属档案夹</span>
                         <button onClick={() => setShowFolderPicker(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        {['生活', '工作', '情感', '旅行', '灵感'].map(folder => (
+                      <div className="flex flex-col gap-2 pb-6 max-h-[300px] overflow-y-auto">
+                        {['生活随笔', '奇思妙想', '恋爱日常', '小秘密', '治愈确幸'].map(folder => (
                           <button
                             key={folder}
                             onClick={() => { setNewFolder(folder); setShowFolderPicker(false); }}
-                            className={`w-full px-6 py-4 rounded-2xl flex items-center justify-between text-[15px] font-bold transition-all ${newFolder === folder ? 'bg-gray-900 text-white shadow-xl' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
+                            className={`w-full px-6 py-4 rounded-2xl flex items-center justify-between text-[14px] font-bold transition-all ${newFolder === folder ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-md' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
                           >
                             <span>{folder}</span>
                             {newFolder === folder && <Check className="w-5 h-5" />}
@@ -1963,18 +2607,19 @@ export const DiaryView = ({ mode = 'life' }: { mode?: 'island' | 'life' }) => {
                         ))}
                         <button 
                           onClick={() => {
-                            const name = prompt("新建日记本名称？");
+                            const name = prompt("输入新建档案夹名称：");
                             if (name) { setNewFolder(name); setShowFolderPicker(false); }
                           }}
-                          className="w-full px-6 py-4 rounded-2xl bg-white border border-dashed border-gray-200 text-gray-400 text-[14px] font-bold hover:border-gray-400 hover:text-gray-600 transition-all font-sans"
+                          className="w-full px-6 py-4 rounded-2xl bg-white border border-dashed border-gray-200 text-gray-400 text-[13px] font-bold hover:border-gray-400 hover:text-gray-600 transition-all font-sans"
                         >
-                          + 新建日记本
+                          + 新建专属档案...
                         </button>
                       </div>
                     </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
+
             </motion.div>
           </motion.div>
         )}
