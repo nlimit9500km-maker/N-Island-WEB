@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mail, Clock, Lock, ShieldAlert, Sparkles, Check, CheckCircle, 
-  Trash2, X, Plus, Calendar, ArrowRight, BookOpen, Send, Gift
+  Trash2, X, Plus, Calendar, ArrowRight, BookOpen, Send, Gift,
+  Inbox, Archive
 } from 'lucide-react';
 import { 
   FutureLetter, STAMP_PRESETS, SEAL_COLORS 
 } from './DiaryTypes';
+
+const BG_PRESETS = [
+  { name: '复古羊皮卷', url: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&q=80&w=800' },
+  { name: '静谧深夜星', url: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=800' },
+  { name: '落樱晚霞', url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800' },
+  { name: '清新泥土绿', url: 'https://images.unsplash.com/photo-1545241047-6083a3684587?auto=format&fit=crop&q=80&w=800' },
+  { name: '梦纪薰衣草', url: 'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&q=80&w=800' }
+];
 
 interface FutureLetterProps {
   letters: FutureLetter[];
@@ -58,10 +67,116 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const [customDate, setCustomDate] = useState('');
   const [selectedStamp, setSelectedStamp] = useState('stamp-butterfly');
   const [selectedSeal, setSelectedSeal] = useState('#9e2a2b');
+  
+  // New States
+  const [letterType, setLetterType] = useState<'future' | 'past'>('future');
+  const [emailForDelivery, setEmailForDelivery] = useState('');
+  const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const [showOutboxModal, setShowOutboxModal] = useState(false);
+  const [showCancelPrompt, setShowCancelPrompt] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+
+  // Images, Files and Background Image State
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string; url: string; size?: string; type?: string}[]>([]);
+  const [bgImage, setBgImage] = useState<string>('');
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isEditingRef = useRef(false);
+
+  const handleBodyImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string' && editorRef.current) {
+          editorRef.current.focus();
+          // Use a resizable span wrapper to ensure reliable resize handles in chrome/safari and allow block formatting
+          const imgHtml = `
+            <div contenteditable="false" style="display: inline-block; vertical-align: top; max-width: 100%; width: 50%; border: 1px dotted transparent; resize: both; overflow: hidden; margin: 4px;">
+              <img src="${reader.result}" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+            </div>
+            &nbsp;
+          `;
+          document.execCommand('insertHTML', false, imgHtml);
+          isEditingRef.current = true;
+          setContent(editorRef.current.innerHTML);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBgImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setBgImage(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAnyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files) as File[];
+      filesArray.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            const kb = (file.size / 1024).toFixed(1);
+            setAttachedFiles(prev => [...prev, {
+              name: file.name,
+              url: reader.result as string,
+              size: `${kb} KB`,
+              type: file.type
+            }]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  // Utility to convert Date to a string compatible with input type="datetime-local"
+  const getLocalDateTimeString = (d: Date) => {
+    const tzoffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzoffset).toISOString().slice(0, 16);
+  };
+
+  // Watch content state and sync with contentEditable manually if external
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== content && !isEditingRef.current) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content]);
+
+  // Synchronize base values and dates on letterType swap
+  useEffect(() => {
+    if (letterType === 'past') {
+      if (recipient === '未来的我' || !recipient) {
+        setRecipient('曾经的我');
+      }
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      setCustomDate(getLocalDateTimeString(yesterday));
+    } else {
+      if (recipient === '曾经的我' || !recipient) {
+        setRecipient('未来的我');
+      }
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setCustomDate(getLocalDateTimeString(tomorrow));
+    }
+  }, [letterType]);
 
   // Animation Sequence States
   const [animationStep, setAnimationStep] = useState<'idle' | 'folding' | 'melting' | 'stamping' | 'done'>('idle');
   const [selectedReadingLetter, setSelectedReadingLetter] = useState<FutureLetter | null>(null);
+  const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
+  const [deleteConfirmLetterId, setDeleteConfirmLetterId] = useState<string | null>(null);
 
   const getStamp = (id: string) => STAMP_PRESETS.find(item => item.id === id) || STAMP_PRESETS[0];
 
@@ -80,54 +195,128 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       setAnimationStep('stamping');
     }, 3200);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       // Complete letter addition
       const today = new Date();
       let deliveryDateStr = '';
 
       if (deliveryYear === 'custom') {
-        deliveryDateStr = customDate || new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+        deliveryDateStr = customDate || getLocalDateTimeString(new Date(today.getTime() + (letterType === 'past' ? -86400000 : 86400000)));
       } else {
         const adYears = parseInt(deliveryYear, 10);
-        const futureDate = new Date(today.getFullYear() + adYears, today.getMonth(), today.getDate());
-        deliveryDateStr = futureDate.toISOString().split('T')[0];
+        if (letterType === 'future') {
+          const futureDate = new Date(today.getFullYear() + adYears, today.getMonth(), today.getDate(), today.getHours(), today.getMinutes());
+          deliveryDateStr = getLocalDateTimeString(futureDate);
+        } else {
+          const pastDate = new Date(today.getFullYear() - adYears, today.getMonth(), today.getDate(), today.getHours(), today.getMinutes());
+          deliveryDateStr = getLocalDateTimeString(pastDate);
+        }
       }
 
-      const newLtr: FutureLetter = {
-        id: 'letter-' + Date.now(),
-        createdAt: today.toISOString().split('T')[0],
-        deliverAt: deliveryDateStr,
-        title: title,
-        content: content,
-        recipient: recipient,
-        stampId: selectedStamp,
-        sealColor: selectedSeal,
-        isDelivered: false
-      };
+      // If email for delivery is configured, call API with rich styling fields
+      if (emailForDelivery.trim() && emailForDelivery.includes('@')) {
+         try {
+           await fetch('/api/send-email', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               to: emailForDelivery.trim(),
+               subject: title,
+               content: content,
+               scheduleTime: deliveryDateStr,
+               type: letterType,
+               images: attachedImages,
+               files: attachedFiles,
+               bgImage: bgImage,
+               recipient: recipient,
+               createdAt: today.toISOString().split('T')[0],
+               id: editingLetterId || undefined
+             })
+           });
+         } catch(e) {
+           console.log('Failed to schedule email delivery', e);
+         }
+      }
 
-      setLetters(prev => [newLtr, ...prev]);
+      if (editingLetterId) {
+        setLetters(prev => prev.map(l => l.id === editingLetterId ? {
+          ...l,
+          deliverAt: deliveryDateStr.replace('T', ' '),
+          title: title,
+          content: content,
+          recipient: recipient,
+          stampId: selectedStamp,
+          sealColor: selectedSeal,
+          images: attachedImages,
+          files: attachedFiles,
+          bgImage: bgImage,
+          letterType: letterType,
+          recipientEmail: emailForDelivery
+        } : l));
+      } else {
+        const newLtr: FutureLetter = {
+          id: 'letter-' + Date.now(),
+          createdAt: today.toISOString().split('T')[0] + ' ' + String(today.getHours()).padStart(2, '0') + ':' + String(today.getMinutes()).padStart(2, '0'),
+          deliverAt: deliveryDateStr.replace('T', ' '),
+          title: title,
+          content: content,
+          recipient: recipient,
+          stampId: selectedStamp,
+          sealColor: selectedSeal,
+          isDelivered: false,
+          images: attachedImages,
+          files: attachedFiles,
+          bgImage: bgImage,
+          letterType: letterType,
+          recipientEmail: emailForDelivery
+        };
+
+        setLetters(prev => [newLtr, ...prev]);
+      }
       setAnimationStep('done');
     }, 5500);
   };
 
   const deleteLetter = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('确认粉碎这一页寄往未来的信章吗？这会让它在时间线中彻底蒸发...')) {
-      setLetters(prev => prev.filter(item => item.id !== id));
+    setDeleteConfirmLetterId(id);
+  };
+
+  const confirmDeleteLetter = () => {
+    if (deleteConfirmLetterId) {
+      setLetters(prev => prev.filter(item => item.id !== deleteConfirmLetterId));
+      setDeleteConfirmLetterId(null);
     }
   };
 
+  const editLetter = (letter: FutureLetter, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingLetterId(letter.id);
+    setTitle(letter.title);
+    setContent(letter.content);
+    setRecipient(letter.recipient);
+    setSelectedStamp(letter.stampId);
+    setSelectedSeal(letter.sealColor);
+    setLetterType(letter.letterType || 'future');
+    setEmailForDelivery(letter.recipientEmail || '');
+    setAttachedImages(letter.images || []);
+    setAttachedFiles(letter.files || []);
+    setBgImage(letter.bgImage || '');
+    setAnimationStep('idle');
+    setShowCompose(true);
+  };
+
   const handleOpenLetter = (letter: FutureLetter) => {
-    const isReady = new Date(letter.deliverAt).getTime() <= nowTime;
+    const isReady = new Date(letter.deliverAt.replace(' ', 'T')).getTime() <= nowTime;
     if (!isReady && !letter.isDelivered) {
-      // Trigger a cozy nudge/shake
-      alert(`锁印完好！寄往未来的信章正悬停在时间的信道中。\n距离送达还有: ${formatCountdown(letter.deliverAt)}\n别着急，时间的邮差会绝对安全地守护它的。`);
+      alert(`锁印完好！此处信章正悬停在时间的信道中。\n距离送达还有: ${formatCountdown(letter.deliverAt)}\n别着急，时间的邮差会绝对安全地守护它的。`);
       return;
     }
     setSelectedReadingLetter(letter);
   };
 
   const resetCompose = () => {
+    setEditingLetterId(null);
     setTitle('');
     setContent('');
     setRecipient('未来的我');
@@ -136,7 +325,69 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     setSelectedStamp('stamp-butterfly');
     setSelectedSeal('#9e2a2b');
     setAnimationStep('idle');
+    setLetterType('future');
+    setEmailForDelivery('');
+    setAttachedImages([]);
+    setAttachedFiles([]);
+    setBgImage('');
     setShowCompose(false);
+    setShowCancelPrompt(false);
+  };
+
+  const handleCancelClick = () => {
+     if (title.trim() || content.trim() || attachedImages.length > 0 || bgImage) {
+       setShowCancelPrompt(true);
+     } else {
+       resetCompose();
+     }
+  };
+
+  const saveDraft = () => {
+     const draftData = {
+       type: 'letter',
+       title,
+       content,
+       letterType,
+       emailForDelivery,
+       recipient,
+       images: attachedImages,
+       bgImage: bgImage,
+       timestamp: Date.now()
+     };
+     const existingDrafts = JSON.parse(localStorage.getItem('shared_drafts_pool') || '[]');
+     existingDrafts.push(draftData);
+     localStorage.setItem('shared_drafts_pool', JSON.stringify(existingDrafts));
+     
+     localStorage.setItem('future_letter_draft', JSON.stringify(draftData));
+     resetCompose();
+  };
+
+  const handleComposeClick = () => {
+     const savedDraft = localStorage.getItem('future_letter_draft');
+     if (savedDraft) {
+       setShowResumePrompt(true);
+     } else {
+       setShowCompose(true);
+     }
+  };
+
+  const resumeDraft = () => {
+     const savedDraft = JSON.parse(localStorage.getItem('future_letter_draft') || '{}');
+     setTitle(savedDraft.title || '');
+     setContent(savedDraft.content || '');
+     setLetterType(savedDraft.letterType || 'future');
+     setEmailForDelivery(savedDraft.emailForDelivery || '');
+     setRecipient(savedDraft.recipient || '未来的我');
+     setAttachedImages(savedDraft.images || []);
+     setBgImage(savedDraft.bgImage || '');
+     setShowResumePrompt(false);
+     setShowCompose(true);
+  };
+
+  const discardDraft = () => {
+     localStorage.removeItem('future_letter_draft');
+     setShowResumePrompt(false);
+     setShowCompose(true);
   };
 
   return (
@@ -155,12 +406,27 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
             </h3>
             <p className="text-xs text-[#a88252] mt-1 font-bold">今天你投递了 {letters.filter(l => !l.isDelivered).length} 封前往未来的漂流信笺</p>
           </div>
-          <button 
-            onClick={() => setShowCompose(true)}
-            className="px-5 py-2.5 bg-[#a88 52] bg-[#a78358] hover:bg-[#866742] text-white rounded-full text-xs font-black shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" /> 笔写新信
-          </button>
+          <div className="flex bg-[#e9e3d9] rounded-2xl p-1 shadow-inner border border-[#dfd6c6]/50 items-center justify-between w-28 gap-1">
+            {/* Left standard Inbox icon button: triggers compose or draft choice dialog */}
+            <button 
+              onClick={handleComposeClick} 
+              className="w-11 h-11 flex items-center justify-center text-[#a78358] hover:bg-white rounded-xl transition-all relative group shadow-3xs cursor-pointer active:scale-95"
+            >
+               <Inbox className="w-5 h-5" />
+               <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#352a1a] text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-lg hidden group-hover:block whitespace-nowrap z-50 font-bold border border-[#dfd6c6]/30">草稿与撰写</span>
+            </button>
+
+            <div className="w-px h-6 bg-[#dfd6c6]"></div>
+
+            {/* Right standard Archive/summary icon button: gathers delivery status & scheduled counts */}
+            <button 
+              onClick={() => setShowOutboxModal(true)} 
+              className="w-11 h-11 flex items-center justify-center text-[#a78358] hover:bg-white rounded-xl transition-all relative group shadow-3xs cursor-pointer active:scale-95"
+            >
+               <Archive className="w-5 h-5" />
+               <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#352a1a] text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-lg hidden group-hover:block whitespace-nowrap z-50 font-bold border border-[#dfd6c6]/30">传递计时汇总</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -177,10 +443,10 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                 这些信会被存放在时光信阁。时间未到以前，它们将被火漆严密锁住无法读取，在交付的那天，蜡印才会随之解开。
               </p>
               <button 
-                onClick={() => setShowCompose(true)}
+                onClick={handleComposeClick}
                 className="mt-5 px-6 py-2.5 bg-[#a78358] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#866742] transition-transform hover:-translate-y-0.5"
               >
-                写给一年后的自己
+                开始执笔
               </button>
             </div>
           ) : (
@@ -246,12 +512,20 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                         </span>
                       )}
 
-                      <button 
-                        onClick={(e) => deleteLetter(letter.id, e)}
-                        className="p-1 px-2.5 text-xs text-red-500 rounded-lg hover:bg-black/5 opacity-40 hover:opacity-100 transition-opacity"
-                      >
-                        粉碎
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={(e) => editLetter(letter, e)}
+                          className="p-1 px-2.5 text-xs text-[#a78358] rounded-lg hover:bg-black/5 opacity-60 hover:opacity-100 transition-opacity whitespace-nowrap"
+                        >
+                          修改
+                        </button>
+                        <button 
+                          onClick={(e) => deleteLetter(letter.id, e)}
+                          className="p-1 px-2.5 text-xs text-red-500 rounded-lg hover:bg-black/5 opacity-40 hover:opacity-100 transition-opacity whitespace-nowrap"
+                        >
+                          粉碎
+                        </button>
+                      </div>
                     </div>
 
                     {/* Wax seal glass block for unarrived letters */}
@@ -271,6 +545,127 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           )}
         </div>
       </div>
+
+      {/* Drafts Modal */}
+      <AnimatePresence>
+        {showDraftsModal && (
+           <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="fixed inset-0 z-50 bg-[#352a1a]/60 backdrop-blur-sm flex justify-end">
+              <motion.div initial={{x: '100%'}} animate={{x: 0}} exit={{x: '100%'}} className="w-full max-w-md bg-[#FAF6F0] h-full shadow-2xl flex flex-col pt-safe px-6 pb-8">
+                 <div className="flex justify-between items-center py-6 border-b border-[#dfd6c6]/50">
+                    <h3 className="text-xl font-black text-[#352a1a] flex items-center gap-2">
+                       <Inbox className="w-5 h-5 text-[#a78358]"/> 暂存信件草稿箱
+                    </h3>
+                    <button onClick={() => setShowDraftsModal(false)} className="p-2 hover:bg-[#dfd6c6]/50 rounded-full transition-colors">
+                       <X className="w-4 h-4 text-[#8c7456]"/>
+                    </button>
+                 </div>
+                 <div className="flex-1 overflow-auto py-4">
+                    {/* Simplified Local Draft */}
+                    {!localStorage.getItem('future_letter_draft') ? (
+                       <div className="text-center py-12 text-[#a88252] opacity-70">
+                         <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                         <p className="font-bold text-sm">空空如也，并没有保留的草稿哦</p>
+                       </div>
+                    ) : (
+                       <div 
+                         onClick={handleComposeClick}
+                         className="p-4 bg-white rounded-2xl border border-[#dfd6c6]/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden group"
+                       >
+                         <h4 className="font-bold text-[#352a1a] mb-1">
+                           {JSON.parse(localStorage.getItem('future_letter_draft') || '{}').title || '未命名信件'}
+                         </h4>
+                         <p className="text-xs text-[#a88252] line-clamp-2">
+                           {JSON.parse(localStorage.getItem('future_letter_draft') || '{}').content || '没有内容...'}
+                         </p>
+                         <div className="mt-3 flex gap-2">
+                           <span className="text-[10px] bg-[#e9e3d9] text-[#8c7456] px-2 py-0.5 rounded-full font-bold">已保存: 刚刚</span>
+                         </div>
+                       </div>
+                    )}
+                 </div>
+              </motion.div>
+           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Outbox Modal */}
+      <AnimatePresence>
+        {showOutboxModal && (
+           <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="fixed inset-0 z-50 bg-[#352a1a]/60 backdrop-blur-sm flex justify-center items-center p-4">
+              <motion.div initial={{scale: 0.95}} animate={{scale: 1}} exit={{scale: 0.95}} className="w-full max-w-lg bg-[#FAF6F0] rounded-[2rem] shadow-2xl flex flex-col p-6 max-h-[80vh]">
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black text-[#352a1a] flex items-center gap-2">
+                       <Archive className="w-5 h-5 text-[#a78358]"/> 传送收发汇总
+                    </h3>
+                    <button onClick={() => setShowOutboxModal(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                       <X className="w-4 h-4 text-[#8c7456]"/>
+                    </button>
+                 </div>
+                 <div className="flex-1 overflow-auto space-y-3">
+                    {letters.filter(l => !l.isDelivered).length === 0 ? (
+                       <div className="text-center py-8 text-[#a88252] opacity-70 font-bold text-sm">
+                         没有在传送途中的信件
+                       </div>
+                    ) : (
+                       letters.filter(l => !l.isDelivered).map(letter => (
+                         <div key={letter.id} className="p-4 bg-white rounded-xl border border-[#dfd6c6]/40 flex justify-between items-center hover:bg-[#fffdf9] transition-colors">
+                           <div className="flex flex-col">
+                             <span className="font-bold text-[#352a1a] text-sm max-w-[200px] truncate">{letter.title}</span>
+                             <span className="text-[10px] text-[#a88252] font-mono mt-1">发往: {letter.recipient}</span>
+                           </div>
+                           <div className="text-right flex flex-col">
+                             <span className="text-[9px] text-[#a78358] uppercase font-bold tracking-widest">距离投递时间</span>
+                             <span className="font-mono text-xs font-black text-[#8c7456] mt-0.5 animate-pulse bg-[#fbf9f4] px-2 py-0.5 rounded-lg border border-[#dfd6c6]">{formatCountdown(letter.deliverAt)}</span>
+                           </div>
+                         </div>
+                       ))
+                    )}
+                 </div>
+              </motion.div>
+           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Prompt Modal */}
+      <AnimatePresence>
+         {showCancelPrompt && (
+           <motion.div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+               <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.9, opacity:0}} className="bg-white p-6 rounded-3xl max-w-sm w-full text-center shadow-xl">
+                 <h4 className="text-lg font-black text-[#352a1a] mb-2">保留当前草稿？</h4>
+                 <p className="text-[#a88252] text-xs mb-6">退出将丢失已写的信件，是否将其保留在草稿箱以免丢失？</p>
+                 <div className="flex gap-3">
+                   <button onClick={() => { resetCompose(); setShowCancelPrompt(false); }} className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200">
+                     直接退出
+                   </button>
+                   <button onClick={saveDraft} className="flex-1 py-2.5 bg-[#a78358] text-white rounded-xl font-bold text-xs hover:bg-[#866742] shadow-md">
+                     保留草稿并退出
+                   </button>
+                 </div>
+               </motion.div>
+           </motion.div>
+         )}
+      </AnimatePresence>
+
+      {/* Resume Draft Prompt Modal */}
+      <AnimatePresence>
+         {showResumePrompt && (
+           <motion.div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+               <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.9, opacity:0}} className="bg-[#FAF6F0] p-6 rounded-3xl max-w-sm w-full text-center shadow-xl border border-[#dfd6c6]">
+                 <Inbox className="w-8 h-8 text-[#a78358] mx-auto mb-3" />
+                 <h4 className="text-lg font-black text-[#352a1a] mb-2">发现一封未写完的信笺</h4>
+                 <p className="text-[#8c7456] text-xs mb-6">之前有一封保存在草稿箱中的未写完的信，是否需要恢复继续编写？</p>
+                 <div className="flex gap-3">
+                   <button onClick={discardDraft} className="flex-1 py-2.5 bg-white border border-[#dfd6c6] text-[#8c7456] rounded-xl font-bold text-xs hover:bg-gray-50 shadow-sm">
+                     删除旧稿，重新写
+                   </button>
+                   <button onClick={resumeDraft} className="flex-1 py-2.5 bg-[#a78358] text-white rounded-xl font-bold text-xs hover:bg-[#866742] shadow-md border border-[#866742]">
+                     好，继续撰写
+                   </button>
+                 </div>
+               </motion.div>
+           </motion.div>
+         )}
+      </AnimatePresence>
 
       {/* Create Future Letter Fullscreen Board with realistic folding wax animation */}
       <AnimatePresence>
@@ -390,15 +785,25 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
               {/* Compose Editor Header */}
               <div className="h-14 bg-white border-b border-[#dfd6c6]/50 flex items-center justify-between px-5 shrink-0">
                 <button 
-                  onClick={() => setShowCompose(false)}
+                  onClick={handleCancelClick}
                   className="p-1 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-full text-xs font-bold cursor-pointer"
                 >
                   取消
                 </button>
-                <h4 className="font-black text-sm text-[#352a1a] flex items-center gap-1.5">
-                  <Send className="w-4 h-4 text-[#a78358]" /> 
-                  邮编写给未来的我
-                </h4>
+                <div className="flex bg-[#E9E3D9] p-1 rounded-full">
+                   <button 
+                     onClick={() => setLetterType('future')}
+                     className={`px-4 py-1 text-xs font-black rounded-full transition-colors ${letterType === 'future' ? 'bg-white text-[#352a1a] shadow-sm' : 'text-[#8c7456] hover:bg-white/50'}`}
+                   >
+                     寄往未来
+                   </button>
+                   <button 
+                     onClick={() => setLetterType('past')}
+                     className={`px-4 py-1 text-xs font-black rounded-full transition-colors ${letterType === 'past' ? 'bg-white text-[#352a1a] shadow-sm' : 'text-[#8c7456] hover:bg-white/50'}`}
+                   >
+                     回溯往昔
+                   </button>
+                </div>
                 <button 
                   onClick={handleMailInTime}
                   disabled={!title.trim() || !content.trim()}
@@ -410,21 +815,39 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
 
               {/* Form and Stationary paper region */}
               <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-[#dfd6c6]/50 overflow-hidden">
-                {/* Lined stationery paper pane */}
-                <div className="flex-1 p-5 md:p-8 overflow-auto flex flex-col bg-[#fffdf9]">
+                {/* Lined stationery paper pane with dynamic background settings */}
+                <div 
+                  className="flex-1 p-5 md:p-8 overflow-auto flex flex-col transition-all duration-500 relative"
+                  style={bgImage ? {
+                    backgroundImage: `linear-gradient(rgba(255,253,249,0.85), rgba(255,253,249,0.85)), url('${bgImage}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : { backgroundColor: '#fffdf9' }}
+                >
                   
                   {/* Stamp space in top right */}
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-1.5 text-xs text-[#a88252] font-black">
-                        <span>TO RECIPIENT:</span>
-                        <input 
-                          type="text" 
-                          value={recipient}
-                          onChange={(e) => setRecipient(e.target.value)}
-                          className="bg-black/5 hover:bg-black/10 border-none outline-none font-bold px-2 py-1 rounded text-[#352a1a] w-36"
-                        />
-                      </div>
+                       <div className="flex flex-col gap-2 relative">
+                         <div className="flex items-center gap-1.5 text-xs text-[#a88252] font-black">
+                           <span>TO RECIPIENT:</span>
+                           <input 
+                             type="text" 
+                             value={recipient}
+                             onChange={(e) => setRecipient(e.target.value)}
+                             className="bg-black/5 hover:bg-black/10 border-none outline-none font-bold px-2 py-1 rounded text-[#352a1a] w-36"
+                           />
+                         </div>
+                         <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-bold ml-[7.5rem] mt-1 relative z-10">
+                           <input 
+                             type="email" 
+                             placeholder="寄达至电子邮箱..."
+                             value={emailForDelivery}
+                             onChange={(e) => setEmailForDelivery(e.target.value)}
+                             className="bg-black/5 hover:bg-black/10 border-none outline-none px-2 py-1 rounded text-[#352a1a] w-40 placeholder:font-normal placeholder:opacity-50"
+                           />
+                         </div>
+                       </div>
                     </div>
 
                     <div className={`w-13 h-16 rounded-md bg-gradient-to-tr ${getStamp(selectedStamp).color} border-2 border-dashed border-[#dfd6c6] flex flex-col items-center justify-center shadow-3xs`}>
@@ -437,19 +860,65 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   <div className="flex-1 flex flex-col gap-4 bg-[linear-gradient(#f0ebe1_1px,transparent_1px)] bg-[size:100%_2.2rem] min-h-[300px] border-l-2 border-orange-200/50 pl-5">
                     <input 
                       type="text" 
-                      placeholder="信章标题: 写在XX年前的心里话..."
+                      placeholder={letterType === 'future' ? "信章标题: 写往岁月的期待与诺言..." : "信章标题: 写给昨日的告解与释怀..."}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       className="bg-transparent text-lg font-black outline-none w-full text-[#352a1a] placeholder-[#352a1a]/20 border-none h-11"
                     />
 
-                    <textarea 
-                      placeholder="亲爱的我，当你在这行文字中醒来时，你是否正站在理想小岛的海岸线上？曾经困扰我们的那些沮丧，在你现在看来，是不是都已经化成了漫漫浪花？\n\n快写下你对未来的期待与承诺..."
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      className="w-full flex-1 bg-transparent resize-none outline-none text-sm leading-[2.2rem] text-[#4d4030] placeholder-[#4d4030]/20 font-serif h-56"
+                    <div 
+                      ref={editorRef}
+                      contentEditable
+                      suppressContentEditableWarning={true}
+                      onInput={(e) => {
+                        isEditingRef.current = true;
+                        setContent(e.currentTarget.innerHTML);
+                      }}
+                      onBlur={(e) => {
+                        isEditingRef.current = false;
+                        setContent(e.currentTarget.innerHTML);
+                      }}
+                      data-placeholder={letterType === 'future' 
+                        ? "亲爱的我，当你在这行文字中醒来时，你是否正站在理想小岛的海岸线上？曾经困扰我们的那些沮丧，在你现在看来，是不是都已经化成了漫漫浪花？\n\n快写下你对未来的期待与承诺..."
+                        : "曾经的我，如果你能在这个瞬间听见我的声音。请原谅那个时候我们的笨拙与怯弱。不要害怕，你所经历的所有挣扎与阴霾，我都在未来平安为你趟过了，你很勇敢...\n\n把那些想对过去的自己诉说的话写下来..."
+                      }
+                      className="w-full flex-1 bg-transparent resize-none outline-none text-sm leading-[2.2rem] text-[#4d4030] font-serif min-h-[14rem] pb-4 editor-content-editable empty:before:content-[attr(data-placeholder)] empty:before:text-[#4d4030]/20 empty:before:whitespace-pre-wrap empty:before:pointer-events-none [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
                     />
                   </div>
+
+                  {/* Attached images visualization container */}
+                  {(attachedImages.length > 0 || attachedFiles.length > 0) && (
+                    <div className="mt-5 border-t border-dashed border-[#dfd6c6] pt-4 shrink-0">
+                      <span className="text-[10px] font-black text-[#8c7456] block mb-2">📎 信件随贴附件 ({attachedImages.length + attachedFiles.length}):</span>
+                      <div className="flex gap-2.5 overflow-x-auto pb-1.5 min-h-[4rem] items-center">
+                        {attachedImages.map((img, idx) => (
+                          <div key={idx} className="relative w-14 h-14 rounded-xl border border-[#dfd6c6] overflow-hidden shrink-0 group shadow-3xs">
+                            <img src={img} className="w-full h-full object-cover" />
+                            <button 
+                              onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        ))}
+                        {attachedFiles.map((file, idx) => (
+                          <div key={idx} className="relative w-20 h-14 bg-white rounded-xl border border-[#dfd6c6] shrink-0 group shadow-3xs flex flex-col items-center justify-center p-1 px-2">
+                            <span className="text-[10px] font-bold text-gray-700 truncate w-full text-center" title={file.name}>{file.name}</span>
+                            <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                            <button 
+                              onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-xl"
+                            >
+                              <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* End of Lined stationery paper pane */}
                 </div>
 
                 {/* Delivery schedule customizer */}
@@ -458,39 +927,65 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   
                   {/* Delivering delay option */}
                   <div className="space-y-2">
-                    <span className="text-xs font-bold text-gray-700">时光渡槽: 信件何时送达？</span>
-                    <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                      <button 
-                        onClick={() => setDeliveryYear('1')}
-                        className={`p-2.5 rounded-xl border text-center transition-all ${deliveryYear === '1' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
-                      >
-                        1年后 (2027年)
-                      </button>
-                      <button 
-                        onClick={() => setDeliveryYear('3')}
-                        className={`p-2.5 rounded-xl border text-center transition-all ${deliveryYear === '3' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
-                      >
-                        3年后 (2029年)
-                      </button>
-                      <button 
-                        onClick={() => setDeliveryYear('5')}
-                        className={`p-2.5 rounded-xl border text-center transition-all ${deliveryYear === '5' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
-                      >
-                        5年后 (2031年)
-                      </button>
+                    <span className="text-xs font-bold text-gray-700">
+                      {letterType === 'future' ? '时光渡槽: 信件何时送达？' : '岁月重演: 追溯至哪刻？'}
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-xs font-bold font-sans">
+                      {letterType === 'future' ? (
+                        <>
+                          <button 
+                            onClick={() => setDeliveryYear('1')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '1' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            1年后 (2027年)
+                          </button>
+                          <button 
+                            onClick={() => setDeliveryYear('3')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '3' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            3年后 (2029年)
+                          </button>
+                          <button 
+                            onClick={() => setDeliveryYear('5')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '5' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            5年后 (2031年)
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => setDeliveryYear('1')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '1' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            1年前 (2025年)
+                          </button>
+                          <button 
+                            onClick={() => setDeliveryYear('3')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '3' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            3年前 (2023年)
+                          </button>
+                          <button 
+                            onClick={() => setDeliveryYear('5')}
+                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === '5' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          >
+                            5年前 (2021年)
+                          </button>
+                        </>
+                      )}
                       <button 
                         onClick={() => setDeliveryYear('custom')}
-                        className={`p-2.5 rounded-xl border text-center transition-all ${deliveryYear === 'custom' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${deliveryYear === 'custom' ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
                       >
-                        特定预约日期
+                        特定预约时刻
                       </button>
                     </div>
 
                     {deliveryYear === 'custom' && (
                       <div className="pt-2 animate-fadeIn">
                         <input 
-                          type="date" 
-                          min="2026-06-05"
+                          type="datetime-local" 
                           value={customDate}
                           onChange={(e) => setCustomDate(e.target.value)}
                           className="w-full bg-white border border-gray-200 font-bold font-mono text-xs p-2.5 rounded-xl outline-none focus:border-[#a78358]"
@@ -500,7 +995,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   </div>
 
                   {/* Stamp selectors */}
-                  <div className="space-y-2 pt-2 border-t border-[#dfd6c6]/30">
+                  <div className="space-y-2 pt-2 border-t border-t-[#dfd6c6]/30">
                     <span className="text-xs font-bold text-gray-700">时光邮票</span>
                     <div className="grid grid-cols-5 gap-2">
                       {STAMP_PRESETS.map(stamp => (
@@ -520,9 +1015,9 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   </div>
 
                   {/* Wax Seal customizers */}
-                  <div className="space-y-2 pt-2 border-t border-[#dfd6c6]/30">
+                  <div className="space-y-2 pt-2 border-t border-t-[#dfd6c6]/30">
                     <span className="text-xs font-bold text-gray-700">火漆蜡印色彩</span>
-                    <div className="flex gap-2.5">
+                    <div className="flex gap-2.5 mb-4">
                       {SEAL_COLORS.map(seal => (
                         <button
                           key={seal.value}
@@ -534,6 +1029,66 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                           style={{ backgroundColor: seal.value }}
                         />
                       ))}
+                    </div>
+
+                    <div className="border-t border-[#dfd6c6]/30 pt-3 flex flex-col gap-2.5">
+                      <span className="text-xs font-bold text-gray-700">信件装帧与设计</span>
+                      <label className="w-full px-3.5 py-2 bg-[#E9E3D9]/60 hover:bg-[#E9E3D9] text-[#8c7456] text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs transition-all active:scale-95">
+                        <Plus className="w-3.5 h-3.5" />
+                        在正文添加图片
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleBodyImageFileChange} 
+                          className="hidden" 
+                        />
+                      </label>
+                      
+                      <div className="relative group/wp w-full">
+                        <button className="w-full px-3.5 py-2 bg-[#E9E3D9]/60 hover:bg-[#E9E3D9] text-[#8c7456] text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs transition-all">
+                          🎨 自定义信件背景图
+                        </button>
+                        <div className="absolute bottom-full right-0 mb-2 bg-[#FAF6F0] border border-[#dfd6c6] p-3 rounded-2xl shadow-xl w-64 hidden group-hover/wp:block z-50 animate-fadeIn">
+                          <span className="text-[10px] font-black text-[#8c7456] block mb-2">选择或上传背景：</span>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <button 
+                              onClick={() => setBgImage('')}
+                              className={`p-1.5 text-[10px] border rounded-lg font-bold truncate transition-colors ${!bgImage ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-100 hover:border-gray-200'}`}
+                            >
+                              纯净原色
+                            </button>
+                            {BG_PRESETS.map((bg, idx) => (
+                              <button 
+                                key={idx}
+                                onClick={() => setBgImage(bg.url)}
+                                className={`p-1.5 text-[10px] border rounded-lg font-bold truncate transition-colors ${bgImage === bg.url ? 'bg-[#a78358] text-white border-[#a78358]' : 'bg-white text-gray-700 border-gray-100 hover:border-gray-200'}`}
+                              >
+                                {bg.name}
+                              </button>
+                            ))}
+                          </div>
+                          <label className="w-full px-3.5 py-1.5 bg-[#a78358] hover:bg-[#8c7456] text-white text-[10px] font-black rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs transition-all mt-1">
+                            或者自己上传背景图
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleBgImageFileChange} 
+                              className="hidden" 
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <label className="w-full px-3.5 py-2 bg-[#E9E3D9]/60 hover:bg-[#E9E3D9] text-[#8c7456] text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs transition-all active:scale-95">
+                        <Plus className="w-3.5 h-3.5" />
+                        随机掉落附件OXO
+                        <input 
+                          type="file" 
+                          multiple 
+                          onChange={handleAnyFileChange} 
+                          className="hidden" 
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -568,9 +1123,10 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                 <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3">TO: {selectedReadingLetter.recipient}</span>
                 <h4 className="text-base font-black text-[#352a1a] mb-2">{selectedReadingLetter.title}</h4>
                 <p className="text-xs text-[#a88252] font-bold font-mono mb-4">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
-                <p className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic">
-                  {selectedReadingLetter.content}
-                </p>
+                <div 
+                  className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic editor-content-html [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
+                  dangerouslySetInnerHTML={{ __html: selectedReadingLetter.content }}
+                />
               </div>
 
               <div className="mt-5 border-t border-[#dfd6c6]/50 pt-4 flex gap-4 items-center justify-center">
@@ -584,6 +1140,42 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Letter Confirm Overlay */}
+      <AnimatePresence>
+        {deleteConfirmLetterId && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-[#1e2621]/40 flex items-center justify-center p-4"
+          >
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <Trash2 className="text-red-500 w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-emerald-900 mb-2">确认粉碎这封信件吗？</h3>
+              <p className="text-xs text-[#4E6156]/70 mb-5">
+                删除后这封信将彻底消失在时间线中，无法恢复。是否继续？
+              </p>
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setDeleteConfirmLetterId(null)}
+                  className="flex-1 py-2.5 rounded-full bg-[#F2F5F3] text-[#4E6156] text-xs font-bold hover:bg-[#E3EAE5] transition-colors"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={confirmDeleteLetter}
+                  className="flex-1 py-2.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-md shadow-red-500/20 hover:bg-red-600 transition-colors"
+                >
+                  粉碎信件
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

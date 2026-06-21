@@ -5,7 +5,7 @@ import {
   Book, BarChart2, CalendarDays, ArrowLeft, Image as ImageIcon, 
   Check, Paperclip, Link as LinkIcon, Music, Video, Sparkles, 
   Smile, RefreshCw, FolderPlus, Type, Highlighter, HelpCircle, 
-  Calendar, FileText, CheckCircle, Palette
+  Calendar, FileText, CheckCircle, Palette, Archive
 } from 'lucide-react';
 import { 
   DiaryEntry, COZY_WEATHER_PRESETS, COZY_MOOD_PRESETS, 
@@ -32,10 +32,35 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('全部');
   const [showStats, setShowStats] = useState(false);
+  const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const [showCancelPrompt, setShowCancelPrompt] = useState(false);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  
+  const [drafts, setDrafts] = useState<DiaryEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('dia_drafts');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dia_drafts', JSON.stringify(drafts));
+  }, [drafts]);
+
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAddingMoment && !editingEntryId && drafts.length > 0) {
+      setShowRestorePrompt(true);
+    }
+  }, [isAddingMoment, editingEntryId]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Draft States
   const editorRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newWeather, setNewWeather] = useState('☀️');
@@ -67,6 +92,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   const [showWeatherDropdown, setShowWeatherDropdown] = useState(false);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [tempFolder, setTempFolder] = useState('');
+  const [manualLocationInput, setManualLocationInput] = useState('');
 
   // Scrapbook Customizations
   const [selectedPaperColor, setSelectedPaperColor] = useState('#fffdf9'); // Soft warm paper
@@ -215,16 +241,54 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
     }
   };
 
+  const lastSelectionRef = useRef<Range | null>(null);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (
+        editorRef.current?.contains(range.startContainer) || 
+        titleRef.current?.contains(range.startContainer)
+      ) {
+        lastSelectionRef.current = range.cloneRange();
+      }
+    }
+  };
+
+  const restoreSelection = () => {
+    if (lastSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(lastSelectionRef.current.cloneRange());
+        
+        // Refocus active container
+        if (editorRef.current?.contains(lastSelectionRef.current.startContainer)) {
+          editorRef.current.focus();
+        } else if (titleRef.current?.contains(lastSelectionRef.current.startContainer)) {
+          titleRef.current.focus();
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (editorRef.current && isAddingMoment) {
       if (editorRef.current.innerHTML !== newContent) {
         editorRef.current.innerHTML = newContent;
       }
     }
+    if (titleRef.current && isAddingMoment) {
+      if (titleRef.current.innerHTML !== newTitle) {
+        titleRef.current.innerHTML = newTitle;
+      }
+    }
   }, [isAddingMoment, editingEntryId]);
 
   // Command formatter & custom style resolvers tailored only to selection content
   const applyCustomFontSize = (fontSize: string) => {
+    restoreSelection();
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
@@ -240,29 +304,39 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
       newRange.collapse(true);
       selection.removeAllRanges();
       selection.addRange(newRange);
+      
+      lastSelectionRef.current = newRange.cloneRange();
+      
       if (editorRef.current) setNewContent(editorRef.current.innerHTML);
+      if (titleRef.current) setNewTitle(titleRef.current.innerHTML);
       return;
     }
 
     document.execCommand('styleWithCSS', false, 'true');
     document.execCommand('fontSize', false, '7'); 
-    if (editorRef.current) {
-      const fonts = editorRef.current.querySelectorAll('font[size="7"]');
+    
+    const targets = [editorRef.current, titleRef.current].filter(Boolean) as HTMLDivElement[];
+    targets.forEach(target => {
+      const fonts = target.querySelectorAll('font[size="7"]');
       fonts.forEach(font => {
         const span = document.createElement('span');
         span.style.fontSize = fontSize;
         span.innerHTML = font.innerHTML;
         font.parentNode?.replaceChild(span, font);
       });
-      const spans = editorRef.current.querySelectorAll('span[style*="xxx-large"]');
+      const spans = target.querySelectorAll('span[style*="xxx-large"]');
       spans.forEach(span => {
         (span as HTMLElement).style.fontSize = fontSize;
       });
-      setNewContent(editorRef.current.innerHTML);
-    }
+    });
+    
+    if (editorRef.current) setNewContent(editorRef.current.innerHTML);
+    if (titleRef.current) setNewTitle(titleRef.current.innerHTML);
+    saveSelection();
   };
 
   const applyCustomHighlight = (color: string, heightPercent: number) => {
+    restoreSelection();
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
@@ -283,39 +357,52 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
       newRange.collapse(true);
       selection.removeAllRanges();
       selection.addRange(newRange);
+      
+      lastSelectionRef.current = newRange.cloneRange();
+      
       if (editorRef.current) setNewContent(editorRef.current.innerHTML);
+      if (titleRef.current) setNewTitle(titleRef.current.innerHTML);
       return;
     }
 
     document.execCommand('styleWithCSS', false, 'true');
     if (!color) {
       document.execCommand('hiliteColor', false, 'transparent');
-      if (editorRef.current) {
-        const elements = editorRef.current.querySelectorAll('span[style*="linear-gradient"]');
+      const targets = [editorRef.current, titleRef.current].filter(Boolean) as HTMLDivElement[];
+      targets.forEach(target => {
+        const elements = target.querySelectorAll('span[style*="linear-gradient"]');
         elements.forEach(el => {
            (el as HTMLElement).style.background = 'transparent';
            (el as HTMLElement).style.backgroundImage = 'none';
         });
-      }
+      });
     } else {
       document.execCommand('hiliteColor', false, '#ff00ff'); // Unique magenta marker
-      if (editorRef.current) {
-        // Query both rgb and hex variations that the browser might generate
-        const spans = editorRef.current.querySelectorAll('span[style*="background-color: rgb(255, 0, 255)"], span[style*="background-color: #ff00ff"]');
-        const transparentStop = 100 - heightPercent;
-        const gradient = `linear-gradient(180deg, transparent ${transparentStop}%, ${color} ${transparentStop}%)`;
+      const targets = [editorRef.current, titleRef.current].filter(Boolean) as HTMLDivElement[];
+      const transparentStop = 100 - heightPercent;
+      const gradient = `linear-gradient(180deg, transparent ${transparentStop}%, ${color} ${transparentStop}%)`;
+      targets.forEach(target => {
+        const spans = target.querySelectorAll('span[style*="background-color: rgb(255, 0, 255)"], span[style*="background-color: #ff00ff"]');
         spans.forEach(span => {
           (span as HTMLElement).style.backgroundColor = 'transparent';
           (span as HTMLElement).style.backgroundImage = gradient;
           (span as HTMLElement).style.display = 'inline';
           (span as HTMLElement).style.padding = '1px 0';
         });
-      }
+      });
     }
     if (editorRef.current) setNewContent(editorRef.current.innerHTML);
+    if (titleRef.current) setNewTitle(titleRef.current.innerHTML);
+    saveSelection();
   };
 
   const applyFormat = (command: string, value?: string) => {
+    restoreSelection();
+    const activeElement = document.activeElement;
+    if (activeElement !== titleRef.current && activeElement !== editorRef.current) {
+        editorRef.current?.focus();
+    }
+    
     document.execCommand('styleWithCSS', false, 'true');
     if (command === 'hiliteColor') {
       applyCustomHighlight(value || '', markerHeight);
@@ -323,13 +410,16 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
       applyCustomFontSize(value);
     } else {
       document.execCommand(command, false, value);
-      if (editorRef.current) setNewContent(editorRef.current.innerHTML);
     }
+    if (editorRef.current) setNewContent(editorRef.current.innerHTML);
+    if (titleRef.current) setNewTitle(titleRef.current.innerHTML);
+    saveSelection();
   };
 
   const startCompose = () => {
     setEditingEntryId(null);
     setNewTitle('');
+    if (titleRef.current) titleRef.current.innerHTML = '';
     setNewContent('');
     setNewWeather('☀️');
     setNewMood('😊');
@@ -351,6 +441,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
     e.stopPropagation();
     setEditingEntryId(entry.id);
     setNewTitle(entry.title);
+    if (titleRef.current) titleRef.current.innerHTML = entry.title || '';
     setNewContent(entry.content);
     setNewWeather(entry.weather);
     setNewMood(entry.mood);
@@ -366,6 +457,38 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
     setIsUnderline(entry.style?.underline || false);
     setSelectedHighlight(entry.style?.highlight || '');
     setIsAddingMoment(true);
+  };
+
+
+  const handleCancelDraft = () => {
+    const finalHtml = editorRef.current?.innerHTML || newContent;
+    if (finalHtml.trim() || newTitle.trim()) {
+      setShowCancelPrompt(true);
+    } else {
+      setIsAddingMoment(false);
+    }
+  };
+
+  const saveToDrafts = () => {
+    const finalHtml = editorRef.current?.innerHTML || newContent;
+    const now = new Date();
+    const newDraft: DiaryEntry = {
+      id: Date.now().toString(),
+      title: newTitle.trim(),
+      content: finalHtml,
+      date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+      weather: newWeather,
+      mood: newMood,
+      folder: newFolder,
+      location: newLocation,
+      images: newImages,
+      links: newLinks,
+      files: newFiles
+    };
+    setDrafts(prev => [newDraft, ...prev]);
+    setShowCancelPrompt(false);
+    setIsAddingMoment(false);
   };
 
   const saveEntry = () => {
@@ -423,10 +546,17 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
     setIsAddingMoment(false);
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const deleteEntry = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('确认删除这篇岛屿记忆吗？')) {
-      setEntries(prev => prev.filter(item => item.id !== id));
+    setDeleteConfirmId(id);
+  };
+  
+  const confirmDelete = () => {
+    if (deleteConfirmId) {
+      setEntries(prev => prev.filter(item => item.id !== deleteConfirmId));
+      setDeleteConfirmId(null);
     }
   };
 
@@ -467,46 +597,19 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
         author: ''
       };
 
-      // Real server-side/client-side metadata crawl via AllOrigins CORS-aware proxy
+      // Server-side parsing to avoid CORS and parse accurately
       try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(formatted)}`);
+        const response = await fetch(`/api/link-preview?url=${encodeURIComponent(formatted)}`);
         if (response.ok) {
           const resJson = await response.json();
-          if (resJson.contents) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(resJson.contents, 'text/html');
-            
-            const fetchedTitle = doc.querySelector('title')?.innerText || 
-                                 doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || 
-                                 doc.querySelector('meta[name="twitter:title"]')?.getAttribute('content') || '';
-            const fetchedDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || 
-                                doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-            let fetchedCover = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || 
-                               doc.querySelector('link[rel="image_src"]')?.getAttribute('href') || 
-                               doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content') || '';
-            const fetchedAuthor = doc.querySelector('meta[property="og:author"]')?.getAttribute('content') || 
-                                  doc.querySelector('meta[name="author"]')?.getAttribute('content') || '';
-
-            if (fetchedTitle) {
-              meta.title = fetchedTitle.trim();
-            }
-            if (fetchedDesc) {
-              meta.snippet = fetchedDesc.trim();
-            }
-            if (fetchedCover) {
-              if (fetchedCover.startsWith('/')) {
-                const urlObj = new URL(formatted);
-                fetchedCover = urlObj.origin + fetchedCover;
-              }
-              meta.cover = fetchedCover;
-            }
-            if (fetchedAuthor) {
-              meta.author = fetchedAuthor.trim();
-            }
-          }
+          if (resJson.title) meta.title = resJson.title;
+          if (resJson.artist) meta.artist = resJson.artist;
+          if (resJson.cover) meta.cover = resJson.cover;
+          if (resJson.description) meta.snippet = resJson.description;
+          if (resJson.author) meta.author = resJson.author;
         }
       } catch (err) {
-        console.warn('CORS request failed, fallback parser is selected', err);
+        console.warn('Backend crawler failed, using fallback parsing:', err);
       }
 
       // If no values retrieved, load high-fidelity matching placeholders:
@@ -665,10 +768,11 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
             />
           </div>
           <button 
-            onClick={() => setShowStats(!showStats)}
-            className={`p-2.5 rounded-full border transition-all ${showStats ? 'bg-[#4E6156] text-white border-[#4E6156]' : 'bg-[#F2F5F3]/50 hover:bg-[#F2F5F3] text-[#2D3832] border-[#E3EAE5]'}`}
+            onClick={() => setShowDraftsModal(!showDraftsModal)}
+            className={`p-2.5 rounded-full border transition-all relative ${showDraftsModal ? 'bg-[#4E6156] text-white border-[#4E6156]' : 'bg-[#F2F5F3]/50 hover:bg-[#F2F5F3] text-[#2D3832] border-[#E3EAE5]'}`}
           >
-            <BarChart2 className="w-5 h-5" />
+            <Archive className="w-5 h-5" />
+            {drafts.length > 0 && <span className="absolute top-0 right-0 w-2 h-2 bg-red-400 rounded-full border border-white"></span>}
           </button>
         </div>
 
@@ -705,7 +809,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
       {/* Main Panel */}
       <div className="flex-1 overflow-auto relative">
         <AnimatePresence>
-          {showStats ? (
+          {showDraftsModal ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -715,80 +819,77 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
-                    <BarChart2 className="text-[#4E6156] w-5 h-5" />
-                    小岛数据罗盘 (数据统计)
+                    <Archive className="text-[#4E6156] w-5 h-5" />
+                    草稿箱
                   </h3>
                   <button 
-                    onClick={() => setShowStats(false)}
+                    onClick={() => setShowDraftsModal(false)}
                     className="flex items-center gap-1 text-xs text-[#3E5246] hover:text-[#1e2621] font-bold bg-white px-3 py-1.5 rounded-full border border-[#E3EAE5] shadow-xs"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" /> 返回日记簿
                   </button>
                 </div>
 
-                {/* Top Stat Boxes Grid */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white p-4 rounded-3xl border border-[#E3EAE5] shadow-xs flex flex-col items-center">
-                    <span className="text-2xl font-black text-[#2D3832]">{totalDays}</span>
-                    <span className="text-[10px] font-bold text-[#4E6156]/70 mt-1">定格记忆 (篇)</span>
-                  </div>
-                  <div className="bg-white p-4 rounded-3xl border border-[#E3EAE5] shadow-xs flex flex-col items-center">
-                    <span className="text-2xl font-black text-rose-500">{maxMood}</span>
-                    <span className="text-[10px] font-bold text-[#4E6156]/70 mt-1">主导心情</span>
-                  </div>
-                  <div className="bg-white p-4 rounded-3xl border border-[#E3EAE5] shadow-xs flex flex-col items-center">
-                    <span className="text-2xl font-black text-amber-600">{folders.length - 1}</span>
-                    <span className="text-[10px] font-bold text-[#4E6156]/70 mt-1">岛屿抽屉 (类别)</span>
-                  </div>
-                </div>
-
-                {/* Custom SVG Dashboard Chart */}
-                <div className="bg-white p-5 rounded-[2rem] border border-[#E3EAE5] shadow-md">
-                  <h4 className="text-sm font-bold text-[#1e2621] mb-4 text-center">心情光谱分布</h4>
-                  
-                  {Object.keys(moodCounts).length === 0 ? (
-                    <p className="text-xs text-center text-[#4E6156]/50 py-10">尚无任何日记心情数据</p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {Object.entries(moodCounts).map(([mood, count]) => {
-                        const percent = Math.round(((count as number) / totalDays) * 100);
-                        const moodMeta = COZY_MOOD_PRESETS.find(p => p.icon === mood);
-                        return (
-                          <div key={mood} className="space-y-1">
-                            <div className="flex justify-between items-center text-xs font-bold text-emerald-900">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-lg">{mood}</span>
-                                <span>{moodMeta?.label || '未知'}</span>
-                              </span>
-                              <span>{count} 篇 ({percent}%)</span>
-                            </div>
-                            <div className="h-3 bg-[#F2F5F3] rounded-full overflow-hidden border border-[#E3EAE5]/30">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percent}%` }}
-                                transition={{ duration: 1, ease: 'easeOut' }}
-                                className="h-full bg-linear-to-r from-[#4E6156] to-teal-400 rounded-full"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                {drafts.length === 0 ? (
+                  <div className="bg-white p-10 rounded-[2rem] border border-[#E3EAE5] shadow-xs flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#F2F5F3] flex items-center justify-center text-[#4E6156] mb-3">
+                      <Archive className="w-8 h-8 opacity-50" />
                     </div>
-                  )}
-                </div>
-
-                {/* Hand Drawn vector visualizer */}
-                <div className="bg-white p-6 rounded-[2rem] border border-[#E3EAE5] shadow-xs flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#F2F5F3] flex items-center justify-center text-[#4E6156] mb-2">
-                    <CheckCircle className="w-8 h-8" />
+                    <h5 className="font-bold text-sm text-emerald-900 mb-1">草稿箱空空如也</h5>
+                    <p className="text-xs text-[#4E6156] max-w-sm">
+                      如果有未完待续的日记取消编辑时，可以保留在这作为草稿。
+                    </p>
                   </div>
-                  <h5 className="font-bold text-sm text-emerald-900 mb-1">小岛栖息地评级</h5>
-                  <p className="text-xs text-[#4E6156] max-w-sm">
-                    {totalDays > 5 
-                      ? '你的记忆被整理得井井有条！你正在用心守护着小岛上的每一次心跳与微风。继续保持记录吧！' 
-                      : '你已点亮了最初的篝火。每一次零星的随笔，都让这片荒岛多一朵盛开的樱树。写下更多定格记忆吧。'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {drafts.map((draft, idx) => (
+                      <div key={draft.id} className="bg-white p-5 rounded-[2rem] border border-[#E3EAE5] shadow-sm flex items-center justify-between group hover:border-[#C3D0C9] transition-colors cursor-pointer" onClick={() => {
+                              setEditingEntryId(null);
+                              setNewTitle(draft.title);
+                              if (titleRef.current) titleRef.current.innerHTML = draft.title || '';
+                              if (editorRef.current) {
+                                editorRef.current.innerHTML = draft.content;
+                              }
+                              setNewContent(draft.content);
+                              setNewWeather(draft.weather);
+                              setNewMood(draft.mood);
+                              setNewFolder(draft.folder);
+                              setNewLocation(draft.location || '');
+                              setNewImages(draft.images || []);
+                              setNewLinks(draft.links || []);
+                              setNewFiles(draft.files || []);
+                              setShowDraftsModal(false);
+                              setIsAddingMoment(true);
+                              setDrafts(prev => prev.filter((_, i) => i !== idx));
+                            }}>
+                        <div className="flex-1 pr-4">
+                          <h4 className="font-bold text-emerald-900 text-sm mb-1 line-clamp-1">{draft.title || '无题草稿'}</h4>
+                          <div className="text-xs text-[#4E6156]/70 line-clamp-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: draft.content || '空内容...' }}></div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] text-gray-400 font-mono">{draft.date} {draft.time}</span>
+                            <span className="bg-[#4E6156]/5 text-[#3E5246] px-1.5 py-0.5 rounded text-[10px] font-bold">📁 {draft.folder}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button 
+                            className="bg-[#4E6156] text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xs hover:bg-[#3E5246] transition-colors cursor-pointer"
+                          >
+                            继续编辑
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDrafts(prev => prev.filter((_, i) => i !== idx));
+                            }}
+                            className="p-1.5 text-red-400 bg-red-50 hover:bg-red-100 rounded-full transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : null}
@@ -867,9 +968,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                       </span>
                     </div>
 
-                    <h4 className="text-base font-black tracking-tighter mb-1.5 text-[#1e2621] pr-8">
-                      {entry.title}
-                    </h4>
+                    <h4 className="text-base font-black tracking-tighter mb-1.5 text-[#1e2621] pr-8" dangerouslySetInnerHTML={{ __html: entry.title || '无题' }} />
 
                     {/* Styled Paragraph content snippet */}
                     <p 
@@ -978,7 +1077,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
             {/* Studio Header */}
             <div className="h-14 bg-white border-b border-[#E3EAE5] flex items-center justify-between px-5 shrink-0 shadow-xs">
               <button 
-                onClick={() => setIsAddingMoment(false)}
+                onClick={handleCancelDraft}
                 className="text-[#2D3832] hover:text-[#1e2621] p-1.5 hover:bg-[#F2F5F3] rounded-full transition-colors font-bold text-sm flex items-center gap-1 cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" /> 取消
@@ -996,7 +1095,8 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
             </div>
 
             {/* Customization Workspace Board with safe bottom padding for small devices/iframes */}
-            <div className="flex-1 overflow-auto p-4 md:p-5 flex flex-col lg:flex-row gap-4 md:gap-5 pb-24 lg:pb-12 bg-[#F4F9F6]">
+            <div className="flex-1 overflow-auto p-4 md:p-5 flex flex-col gap-4 md:gap-5 pb-24 lg:pb-12 bg-[#F4F9F6]">
+              <div className="flex flex-col lg:flex-row gap-4 md:gap-5">
               {/* Left Side: Scrapbook Composition Sheet */}
               <div 
                 style={{ 
@@ -1013,211 +1113,24 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4 mt-8">
-                  {/* Title and mood/weather banners */}
-                  <div className="flex items-center gap-2.5 flex-wrap z-30">
-                    
-                    {/* CUSTOM MOOD SELECTOR */}
-                    <div className="relative">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setShowMoodDropdown(!showMoodDropdown);
-                          setShowWeatherDropdown(false);
-                          setShowFolderDropdown(false);
-                        }}
-                        className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
-                      >
-                        <span>心情: {newMood}</span>
-                        <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
-                      </button>
-                      {showMoodDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowMoodDropdown(false)} />
-                          <div className="absolute top-10 left-0 w-56 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3.5 z-50 flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-150">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">选择今日心境</span>
-                            <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                              {moodPresets.map((m) => (
-                                <button
-                                  key={m.icon + '-' + m.label}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewMood(m.icon);
-                                    setShowMoodDropdown(false);
-                                  }}
-                                  className={`p-1.5 rounded-xl hover:bg-[#F2F5F3] text-xs flex flex-col items-center gap-1 transition-all ${newMood === m.icon ? 'bg-[#E3EAE5] border border-[#C3D0C9]' : 'border border-transparent'}`}
-                                >
-                                  <span className="text-xl">{m.icon}</span>
-                                  <span className="text-[10px] font-bold text-[#2D3832]/80">{m.label}</span>
-                                </button>
-                              ))}
-                            </div>
-                            <div className="border-t border-[#F2F5F3] pt-2.5 flex flex-col gap-1.5">
-                              <label className="text-[10px] font-bold text-gray-400">➕ 自填心情 emoji</label>
-                              <div className="flex gap-1.5">
-                                <input
-                                  type="text"
-                                  placeholder="如: 🥳 欢喜"
-                                  value={customMoodInput}
-                                  onChange={(e) => setCustomMoodInput(e.target.value)}
-                                  className="bg-[#F2F5F3] border-none rounded-lg text-xs px-2.5 py-1.5 w-full outline-none font-sans font-bold text-gray-700 placeholder-gray-400"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (customMoodInput.trim()) {
-                                      const text = customMoodInput.trim();
-                                      const emojiMatch = text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji}/u);
-                                      const icon = emojiMatch ? emojiMatch[0] : '✨';
-                                      const label = text.replace(icon, '').trim() || '自定义';
-                                      
-                                      const newPreset = { icon, label: label.substring(0, 4) };
-                                      setMoodPresets(prev => [...prev, newPreset]);
-                                      setNewMood(icon);
-                                      setCustomMoodInput('');
-                                      setShowMoodDropdown(false);
-                                    }
-                                  }}
-                                  className="px-2.5 py-1.5 bg-[#4E6156] text-white text-[10px] font-bold rounded-lg hover:bg-[#3d4c43] transition-colors shrink-0"
-                                >
-                                  添加
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                  {/* Title and mood/weather banners moved */}
 
-                    {/* CUSTOM WEATHER SELECTOR */}
-                    <div className="relative">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setShowWeatherDropdown(!showWeatherDropdown);
-                          setShowMoodDropdown(false);
-                          setShowFolderDropdown(false);
-                        }}
-                        className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
-                      >
-                        <span>天气: {newWeather}</span>
-                        <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
-                      </button>
-                      {showWeatherDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowWeatherDropdown(false)} />
-                          <div className="absolute top-10 left-0 w-56 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3.5 z-50 flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-150">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">选择今日天气</span>
-                            <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                              {weatherPresets.map((w) => (
-                                <button
-                                  key={w.icon + '-' + w.label}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewWeather(w.icon);
-                                    setShowWeatherDropdown(false);
-                                  }}
-                                  className={`p-1.5 rounded-xl hover:bg-[#F2F5F3] text-xs flex flex-col items-center gap-1 transition-all ${newWeather === w.icon ? 'bg-[#E3EAE5] border border-[#C3D0C9]' : 'border border-transparent'}`}
-                                >
-                                  <span className="text-xl">{w.icon}</span>
-                                  <span className="text-[10px] font-bold text-[#2D3832]/80">{w.label}</span>
-                                </button>
-                              ))}
-                            </div>
-                            <div className="border-t border-[#F2F5F3] pt-2.5 flex flex-col gap-1.5">
-                              <label className="text-[10px] font-bold text-gray-400">➕ 自填天气 emoji</label>
-                              <div className="flex gap-1.5">
-                                <input
-                                  type="text"
-                                  placeholder="如: 🌅 朝霞"
-                                  value={customWeatherInput}
-                                  onChange={(e) => setCustomWeatherInput(e.target.value)}
-                                  className="bg-[#F2F5F3] border-none rounded-lg text-xs px-2.5 py-1.5 w-full outline-none font-sans font-bold text-gray-700 placeholder-gray-400"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (customWeatherInput.trim()) {
-                                      const text = customWeatherInput.trim();
-                                      const emojiMatch = text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji}/u);
-                                      const icon = emojiMatch ? emojiMatch[0] : '✨';
-                                      const label = text.replace(icon, '').trim() || '自定义';
-                                      
-                                      const newPreset = { icon, label: label.substring(0, 4) };
-                                      setWeatherPresets(prev => [...prev, newPreset]);
-                                      setNewWeather(icon);
-                                      setCustomWeatherInput('');
-                                      setShowWeatherDropdown(false);
-                                    }
-                                  }}
-                                  className="px-2.5 py-1.5 bg-[#4E6156] text-white text-[10px] font-bold rounded-lg hover:bg-[#3d4c43] transition-colors shrink-0"
-                                >
-                                  添加
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* CUSTOM FOLDER SELECTOR */}
-                    <div className="relative">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setShowFolderDropdown(!showFolderDropdown);
-                          setShowMoodDropdown(false);
-                          setShowWeatherDropdown(false);
-                        }}
-                        className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
-                      >
-                        <span>归档: 📁 {newFolder}</span>
-                        <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
-                      </button>
-                      {showFolderDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowFolderDropdown(false)} />
-                          <div className="absolute top-10 left-0 w-48 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3 z-50 flex flex-col gap-2 animate-in fade-in-50 zoom-in-95 duration-150">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">划分日记抽屉</span>
-                            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                              {folders.filter(f => f !== '全部').map((folderName) => (
-                                <button
-                                  key={folderName}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewFolder(folderName);
-                                    setShowFolderDropdown(false);
-                                  }}
-                                  className={`w-full text-left p-2 rounded-xl text-xs font-bold hover:bg-[#F2F5F3] truncate ${newFolder === folderName ? 'bg-[#E3EAE5] text-[#2D3832]' : 'text-gray-600'}`}
-                                >
-                                  📁 {folderName}
-                                </button>
-                              ))}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowFolderCreator(true);
-                                setShowFolderDropdown(false);
-                              }}
-                              className="w-full text-center py-2 border border-dashed border-[#DFE4E1] hover:bg-[#F2F5F3] text-[11px] font-black rounded-xl text-[#4E6156] mt-1"
-                            >
-                              + 新建抽屉/文件夹
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                  </div>
-
-                  <input 
-                    type="text" 
-                    placeholder="给记忆取个美好的标题..."
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    dir="auto"
-                    className="bg-transparent text-lg font-black outline-none border-b border-[#2D3832]/10 pb-2 placeholder-[#1e2621]/20"
+                  {/* Rich Text Title */}
+                  <div 
+                    ref={titleRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    data-placeholder="给记忆取个美好的标题..."
+                    onInput={(e) => {
+                      setNewTitle(e.currentTarget.innerHTML);
+                    }}
+                    onBlur={(e) => {
+                      setNewTitle(e.currentTarget.innerHTML);
+                      saveSelection();
+                    }}
+                    onMouseUp={saveSelection}
+                    onKeyUp={saveSelection}
+                    className="bg-transparent text-lg font-black outline-none border-b border-[#2D3832]/10 pb-2 empty:before:content-[attr(data-placeholder)] empty:before:text-[#1e2621]/20 empty:before:pointer-events-none empty:before:opacity-60 min-h-[40px] whitespace-pre-wrap break-words"
                   />
 
                   {/* Body TextArea */}
@@ -1229,40 +1142,44 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                     style={{ 
                       color: defaultTextColor
                     }}
+                    onInput={(e) => {
+                      setNewContent(e.currentTarget.innerHTML);
+                    }}
+                    onBlur={(e) => {
+                      setNewContent(e.currentTarget.innerHTML);
+                      saveSelection();
+                    }}
+                    onMouseUp={saveSelection}
+                    onKeyUp={saveSelection}
                     dir="auto"
                     className="w-full flex-1 bg-transparent resize-none outline-none leading-loose font-serif py-2 transition-all min-h-[50vh] empty:before:content-[attr(data-placeholder)] empty:before:text-[#1e2621]/20 empty:before:pointer-events-none empty:before:opacity-60"
                   />
 
-                  {/* Instagram-style Bottom Photo Grid Section */}
+                  {/* Instagram-style Photo Grid at the very bottom of the diary page column inside composition sheet */}
                   {newImages.length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-[#2D3832]/10 select-none animate-fade-in">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full border border-pink-400 bg-linear-to-tr from-yellow-300 via-pink-500 to-purple-600 p-0.5 flex-shrink-0 flex items-center justify-center">
+                    <div className="mt-4 pt-4 border-t border-[#2D3832]/5 select-none flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full border border-pink-400 bg-gradient-to-tr from-yellow-300 via-pink-500 to-purple-600 p-0.5 flex-shrink-0 flex items-center justify-center">
                           <div className="w-full h-full bg-[#E3EAE5] rounded-full overflow-hidden flex items-center justify-center border border-white">
-                            <span className="text-lg">🏝️</span>
+                            <span className="text-xs">🏝️</span>
                           </div>
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="font-sans font-bold text-xs text-[#2D3832] flex items-center gap-1.5 leading-none">
+                          <span className="font-sans font-bold text-[11px] text-[#2D3832] flex items-center gap-1 leading-none">
                             岛屿摄影师 · @屿落 📷 
-                            <span className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-mono font-black text-[7px] px-1 py-0.5 rounded-sm uppercase tracking-wide">Verified</span>
                           </span>
-                          <span className="text-[9px] text-gray-400 font-medium mt-1">专属镜头画卷 | Instagram Style Grid</span>
+                          <span className="text-[8px] text-gray-400 mt-0.5">专属实物镜头画卷 | Instagram Grid</span>
                         </div>
-                        <div className="ml-auto flex items-center gap-4 text-center">
+                        <div className="ml-auto flex items-center gap-3 text-center text-gray-500">
                           <div>
-                            <p className="text-xs font-black text-[#2D3832]">{newImages.length}</p>
-                            <p className="text-[8px] text-gray-400 uppercase font-black">帖子</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-[#2D3832]">{newImages.length * 8 + 15}</p>
-                            <p className="text-[8px] text-gray-400 uppercase font-black">获赞</p>
+                            <p className="text-[10px] font-black">{newImages.length}</p>
+                            <p className="text-[7px] uppercase font-bold text-gray-400">Pores</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* 3 Column Square Grid mirroring Instagram profiles */}
-                      <div className="grid grid-cols-3 gap-1 md:gap-1.5 rounded-2xl overflow-hidden shadow-2xs border border-gray-150/60 bg-white/70 p-1.5">
+                      {/* 3-Column Square Grid mirroring Instagram profile feed */}
+                      <div className="grid grid-cols-3 gap-1 rounded-2xl overflow-hidden border border-gray-150/40 bg-white/40 p-1">
                         {newImages.map((img, index) => (
                           <div 
                             key={index}
@@ -1272,13 +1189,13 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                             <img 
                               src={img} 
                               alt="Instagram grid card" 
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="w-full h-full object-cover transition-transform duration-350 group-hover:scale-105"
                             />
-                            {/* Hover overlay stats */}
-                            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3.5 text-white text-xs font-bold">
-                              <span className="flex items-center gap-0.5">❤️ {15 + index * 4}</span>
+                            {/* Hover overlay stats & delete option */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5 text-white text-[10px] font-bold">
+                              <span>❤️ {15 + index * 4}</span>
                               <span 
-                                className="flex items-center gap-0.5 hover:text-red-400 transition-colors cursor-pointer bg-white/20 p-1 rounded-md"
+                                className="flex items-center justify-center w-5 h-5 bg-white/20 hover:bg-red-500/50 rounded-full transition-colors cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setNewImages(prev => prev.filter((_, idx) => idx !== index));
@@ -1308,6 +1225,210 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
 
               {/* Right Side Style Customizer drawer panel with safe bottom spacing */}
               <div className="w-full lg:w-80 bg-white rounded-[2.5rem] p-5 pb-16 lg:pb-8 border border-[#F2F5F3] shadow-sm flex flex-col gap-5 shrink-0">
+                <h5 className="font-bold text-sm text-[#1e2621] flex items-center gap-1 border-b pb-2 border-gray-100">
+                  日记本属性归约
+                </h5>
+                {/* Title and mood/weather banners */}
+                <div className="flex items-center gap-2.5 flex-wrap z-30">
+                  
+                  {/* CUSTOM MOOD SELECTOR */}
+                  <div className="relative">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setShowMoodDropdown(!showMoodDropdown);
+                        setShowWeatherDropdown(false);
+                        setShowFolderDropdown(false);
+                      }}
+                      className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
+                    >
+                      <span>心情: {newMood}</span>
+                      <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
+                    </button>
+                    {showMoodDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowMoodDropdown(false)} />
+                        <div className="absolute top-10 left-0 w-56 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3.5 z-50 flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-150">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">选择今日心境</span>
+                          <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                            {moodPresets.map((m) => (
+                              <button
+                                key={m.icon + '-' + m.label}
+                                type="button"
+                                onClick={() => {
+                                setNewMood(m.icon);
+                                setShowMoodDropdown(false);
+                                }}
+                                className={`p-1.5 rounded-xl hover:bg-[#F2F5F3] text-xs flex flex-col items-center gap-1 transition-all ${newMood === m.icon ? 'bg-[#E3EAE5] border border-[#C3D0C9]' : 'border border-transparent'}`}
+                              >
+                                <span className="text-xl">{m.icon}</span>
+                                <span className="text-[10px] font-bold text-[#2D3832]/80">{m.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="border-t border-[#F2F5F3] pt-2.5 flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-gray-400">➕ 自填心情 emoji</label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="如: 🥳 欢喜"
+                                value={customMoodInput}
+                                onChange={(e) => setCustomMoodInput(e.target.value)}
+                                className="bg-[#F2F5F3] border-none rounded-lg text-xs px-2.5 py-1.5 w-full outline-none font-sans font-bold text-gray-700 placeholder-gray-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                if (customMoodInput.trim()) {
+                                  const text = customMoodInput.trim();
+                                  const emojiMatch = text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji}/u);
+                                  const icon = emojiMatch ? emojiMatch[0] : '✨';
+                                  const label = text.replace(icon, '').trim() || '自定义';
+                                  
+                                  const newPreset = { icon, label: label.substring(0, 4) };
+                                  setMoodPresets(prev => [...prev, newPreset]);
+                                  setNewMood(icon);
+                                  setCustomMoodInput('');
+                                  setShowMoodDropdown(false);
+                                }
+                                }}
+                                className="px-2.5 py-1.5 bg-[#4E6156] text-white text-[10px] font-bold rounded-lg hover:bg-[#3d4c43] transition-colors shrink-0"
+                              >
+                                添加
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* CUSTOM WEATHER SELECTOR */}
+                  <div className="relative">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setShowWeatherDropdown(!showWeatherDropdown);
+                        setShowMoodDropdown(false);
+                        setShowFolderDropdown(false);
+                      }}
+                      className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
+                    >
+                      <span>天气: {newWeather}</span>
+                      <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
+                    </button>
+                    {showWeatherDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowWeatherDropdown(false)} />
+                        <div className="absolute top-10 left-0 w-56 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3.5 z-50 flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-150">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">选择今日天气</span>
+                          <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                            {weatherPresets.map((w) => (
+                              <button
+                                key={w.icon + '-' + w.label}
+                                type="button"
+                                onClick={() => {
+                                setNewWeather(w.icon);
+                                setShowWeatherDropdown(false);
+                                }}
+                                className={`p-1.5 rounded-xl hover:bg-[#F2F5F3] text-xs flex flex-col items-center gap-1 transition-all ${newWeather === w.icon ? 'bg-[#E3EAE5] border border-[#C3D0C9]' : 'border border-transparent'}`}
+                              >
+                                <span className="text-xl">{w.icon}</span>
+                                <span className="text-[10px] font-bold text-[#2D3832]/80">{w.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="border-t border-[#F2F5F3] pt-2.5 flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-gray-400">➕ 自填天气 emoji</label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="如: 🌅 朝霞"
+                                value={customWeatherInput}
+                                onChange={(e) => setCustomWeatherInput(e.target.value)}
+                                className="bg-[#F2F5F3] border-none rounded-lg text-xs px-2.5 py-1.5 w-full outline-none font-sans font-bold text-gray-700 placeholder-gray-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                if (customWeatherInput.trim()) {
+                                  const text = customWeatherInput.trim();
+                                  const emojiMatch = text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji}/u);
+                                  const icon = emojiMatch ? emojiMatch[0] : '✨';
+                                  const label = text.replace(icon, '').trim() || '自定义';
+                                  
+                                  const newPreset = { icon, label: label.substring(0, 4) };
+                                  setWeatherPresets(prev => [...prev, newPreset]);
+                                  setNewWeather(icon);
+                                  setCustomWeatherInput('');
+                                  setShowWeatherDropdown(false);
+                                }
+                                }}
+                                className="px-2.5 py-1.5 bg-[#4E6156] text-white text-[10px] font-bold rounded-lg hover:bg-[#3d4c43] transition-colors shrink-0"
+                              >
+                                添加
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* CUSTOM FOLDER SELECTOR */}
+                  <div className="relative">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setShowFolderDropdown(!showFolderDropdown);
+                        setShowMoodDropdown(false);
+                        setShowWeatherDropdown(false);
+                      }}
+                      className="bg-white/90 border border-[#2D3832]/15 hover:border-[#4E6156] text-xs px-3 py-1.8 rounded-xl font-bold font-sans flex items-center gap-1.5 shadow-3xs cursor-pointer text-[#2D3832] transition-all select-none"
+                    >
+                      <span>归档: 📁 {newFolder}</span>
+                      <ChevronRight className="w-3.5 h-3.5 rotate-90 opacity-60" />
+                    </button>
+                    {showFolderDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowFolderDropdown(false)} />
+                        <div className="absolute top-10 left-0 w-48 bg-white rounded-2xl border border-[#DFE4E1] shadow-lg p-3 z-50 flex flex-col gap-2 animate-in fade-in-50 zoom-in-95 duration-150">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">划分日记抽屉</span>
+                          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                            {folders.filter(f => f !== '全部').map((folderName) => (
+                              <button
+                                key={folderName}
+                                type="button"
+                                onClick={() => {
+                                setNewFolder(folderName);
+                                setShowFolderDropdown(false);
+                                }}
+                                className={`w-full text-left p-2 rounded-xl text-xs font-bold hover:bg-[#F2F5F3] truncate ${newFolder === folderName ? 'bg-[#E3EAE5] text-[#2D3832]' : 'text-gray-600'}`}
+                              >
+                                📁 {folderName}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowFolderCreator(true);
+                              setShowFolderDropdown(false);
+                            }}
+                            className="w-full text-center py-2 border border-dashed border-[#DFE4E1] hover:bg-[#F2F5F3] text-[11px] font-black rounded-xl text-[#4E6156] mt-1"
+                          >
+                            + 新建抽屉/文件夹
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                </div>
+
+
+                <div className="w-full h-px bg-gray-100 my-1"></div>
+
                 <h5 className="font-bold text-sm text-[#1e2621] flex items-center gap-1">
                   <Palette className="w-4.5 h-4.5 text-[#4E6156]" />
                   便签格式定做
@@ -1555,6 +1676,8 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                 </div>
               </div>
             </div>
+
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1632,25 +1755,35 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                     type="button"
                     onClick={() => {
                       setGpsLoading(true);
-                      const geoSuccess = (position: GeolocationPosition) => {
-                        const lat = position.coords.latitude.toFixed(4);
-                        const lng = position.coords.longitude.toFixed(4);
-                        setTimeout(() => {
-                          const customPlace = `GPS卫星校准室 (${lat}, ${lng})`;
-                          setNewLocation(customPlace);
-                          editorRef.current?.focus();
-                          const htmlToInsert = `<div contenteditable="false" style="display:inline-flex;align-items:center;padding:10px 16px;background:#EBF3EF;color:#2D3832;border:1px solid #C2DBD0;border-radius:18px;font-size:12px;font-weight:bold;margin:10px 0;user-select:none;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.03);gap:8px;">
-                            <span style="font-size:16px;">🎯</span>
-                            <div style="display:flex;flex-direction:column;line-height:1.2;text-align:left;">
-                              <span style="font-size:11px;font-weight:800;color:#1e382d;">真实卫星GPS定位</span>
-                              <span style="font-size:10px;color:#4E6156;font-weight:normal;margin-top:2px;">全球经纬度坐标 (${lat}°N, ${lng}°E)</span>
-                            </div>
-                          </div><div><br/></div>`;
-                          document.execCommand('insertHTML', false, htmlToInsert);
-                          if(editorRef.current) setNewContent(editorRef.current.innerHTML);
-                          setGpsLoading(false);
-                          setShowLocationModal(false);
-                        }, 1200);
+                      const geoSuccess = async (position: GeolocationPosition) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setNewLocation(`正在卫星云图检索...`);
+                        
+                        let city = "未知城市";
+                        try {
+                           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                           const data = await res.json();
+                           city = data.address?.city || data.address?.town || data.address?.village || data.address?.state || data.address?.country || "坐标定位位置";
+                        } catch(e) {
+                           console.log("Geocode failed", e);
+                        }
+                        
+                        const customPlace = `${city} | GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+                        setNewLocation(customPlace);
+                        editorRef.current?.focus();
+                        const htmlToInsert = `<div contenteditable="false" style="display:inline-flex;align-items:center;padding:10px 16px;background:#EBF3EF;color:#2D3832;border:1px solid #C2DBD0;border-radius:18px;font-size:12px;font-weight:bold;margin:10px 0;user-select:none;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.03);gap:8px;">
+                          <span style="font-size:16px;">🎯</span>
+                          <div style="display:flex;flex-direction:column;line-height:1.2;text-align:left;">
+                            <span style="font-size:11px;font-weight:800;color:#1e382d;">全球真实卫星GPS网络</span>
+                            <span style="font-size:10px;color:#4E6156;font-weight:normal;margin-top:2px;">${city} (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E)</span>
+                          </div>
+                        </div><div><br/></div>`;
+                        document.execCommand('insertHTML', false, htmlToInsert);
+                        if(editorRef.current) setNewContent(editorRef.current.innerHTML);
+                        setGpsLoading(false);
+                        setShowLocationModal(false);
                       };
 
                       const geoError = () => {
@@ -1692,37 +1825,65 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                     <span className="text-[9px] text-gray-400">读取浏览器物理卫星数据</span>
                   </button>
 
-                  {/* Manual Selection panel list */}
-                  <div className="flex flex-col gap-1.5 p-1 max-h-44 overflow-y-auto border border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-                    <span className="text-[9px] font-black uppercase text-gray-400 block px-2 text-left pt-1">🗺️ 挑选小岛推荐航标</span>
-                    {[
-                      { name: '忘忧角灯塔 🥐', full: '中国 · 理想小岛 · 忘忧角静海灯塔' },
-                      { name: '晚风椰林集市 🌾', full: '中国 · 理想小岛 · 落日椰林文创集市' },
-                      { name: '微光星空营地 🌌', full: '中国 · 理想小岛 · 忘忧丘陵微光露营台' },
-                      { name: '潮汐青苔石径 🌿', full: '中国 · 理想小岛 · 海角潮汐古旧石径' },
-                      { name: '落日海岸天台咖啡馆 ☕', full: '中国 · 理想小岛 · 落日台摄影咖啡馆' }
-                    ].map(site => (
+                  {/* Manual Selection search input and pre-fills */}
+                  <div className="flex flex-col gap-2 p-3 border border-gray-150 rounded-2xl bg-gray-50/50">
+                    <span className="text-[10px] font-black uppercase text-[#4E6156] block text-left">🗺️ 方案二：手动搜索与自定地点</span>
+                    
+                    <div className="flex gap-1.5">
+                      <input 
+                        type="text"
+                        placeholder="输入任意自选或自定义地点名称..."
+                        value={manualLocationInput}
+                        onChange={(e) => setManualLocationInput(e.target.value)}
+                        className="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-[#4E6156] text-[#2D3832]"
+                      />
                       <button
-                        key={site.name}
+                        type="button"
                         onClick={() => {
-                          setNewLocation(site.name);
-                          editorRef.current?.focus();
-                          const htmlToInsert = `<div contenteditable="false" style="display:inline-flex;align-items:center;padding:10px 16px;background:#F9F9FB;color:#2D3832;border:1px solid #DFE4E1;border-radius:18px;font-size:12px;font-weight:bold;margin:10px 0;user-select:none;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 5px rgba(0,0,0,0.02);gap:8px;">
-                            <span style="font-size:16px;">📍</span>
-                            <div style="display:flex;flex-direction:column;line-height:1.2;text-align:left;">
-                              <span style="font-size:11px;font-weight:800;color:#2D3832;">收录此间足迹</span>
-                              <span style="font-size:10px;color:#8A9A92;font-weight:normal;margin-top:2px;">${site.full}</span>
-                            </div>
-                          </div><div><br/></div>`;
-                          document.execCommand('insertHTML', false, htmlToInsert);
-                          if(editorRef.current) setNewContent(editorRef.current.innerHTML);
-                          setShowLocationModal(false);
+                          if (manualLocationInput.trim()) {
+                            const name = manualLocationInput.trim();
+                            setNewLocation(name);
+                            editorRef.current?.focus();
+                            const htmlToInsert = `<div contenteditable="false" style="display:inline-flex;align-items:center;padding:10px 16px;background:#F9F9FB;color:#2D3832;border:1px solid #DFE4E1;border-radius:18px;font-size:12px;font-weight:bold;margin:10px 0;user-select:none;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 5px rgba(0,0,0,0.02);gap:8px;">
+                              <span style="font-size:16px;">📍</span>
+                              <div style="display:flex;flex-direction:column;line-height:1.2;text-align:left;">
+                                <span style="font-size:11px;font-weight:800;color:#2D3832;">自定所选足迹</span>
+                                <span style="font-size:10px;color:#8A9A92;font-weight:normal;margin-top:2px;">中国 · ${name}</span>
+                              </div>
+                            </div><div><br/></div>`;
+                            document.execCommand('insertHTML', false, htmlToInsert);
+                            if(editorRef.current) setNewContent(editorRef.current.innerHTML);
+                            setManualLocationInput('');
+                            setShowLocationModal(false);
+                          }
                         }}
-                        className="w-full text-left p-2 rounded-xl text-[11px] font-bold text-gray-700 bg-white hover:bg-[#E3EAE5] transition-colors shadow-3xs truncate"
+                        className="bg-[#4E6156] hover:bg-[#3d4c43] text-white text-xs font-black px-3 py-1.5 rounded-xl cursor-pointer transition-colors"
                       >
-                        📍 {site.name}
+                        定位
                       </button>
-                    ))}
+                    </div>
+
+                    <div className="max-h-24 overflow-y-auto flex flex-col gap-1 mt-1 border-t border-gray-250/30 pt-2 text-left">
+                      <span className="text-[9px] text-gray-400 font-bold block mb-1">💡 快捷填入参考推荐航标：</span>
+                      {[
+                        { name: '忘忧角静海灯塔 🥐', full: '中国 · 理想小岛 · 忘忧角静海灯塔' },
+                        { name: '落日椰林文创集市 🌾', full: '中国 · 理想小岛 · 落日椰林文创集市' },
+                        { name: '忘忧丘陵微光露营台 🌌', full: '中国 · 理想小岛 · 忘忧丘陵微光露营台' },
+                        { name: '海角潮汐古旧石径 🌿', full: '中国 · 理想小岛 · 海角潮汐古旧石径' },
+                        { name: '落日海岸摄影咖啡馆 ☕', full: '中国 · 理想小岛 · 落日台摄影咖啡馆' }
+                      ].map(site => (
+                        <button
+                          key={site.name}
+                          type="button"
+                          onClick={() => {
+                            setManualLocationInput(site.name);
+                          }}
+                          className="w-full text-left p-1.5 rounded-lg text-[10px] font-bold text-gray-700 bg-white hover:bg-gray-100 transition-colors border border-gray-100 truncate block"
+                        >
+                          📍 {site.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1804,6 +1965,135 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
           </div>
         )}
       </AnimatePresence>
+        
+        {/* Restore Draft Prompt Overlay */}
+        <AnimatePresence>
+          {showRestorePrompt && isAddingMoment && !editingEntryId && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-[#1e2621]/40 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-[#F2F5F3] flex items-center justify-center mb-4">
+                  <Archive className="text-[#4E6156] w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-emerald-900 mb-2">发现未写完的记忆</h3>
+                <p className="text-xs text-[#4E6156]/70 mb-5">
+                  你在草稿箱中有保留的日记，要直接开始一页全新的记忆，还是去草稿箱挑拣？
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => {
+                      setShowRestorePrompt(false);
+                      setNewTitle('');
+                      if (titleRef.current) titleRef.current.innerHTML = '';
+                      setNewContent('');
+                      if (editorRef.current) editorRef.current.innerHTML = '';
+                      setNewWeather('☀️');
+                      setNewMood('😊');
+                      setNewFolder('默认日记本');
+                      setNewLocation('');
+                      setNewImages([]);
+                      setNewLinks([]);
+                      setNewFiles([]);
+                    }}
+                    className="flex-1 py-2.5 rounded-full bg-[#F2F5F3] text-[#4E6156] text-xs font-bold hover:bg-[#E3EAE5] transition-colors"
+                  >
+                    写新日记
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowRestorePrompt(false);
+                      setIsAddingMoment(false);
+                      setShowDraftsModal(true);
+                    }}
+                    className="flex-1 py-2.5 rounded-full bg-[#4E6156] text-white text-xs font-bold shadow-md shadow-[#4E6156]/20 hover:bg-[#3E5246] transition-colors"
+                  >
+                    去草稿箱
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cancel Prompt Overlay */}
+        <AnimatePresence>
+          {showCancelPrompt && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-[#1e2621]/40 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-[#F2F5F3] flex items-center justify-center mb-4">
+                  <Archive className="text-[#4E6156] w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-emerald-900 mb-2">保留日记草稿？</h3>
+                <p className="text-xs text-[#4E6156]/70 mb-5">
+                  你已经编辑了一些内容，取消后是否将这次的碎片保留在草稿箱中？
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => {
+                      setShowCancelPrompt(false);
+                      setIsAddingMoment(false);
+                    }}
+                    className="flex-1 py-2.5 rounded-full bg-[#F2F5F3] text-[#4E6156] text-xs font-bold hover:bg-[#E3EAE5] transition-colors"
+                  >
+                    直接丢弃
+                  </button>
+                  <button 
+                    onClick={saveToDrafts}
+                    className="flex-1 py-2.5 rounded-full bg-[#4E6156] text-white text-xs font-bold shadow-md shadow-[#4E6156]/20 hover:bg-[#3E5246] transition-colors"
+                  >
+                    存入草稿箱
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Prompt Overlay */}
+        <AnimatePresence>
+          {deleteConfirmId && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-[#1e2621]/40 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <Trash2 className="text-red-500 w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-emerald-900 mb-2">确认删除这篇记忆吗？</h3>
+                <p className="text-xs text-[#4E6156]/70 mb-5">
+                  删除后将无法恢复，是否继续？
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="flex-1 py-2.5 rounded-full bg-[#F2F5F3] text-[#4E6156] text-xs font-bold hover:bg-[#E3EAE5] transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    onClick={confirmDelete}
+                    className="flex-1 py-2.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-md shadow-red-500/20 hover:bg-red-600 transition-colors"
+                  >
+                    确认删除
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
     </div>
   );
 };

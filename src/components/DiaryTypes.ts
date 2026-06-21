@@ -31,6 +31,11 @@ export interface FutureLetter {
   stampId: string;
   sealColor: string;
   isDelivered: boolean;
+  images?: string[];
+  files?: { name: string; url: string; size?: string; type?: string; }[];
+  bgImage?: string;
+  letterType?: 'future' | 'past';
+  recipientEmail?: string;
 }
 
 export const PRESET_DIARY_ENTRIES: DiaryEntry[] = [
