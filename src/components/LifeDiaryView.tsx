@@ -35,8 +35,11 @@ const PRESET_ENTRIES: LifeDiaryEntry[] = [
 
 export const LifeDiaryView = () => {
   const [entries, setEntries] = useState<LifeDiaryEntry[]>(() => {
-    const saved = localStorage.getItem('life_diary_entries');
-    return saved ? JSON.parse(saved) : PRESET_ENTRIES;
+    try {
+      const saved = localStorage.getItem('life_diary_entries');
+      const parsed = saved && saved !== 'null' ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed : PRESET_ENTRIES;
+    } catch { return PRESET_ENTRIES; }
   });
 
   useEffect(() => {
@@ -51,11 +54,11 @@ export const LifeDiaryView = () => {
   const [newContent, setNewContent] = useState('');
   
   const filteredEntries = entries.filter(e => {
-    return e.title.includes(searchQuery) || e.content.includes(searchQuery);
+    return (e.title || '').includes(searchQuery) || (e.content || '').includes(searchQuery);
   });
 
   const handleSave = () => {
-    if (!newTitle.trim() && !newContent.trim()) return;
+    if (!(newTitle || '').trim() && !(newContent || '').trim()) return;
     const now = new Date();
     const newEntry: LifeDiaryEntry = {
       id: `life-${Date.now()}`,
@@ -214,7 +217,7 @@ export const LifeDiaryView = () => {
               <div className="p-6 border-t border-amber-900/5 bg-[#fdfbf7]/50 flex justify-end">
                 <button 
                   onClick={handleSave}
-                  disabled={!newTitle.trim() && !newContent.trim()}
+                  disabled={!(newTitle || '').trim() && !(newContent || '').trim()}
                   className="px-6 py-2 bg-amber-900 text-white rounded-full text-xs font-bold shadow-md hover:bg-amber-800 disabled:opacity-50 disabled:hover:bg-amber-900 transition-all font-serif tracking-wider uppercase"
                 >
                   Save Entry

@@ -58,7 +58,7 @@ export const PhotoesView = () => {
   const [photoLikes, setPhotoLikes] = useState<Record<string, string[]>>({});
   const [isSharing, setIsSharing] = useState(false);
   const [userProfile, setUserProfile] = useState(() => {
-    const savedAvatar = safeGetItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
+    const savedAvatar = safeGetItem('icity_avatar') || "https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg";
     const savedSignature = localStorage.getItem('icity_signature');
     
     if (savedSignature && savedSignature !== "Island_乱码") {

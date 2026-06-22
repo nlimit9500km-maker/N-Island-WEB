@@ -182,7 +182,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
 
   // Wax sealing trigger
   const handleMailInTime = () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!(title || '').trim() || !(content || '').trim()) return;
 
     // Trigger folding steps
     setAnimationStep('folding');
@@ -214,13 +214,13 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       }
 
       // If email for delivery is configured, call API with rich styling fields
-      if (emailForDelivery.trim() && emailForDelivery.includes('@')) {
+      if ((emailForDelivery || '').trim() && (emailForDelivery || '').includes('@')) {
          try {
            await fetch('/api/send-email', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
-               to: emailForDelivery.trim(),
+               to: (emailForDelivery || '').trim(),
                subject: title,
                content: content,
                scheduleTime: deliveryDateStr,
@@ -292,9 +292,9 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const editLetter = (letter: FutureLetter, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingLetterId(letter.id);
-    setTitle(letter.title);
-    setContent(letter.content);
-    setRecipient(letter.recipient);
+    setTitle(letter.title || '');
+    setContent(letter.content || '');
+    setRecipient(letter.recipient || '未来的我');
     setSelectedStamp(letter.stampId);
     setSelectedSeal(letter.sealColor);
     setLetterType(letter.letterType || 'future');
@@ -335,7 +335,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   };
 
   const handleCancelClick = () => {
-     if (title.trim() || content.trim() || attachedImages.length > 0 || bgImage) {
+     if ((title || '').trim() || (content || '').trim() || attachedImages.length > 0 || bgImage) {
        setShowCancelPrompt(true);
      } else {
        resetCompose();
@@ -354,7 +354,11 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
        bgImage: bgImage,
        timestamp: Date.now()
      };
-     const existingDrafts = JSON.parse(localStorage.getItem('shared_drafts_pool') || '[]');
+     let existingDrafts = [];
+     try {
+       const parsed = JSON.parse(localStorage.getItem('shared_drafts_pool') || '[]');
+       if (Array.isArray(parsed)) existingDrafts = parsed;
+     } catch {}
      existingDrafts.push(draftData);
      localStorage.setItem('shared_drafts_pool', JSON.stringify(existingDrafts));
      
@@ -372,7 +376,10 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   };
 
   const resumeDraft = () => {
-     const savedDraft = JSON.parse(localStorage.getItem('future_letter_draft') || '{}');
+     let savedDraft: any = {};
+     try {
+       savedDraft = JSON.parse(localStorage.getItem('future_letter_draft') || '{}');
+     } catch {}
      setTitle(savedDraft.title || '');
      setContent(savedDraft.content || '');
      setLetterType(savedDraft.letterType || 'future');
@@ -572,10 +579,10 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                          className="p-4 bg-white rounded-2xl border border-[#dfd6c6]/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden group"
                        >
                          <h4 className="font-bold text-[#352a1a] mb-1">
-                           {JSON.parse(localStorage.getItem('future_letter_draft') || '{}').title || '未命名信件'}
+                           {(() => { try { return JSON.parse(localStorage.getItem('future_letter_draft') || '{}').title || '未命名信件'; } catch { return '未命名信件'; } })()}
                          </h4>
                          <p className="text-xs text-[#a88252] line-clamp-2">
-                           {JSON.parse(localStorage.getItem('future_letter_draft') || '{}').content || '没有内容...'}
+                           {(() => { try { return JSON.parse(localStorage.getItem('future_letter_draft') || '{}').content || '没有内容...'; } catch { return '没有内容...'; } })()}
                          </p>
                          <div className="mt-3 flex gap-2">
                            <span className="text-[10px] bg-[#e9e3d9] text-[#8c7456] px-2 py-0.5 rounded-full font-bold">已保存: 刚刚</span>
@@ -806,7 +813,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                 </div>
                 <button 
                   onClick={handleMailInTime}
-                  disabled={!title.trim() || !content.trim()}
+                  disabled={!(title || '').trim() || !(content || '').trim()}
                   className="px-5 py-1.5 bg-[#a78358] text-white hover:bg-[#866742] rounded-full text-xs font-black disabled:opacity-40 cursor-pointer"
                 >
                   完成，火漆封好

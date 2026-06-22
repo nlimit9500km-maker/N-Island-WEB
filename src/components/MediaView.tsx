@@ -48,7 +48,7 @@ export const MediaView = () => {
       type: 'movie',
       title: '百万元与苦虫女',
       author: '棚田由纪',
-      cover: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/p699101890-imagetourl.cloud-1774953220634-dec80r.webp',
+      cover: 'https://s3.bmp.ovh/2026/06/22/I6AWe6i6.webp',
       rating: 8.1,
       description: '佐藤铃子是一个平凡的女孩，在经历了一场意外的牢狱之灾后，她决定每赚够一百万日元就搬一次家，在不同的地方开启新的生活。',
       url: 'https://movie.douban.com/subject/2157504/'
@@ -59,7 +59,7 @@ export const MediaView = () => {
       title: '我的解放日志',
       author: '金锡允',
       screenwriter: '朴惠英',
-      cover: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/p2869925687-imagetourl.cloud-1774961446401-dk99p9.webp',
+      cover: 'https://s3.bmp.ovh/2026/06/22/pkByckk3.webp',
       rating: 9.0,
       description: '三兄妹想要逃离达到极限的烦闷生活，与神秘的外地人具氏之间发生的故事。',
       url: 'https://movie.douban.com/subject/35322421/'
@@ -70,7 +70,7 @@ export const MediaView = () => {
       title: '你的夏天还好吗',
       author: '金爱烂',
       translator: '薛舟',
-      cover: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/s34320463-imagetourl.cloud-1774966252650-2zb4wo.jpg',
+      cover: 'https://s3.bmp.ovh/2026/06/22/MTzkk470.jpg',
       rating: 8.7,
       description: '“去看里面八个如热带鱼一样残忍而发光的故事吧。去亲身感受金爱烂美丽又凶险的夏天吧。\n——如果可以的话，尽可能多读几遍。”\n\n《你的夏天还好吗？》是金爱烂的第三部短篇小说集，共收入八篇作品。书中形形色色的人物大多面临绝境，赤裸裸地暴露在现实之中，却试图寻找渺茫的希望。尤其值得一提的是，其中五篇作品聚焦于三十岁左右的年轻女性，细腻地描摹了她们在爱情、友情、婚姻、工作等方面的心理状态，或许会激起中国女性读者的共鸣。作为韩国文坛最有代表性的女作家，金爱烂赢得了大量读者的喜爱，很大程度上归功于作品主人公的力量。',
       url: 'https://book.douban.com/subject/36109174/'
@@ -121,7 +121,7 @@ export const MediaView = () => {
   }, []);
 
   const [userProfile, setUserProfile] = useState(() => {
-    const savedAvatar = safeGetItem('icity_avatar') || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png";
+    const savedAvatar = safeGetItem('icity_avatar') || "https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg";
     const savedSignature = localStorage.getItem('icity_signature');
     
     if (savedSignature && savedSignature !== "Island_乱码") {
@@ -159,26 +159,26 @@ export const MediaView = () => {
     if (id === '2') {
       return {
         date: '25-12-11 14:30 来自 岛屿的信箱',
-        mainImage: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/ScreenShot_2026-03-31_215341_248-imagetourl.cloud-1774965237240-1qp729.png',
+        mainImage: 'https://s3.bmp.ovh/2026/06/22/P3MpHS5K.png',
         images: [
-          "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/1-imagetourl.cloud-1774964823576-xbumkz.jpg",
-          "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/2-imagetourl.cloud-1774964823595-anu8n3.jpg",
-          "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/3-imagetourl.cloud-1774964822560-awccc5.jpg",
-          "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/4-imagetourl.cloud-1774964821839-as7zaz.jpg",
-          "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/5-imagetourl.cloud-1774964822290-qeg3wz.jpg"
+          "https://imagetourl.cloud/sm55l97n.jpg",
+          "https://imagetourl.cloud/h6z0pbt7.jpg",
+          "https://s3.bmp.ovh/2026/06/22/6EVtN3T0.jpg",
+          "https://s3.bmp.ovh/2026/06/22/146mDRZk.jpg",
+          "https://s3.bmp.ovh/2026/06/22/jNkMuvmP.jpg"
         ]
       };
     }
     return {
       date: '22-4-20 14:30 来自 岛屿的信箱',
-      mainImage: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/2-imagetourl.cloud-1774960309581-q0ewfd.png',
+      mainImage: 'https://s3.bmp.ovh/2026/06/22/RJnFq1s3.png',
       images: [
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/1-imagetourl.cloud-1774957080142-a15fxz.jpg",
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/2-imagetourl.cloud-1774957080061-z0prs7.jpg",
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/3-imagetourl.cloud-1774957080145-62xzov.jpg",
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/4-imagetourl.cloud-1774957080076-93t66l.jpg",
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/5-imagetourl.cloud-1774957080081-5sqxvg.jpg",
-        "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/6-imagetourl.cloud-1774957080115-cgza4x.jpg"
+        "https://s3.bmp.ovh/2026/06/22/AYA2ASdy.jpg",
+        "https://s3.bmp.ovh/2026/06/22/stxOOnDZ.jpg",
+        "https://s3.bmp.ovh/2026/06/22/75BHdqY2.jpg",
+        "https://s3.bmp.ovh/2026/06/22/KumaY3dL.jpg",
+        "https://s3.bmp.ovh/2026/06/22/Yy9sEYB9.jpg",
+        "https://s3.bmp.ovh/2026/06/22/PI7Q4xuj.jpg"
       ]
     };
   };
@@ -441,7 +441,7 @@ export const MediaView = () => {
                                 placeholder="写下你的评论..."
                                 className="flex-1 bg-white border border-amber-900/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-amber-900/30 text-amber-950 placeholder:text-amber-900/30"
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && newCommentText.trim()) {
+                                  if (e.key === 'Enter' && (newCommentText || '').trim()) {
                                     const newComment = {
                                       id: Math.random().toString(36).substring(2, 11),
                                       userName: userProfile.signature,
@@ -457,7 +457,7 @@ export const MediaView = () => {
                               />
                               <button 
                                 onClick={() => {
-                                  if (!newCommentText.trim()) return;
+                                  if (!(newCommentText || '').trim()) return;
                                   const newComment = {
                                     id: crypto.randomUUID(),
                                     userName: userProfile.signature,
@@ -525,7 +525,7 @@ export const MediaView = () => {
                     </div>
                     <button 
                       onClick={() => {
-                        if (!newReviewText.trim() && !newReviewImage) return;
+                        if (!(newReviewText || '').trim() && !newReviewImage) return;
                         const newReview: Review = {
                           id: crypto.randomUUID(),
                           mediaId: showReviewsFor.id,
@@ -583,7 +583,7 @@ export const MediaView = () => {
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden border border-amber-900/10 shadow-sm">
-                        <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260329125909_133_129-imagetourl.cloud-1774956795081-lwdbks.jpg" alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src="https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg" alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-[15px] text-amber-900">无棘莺落</span>
@@ -686,7 +686,7 @@ export const MediaView = () => {
                         </button>
                         <button 
                           onClick={() => {
-                            if (!thoughtsCommentValue.trim()) return;
+                            if (!(thoughtsCommentValue || '').trim()) return;
                             const newComment = {
                               id: crypto.randomUUID(),
                               name: userProfile.signature,

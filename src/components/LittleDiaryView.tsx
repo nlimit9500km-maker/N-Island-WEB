@@ -39,7 +39,8 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   const [drafts, setDrafts] = useState<DiaryEntry[]>(() => {
     try {
       const saved = localStorage.getItem('dia_drafts');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -440,11 +441,11 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   const startEdit = (entry: DiaryEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingEntryId(entry.id);
-    setNewTitle(entry.title);
+    setNewTitle(entry.title || '');
     if (titleRef.current) titleRef.current.innerHTML = entry.title || '';
-    setNewContent(entry.content);
-    setNewWeather(entry.weather);
-    setNewMood(entry.mood);
+    setNewContent(entry.content || '');
+    setNewWeather(entry.weather || '☀️');
+    setNewMood(entry.mood || '😊');
     setNewFolder(entry.folder);
     setNewLocation(entry.location || '');
     setNewImages(entry.images || []);
@@ -461,8 +462,8 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
 
 
   const handleCancelDraft = () => {
-    const finalHtml = editorRef.current?.innerHTML || newContent;
-    if (finalHtml.trim() || newTitle.trim()) {
+    const finalHtml = editorRef.current?.innerHTML || newContent || '';
+    if (finalHtml.trim() || (newTitle || '').trim()) {
       setShowCancelPrompt(true);
     } else {
       setIsAddingMoment(false);
@@ -470,11 +471,11 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   };
 
   const saveToDrafts = () => {
-    const finalHtml = editorRef.current?.innerHTML || newContent;
+    const finalHtml = editorRef.current?.innerHTML || newContent || '';
     const now = new Date();
     const newDraft: DiaryEntry = {
       id: Date.now().toString(),
-      title: newTitle.trim(),
+      title: (newTitle || '').trim(),
       content: finalHtml,
       date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
       time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
@@ -492,10 +493,10 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
   };
 
   const saveEntry = () => {
-    const finalHtml = editorRef.current?.innerHTML || newContent;
-    if (!finalHtml.trim() && !newTitle.trim()) return;
+    const finalHtml = editorRef.current?.innerHTML || newContent || '';
+    if (!finalHtml.trim() && !(newTitle || '').trim()) return;
 
-    const finalTitle = newTitle.trim() || newContent.substring(0, 12) || '无题随笔';
+    const finalTitle = (newTitle || '').trim() || finalHtml.substring(0, 12) || '无题随笔';
     const finalStyle = {
       color: selectedPaperColor,
       fontSize: selectedFontSize,
@@ -543,6 +544,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
       setEntries(prev => [newEntry, ...prev]);
     }
 
+    setEditingEntryId(null);
     setIsAddingMoment(false);
   };
 
@@ -737,8 +739,10 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
 
   // Filter and search entries
   const filteredEntries = entries.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const titleMatch = (item.title || '');
+    const contentMatch = (item.content || '');
+    const matchesSearch = titleMatch.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          contentMatch.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFolder = selectedFolder === '全部' || item.folder === selectedFolder;
     return matchesSearch && matchesFolder;
   });
@@ -932,11 +936,11 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
                   <div 
                     onClick={() => {
                       setEditingEntryId(entry.id);
-                      setNewTitle(entry.title);
-                      setNewContent(entry.content);
-                      setNewWeather(entry.weather);
-                      setNewMood(entry.mood);
-                      setNewFolder(entry.folder);
+                      setNewTitle(entry.title || '');
+                      setNewContent(entry.content || '');
+                      setNewWeather(entry.weather || '☀️');
+                      setNewMood(entry.mood || '😊');
+                      setNewFolder(entry.folder || '默认日记本');
                       setNewLocation(entry.location || '');
                       setNewImages(entry.images || []);
                       setNewLinks(entry.links || []);
@@ -1087,7 +1091,7 @@ export const LittleDiaryView: React.FC<LittleDiaryViewProps> = ({
               </h4>
               <button 
                 onClick={saveEntry}
-                disabled={!newContent.trim() && !newTitle.trim()}
+                disabled={!(newContent || '').trim() && !(newTitle || '').trim()}
                 className="px-5 py-1.5 bg-[#4E6156] text-white rounded-full text-xs font-black disabled:opacity-40 shadow-md shadow-[#4E6156]/10 cursor-pointer"
               >
                 收录记忆

@@ -161,18 +161,27 @@ const SEAL_COLORS = ['#9C3D3D', '#4A6D55', '#3D556E', '#8C6F3D', '#5E4A6F'];
 export const DiaryView = ({ mode }: { mode?: string }) => {
   // === PERSISTENCE STATES ===
   const [entries, setEntries] = useState<DiaryEntry[]>(() => {
-    const saved = localStorage.getItem('island_entries');
-    return saved ? JSON.parse(saved) : PRESETS_ENTRIES;
+    try {
+      const saved = localStorage.getItem('island_entries');
+      const parsed = saved && saved !== 'null' ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed : PRESETS_ENTRIES;
+    } catch { return PRESETS_ENTRIES; }
   });
 
   const [letters, setLetters] = useState<FutureLetter[]>(() => {
-    const saved = localStorage.getItem('island_letters');
-    return saved ? JSON.parse(saved) : PRESETS_LETTERS;
+    try {
+      const saved = localStorage.getItem('island_letters');
+      const parsed = saved && saved !== 'null' ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed : PRESETS_LETTERS;
+    } catch { return PRESETS_LETTERS; }
   });
 
   const [anniversaries, setAnniversaries] = useState<Anniversary[]>(() => {
-    const saved = localStorage.getItem('island_anniversaries');
-    return saved ? JSON.parse(saved) : PRESETS_ANNIVERSARIES;
+    try {
+      const saved = localStorage.getItem('island_anniversaries');
+      const parsed = saved && saved !== 'null' ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed : PRESETS_ANNIVERSARIES;
+    } catch { return PRESETS_ANNIVERSARIES; }
   });
 
   const [themeId, setThemeId] = useState<string>(() => {
@@ -180,12 +189,20 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
   });
 
   const [profile, setProfile] = useState(() => {
-    const saved = localStorage.getItem('island_profile');
-    return saved ? JSON.parse(saved) : {
-      nickname: '无棘落莺馆主',
-      avatar: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg',
-      signature: '听晨风敲打在石板上，静听时光邮差的碎步。'
-    };
+    try {
+      const saved = localStorage.getItem('island_profile');
+      return saved && saved !== 'null' ? JSON.parse(saved) : {
+        nickname: '无棘落莺馆主',
+        avatar: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg',
+        signature: '听晨风敲打在石板上，静听时光邮差的碎步。'
+      };
+    } catch {
+      return {
+        nickname: '无棘落莺馆主',
+        avatar: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg',
+        signature: '听晨风敲打在石板上，静听时光邮差的碎步。'
+      };
+    }
   });
 
   const [lockPIN, setLockPIN] = useState(() => localStorage.getItem('island_pin') || '1234');
@@ -277,10 +294,10 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
   
   // Add Anniversary item
   const handleAddAnniversary = () => {
-    if (!newAnnTitle.trim() || !newAnnDate) return;
+    if (!(newAnnTitle || '').trim() || !newAnnDate) return;
     const item: Anniversary = {
       id: 'ann-' + Date.now(),
-      title: newAnnTitle.trim(),
+      title: (newAnnTitle || '').trim(),
       date: newAnnDate,
       emoji: newAnnEmoji
     };
@@ -385,7 +402,7 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
 
   // Dynamic values
   const filteredEntries = entries.filter(e => {
-    const matchesSearch = e.title.includes(searchQuery) || e.content.includes(searchQuery);
+    const matchesSearch = (e.title || '').includes(searchQuery) || (e.content || '').includes(searchQuery);
     const matchesFolder = selectedFolder ? e.folder === selectedFolder : true;
     return matchesSearch && matchesFolder;
   });
@@ -666,7 +683,7 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
                   />
                   <button 
                     onClick={handleAddAnniversary}
-                    disabled={!newAnnTitle.trim() || !newAnnDate}
+                    disabled={!(newAnnTitle || '').trim() || !newAnnDate}
                     className="px-3 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-lg disabled:opacity-40"
                   >
                     添加
@@ -1014,7 +1031,7 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
                       />
                       <button
                         onClick={handleImportBackup}
-                        disabled={!importText.trim()}
+                        disabled={!(importText || '').trim()}
                         className="w-full py-1.5 bg-emerald-750 bg-[#4F6C5B] hover:bg-[#3E5547] text-white text-[10px] rounded-lg font-black disabled:opacity-40"
                       >
                         导入上述日志备份

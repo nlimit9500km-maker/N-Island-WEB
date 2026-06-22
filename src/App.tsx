@@ -132,7 +132,7 @@ const XiaohongshuHomepage = () => {
 
         <div className="flex items-center gap-6 mb-6">
           <div className="relative">
-            <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323223334_83_2-imagetourl.cloud-1774756876092-3dsrts.png" alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg" referrerPolicy="no-referrer" />
+            <img src="https://1drv.ms/i/c/83c1e13c098d1856/IQC5eoBl_hQ7T5WosVLzYg1qAeNwMF7SxGLWdRyX5W6r6Ok?e=bjITLk" alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg" referrerPolicy="no-referrer" />
             <div className="absolute bottom-0 right-0 w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white">+</div>
           </div>
           <div>
@@ -305,7 +305,7 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
           className="absolute inset-0 bg-cover bg-center blur-[2px] brightness-90"
           style={{ backgroundImage: "url('https://s3.uuu.ovh/2026/05/20/WBc2dl3Q.png')" }}
         />
-        <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg" alt="Profile" className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg" referrerPolicy="no-referrer" />
+        <img src="https://s3.bmp.ovh/2026/05/20/6lYMFAMm.jpg" alt="Profile" className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg" referrerPolicy="no-referrer" />
         <div className="relative p-3">
           <h2 className="text-3xl font-bold text-white drop-shadow-md">NotANumberO_</h2>
           <p className="text-white text-sm mt-1 font-medium drop-shadow-md">动态 5</p>
@@ -320,7 +320,7 @@ const NetEaseEventContent = ({ onBack }: { onBack: () => void }) => (
           { text: "轻盈又笨重地驶向遥远的天际。", song: "轻轨", artist: "液蓝BLUE LIQUID", date: "2023-05-03", cover: "https://p3.music.126.net/4Drcf3rTpQ0d9wnFB9QgOA==/109951168558920760.jpg" }
         ].map((event, i) => (
           <div key={i} className="flex gap-4 pb-8 border-b border-gray-100 last:border-0">
-            <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg" alt="Avatar" className="w-12 h-12 rounded-full mt-1" referrerPolicy="no-referrer" />
+            <img src="https://s3.bmp.ovh/2026/05/20/6lYMFAMm.jpg" alt="Avatar" className="w-12 h-12 rounded-full mt-1" referrerPolicy="no-referrer" />
             <div className="flex-1">
               <div className="flex justify-between items-center">
                 <div className="font-bold text-blue-800 text-sm">NotANumberO_</div>
@@ -372,7 +372,7 @@ const MusicContent = () => {
           {/* NetEase Cloud Music-style profile */}
           <div className="p-3 bg-white/50 rounded-xl border border-black/5 mb-4">
             <div className="flex items-center gap-3 mb-3">
-              <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg" alt="Profile" className="w-10 h-10 rounded-full border-2 border-white shadow-sm" referrerPolicy="no-referrer" />
+              <img src="https://s3.bmp.ovh/2026/05/20/6lYMFAMm.jpg" alt="Profile" className="w-10 h-10 rounded-full border-2 border-white shadow-sm" referrerPolicy="no-referrer" />
               <div className="overflow-hidden">
                 <div className="font-bold text-[10px] text-gray-800 truncate">NotANumberO_</div>
                 <div className="text-[10px] text-red-500 font-medium bg-red-100 px-1 py-0 rounded-full inline-block mt-0.5">Lv. 8</div>
@@ -2937,7 +2937,7 @@ const StickyNotes = () => {
     localStorage.getItem(STORAGE_KEYS.CONTENT) || "“ 每一个不曾起舞的日子，都是对生命的辜负。”"
   );
   const [avatarUrl, setAvatarUrl] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.AVATAR) || "https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260331190749_135_129-imagetourl.cloud-1774955296881-pmp6sz.png"
+    localStorage.getItem(STORAGE_KEYS.AVATAR) || "https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg"
   );
   const [signature, setSignature] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SIGNATURE);
@@ -3125,14 +3125,14 @@ const StickyNotes = () => {
                 <img src="https://s3.uuu.ovh/2026/05/20/WDeGuuve.jpg" className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
                 <div className="absolute -bottom-6 right-4 flex items-end gap-3 z-10">
                   <span className="text-white font-bold text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-6">未命名诗集</span>
-                  <img src="https://s3.uuu.ovh/2026/05/20/QQkgMK8x.jpg" className="w-16 h-16 rounded-xl border-2 border-white object-cover bg-white shadow-sm" alt="Avatar" referrerPolicy="no-referrer" />
+                  <img src="https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg" className="w-16 h-16 rounded-xl border-2 border-white object-cover bg-white shadow-sm" alt="Avatar" referrerPolicy="no-referrer" />
                 </div>
               </div>
               
               {/* Content */}
               <div className="p-4 pt-10 flex gap-3">
                 {/* Avatar Left */}
-                <img src="https://s3.uuu.ovh/2026/05/20/QQkgMK8x.jpg" className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="Avatar" referrerPolicy="no-referrer" />
+                <img src="https://s3.bmp.ovh/2026/05/20/QQkgMK8x.jpg" className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="Avatar" referrerPolicy="no-referrer" />
                 
                 {/* Post Content */}
                 <div className="flex-1 min-w-0">
@@ -3142,7 +3142,7 @@ const StickyNotes = () => {
                       className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors" 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFullscreenImage('https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/all-imagetourl.cloud-1775031508441-xqze8z.jpg');
+                        setFullscreenImage('https://s3.bmp.ovh/2026/06/22/RtAGgkLh.jpg');
                       }} 
                     />
                   </div>
@@ -3514,7 +3514,7 @@ const BottomBar = () => {
       {/* Polaroid Avatar (Frosted Glass) */}
       <div className="absolute bottom-2 left-8 w-20 h-24 bg-white/20 backdrop-blur-xl p-1.5 pb-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] -rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-white/40 group rounded-sm">
         <div className="w-full h-full overflow-hidden bg-white/10 rounded-sm">
-          <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260323223343_86_2-imagetourl.cloud-1774789075796-7fut44.png" alt="Avatar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" referrerPolicy="no-referrer" />
+          <img src="https://s3.bmp.ovh/2026/06/22/a4qbltZI.png" alt="Avatar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" referrerPolicy="no-referrer" />
         </div>
       </div>
       
