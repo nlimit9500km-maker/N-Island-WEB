@@ -233,7 +233,7 @@ async function startServer() {
       `;
 
       const mailOptions: any = {
-         from: process.env.SMTP_FROM || '"屿·记 时光邮差" <no-reply@island.diary>',
+         from: process.env.SMTP_FROM || `"屿·记 时光邮差" <${process.env.SMTP_USER}>`,
          to: letter.to,
          subject: `[屿·记时光信笺] ${letter.subject}`,
          html: htmlContent,
@@ -276,7 +276,14 @@ async function startServer() {
       let updated = false;
       for (const letter of letters) {
         if (letter.status === "pending") {
-          const deliveryTime = new Date(letter.deliverAt).getTime();
+          let deliveryTime = 0;
+          let deliverStr = letter.deliverAt;
+          // If the date string doesn't include timezone information, assume Beijing Time (UTC+8)
+          if (!deliverStr.includes('Z') && !deliverStr.match(/[+-]\d{2}:\d{2}$/)) {
+            deliverStr = deliverStr.replace(' ', 'T') + '+08:00';
+          }
+          deliveryTime = new Date(deliverStr).getTime();
+
           if (deliveryTime <= now) {
             const ok = await sendScheduledLetterEmail(letter);
             letter.status = ok ? "submitted" : "failed";

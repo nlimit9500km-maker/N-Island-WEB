@@ -88,6 +88,16 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const handleBodyImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+        alert('为了保证应用稳定性，不可上传音频或视频文件');
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('图片大小不能超过 2MB，请压缩后再上传。');
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string' && editorRef.current) {
@@ -111,6 +121,16 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const handleBgImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+        alert('背景图不能是音频或视频文件');
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('背景图片大小不能超过 2MB。');
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
@@ -124,7 +144,28 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const handleAnyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files) as File[];
-      filesArray.forEach(file => {
+      let hasOversized = false;
+      let hasMedia = false;
+      const validFiles = filesArray.filter(file => {
+        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+          hasMedia = true;
+          return false;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          hasOversized = true;
+          return false;
+        }
+        return true;
+      });
+
+      if (hasMedia) {
+        alert('为了应用稳定，已自动过滤音视频文件（本信笺暂不支持装载音视频音乐文件）。');
+      }
+      if (hasOversized) {
+        alert('部分文件过大（超过2MB），已自动取消加载这部分文件以避免应用闪退。');
+      }
+
+      validFiles.forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
           if (typeof reader.result === 'string') {
@@ -139,6 +180,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
         };
         reader.readAsDataURL(file);
       });
+      e.target.value = '';
     }
   };
 
@@ -230,7 +272,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                to: (emailForDelivery || '').trim(),
                subject: title,
                content: content,
-               scheduleTime: universalDeliveryISO,
+               scheduleTime: deliveryDateStr,
                type: letterType,
                images: attachedImages,
                files: attachedFiles,
