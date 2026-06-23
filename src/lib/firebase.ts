@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0881204837",
@@ -11,4 +11,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, "ai-studio-611cfb5e-7db4-434e-bb94-bb1a0df7c5b3");
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
+}, "ai-studio-611cfb5e-7db4-434e-bb94-bb1a0df7c5b3");
+
