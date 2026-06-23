@@ -34,6 +34,8 @@ export interface FutureLetter {
   images?: string[];
   files?: { name: string; url: string; size?: string; type?: string; }[];
   bgImage?: string;
+  bgSize?: string;
+  bgPosition?: string;
   letterType?: 'future' | 'past';
   recipientEmail?: string;
 }

@@ -232,12 +232,32 @@ async function startServer() {
         </html>
       `;
 
-      const mailOptions = {
+      const mailOptions: any = {
          from: process.env.SMTP_FROM || '"屿·记 时光邮差" <no-reply@island.diary>',
          to: letter.to,
          subject: `[屿·记时光信笺] ${letter.subject}`,
-         html: htmlContent
+         html: htmlContent,
+         headers: {
+           'Priority': 'normal',
+           'X-Mailer': 'Nodemailer'
+         }
       };
+
+      const attachments: any[] = [];
+      
+      if (letter.files && letter.files.length > 0) {
+        // Base64 file attachments
+        letter.files.forEach((f: any) => {
+          if (f.url && typeof f.url === 'string' && f.url.includes('base64,')) {
+            const b64 = f.url.split('base64,')[1];
+            attachments.push({ filename: f.name, content: b64, encoding: 'base64' });
+          }
+        });
+      }
+
+      if (attachments.length > 0) {
+         mailOptions.attachments = attachments;
+      }
 
       const info = await transporter.sendMail(mailOptions);
       console.log(`[Email Sent Success] Sent mail successfully to ${letter.to}. MessageID: ${info.messageId}`);
@@ -275,7 +295,7 @@ async function startServer() {
 
   app.post('/api/send-email', async (req, res) => {
     try {
-      const { to, subject, content, scheduleTime, type, images, bgImage, createdAt, recipient } = req.body;
+      const { to, subject, content, scheduleTime, type, images, bgImage, createdAt, recipient, files } = req.body;
       
       if (!to || !to.includes('@')) {
          return res.status(400).json({ error: 'Invalid email address' });
@@ -293,6 +313,7 @@ async function startServer() {
         images: images || [],
         bgImage: bgImage || '',
         recipient: recipient || '收件人',
+        files: files || [],
         status: 'pending'
       };
 

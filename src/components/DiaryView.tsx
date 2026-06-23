@@ -214,16 +214,24 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
   const [quietEnabled, setQuietEnabled] = useState(() => localStorage.getItem('island_quiet_enabled') === 'true');
 
   // Sync to localStorage
-  useEffect(() => localStorage.setItem('island_entries', JSON.stringify(entries)), [entries]);
-  useEffect(() => localStorage.setItem('island_letters', JSON.stringify(letters)), [letters]);
-  useEffect(() => localStorage.setItem('island_anniversaries', JSON.stringify(anniversaries)), [anniversaries]);
-  useEffect(() => localStorage.setItem('island_theme', themeId), [themeId]);
-  useEffect(() => localStorage.setItem('island_profile', JSON.stringify(profile)), [profile]);
-  useEffect(() => localStorage.setItem('island_pin', lockPIN), [lockPIN]);
-  useEffect(() => localStorage.setItem('island_lock_enabled', String(lockEnabled)), [lockEnabled]);
-  useEffect(() => localStorage.setItem('island_quiet_hour', quietHour), [quietHour]);
-  useEffect(() => localStorage.setItem('island_quiet_min', quietMin), [quietMin]);
-  useEffect(() => localStorage.setItem('island_quiet_enabled', String(quietEnabled)), [quietEnabled]);
+  const safeSetItem = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn(`Failed to save ${key} to localStorage`, e);
+    }
+  };
+
+  useEffect(() => safeSetItem('island_entries', JSON.stringify(entries)), [entries]);
+  useEffect(() => safeSetItem('island_letters', JSON.stringify(letters)), [letters]);
+  useEffect(() => safeSetItem('island_anniversaries', JSON.stringify(anniversaries)), [anniversaries]);
+  useEffect(() => safeSetItem('island_theme', themeId), [themeId]);
+  useEffect(() => safeSetItem('island_profile', JSON.stringify(profile)), [profile]);
+  useEffect(() => safeSetItem('island_pin', lockPIN), [lockPIN]);
+  useEffect(() => safeSetItem('island_lock_enabled', String(lockEnabled)), [lockEnabled]);
+  useEffect(() => safeSetItem('island_quiet_hour', quietHour), [quietHour]);
+  useEffect(() => safeSetItem('island_quiet_min', quietMin), [quietMin]);
+  useEffect(() => safeSetItem('island_quiet_enabled', String(quietEnabled)), [quietEnabled]);
 
   // === INTERACTION STATES ===
   const [activeTab, setActiveTab] = useState<'moments' | 'future'>('moments');

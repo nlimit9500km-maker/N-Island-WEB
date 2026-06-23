@@ -80,6 +80,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<{name: string; url: string; size?: string; type?: string}[]>([]);
   const [bgImage, setBgImage] = useState<string>('');
+  const [bgSize, setBgSize] = useState<string>('cover');
+  const [bgPosition, setBgPosition] = useState<string>('center');
   const editorRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false);
 
@@ -199,17 +201,22 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       // Complete letter addition
       const today = new Date();
       let deliveryDateStr = '';
+      let universalDeliveryISO = '';
 
       if (deliveryYear === 'custom') {
-        deliveryDateStr = customDate || getLocalDateTimeString(new Date(today.getTime() + (letterType === 'past' ? -86400000 : 86400000)));
+        const d = new Date(customDate || getLocalDateTimeString(new Date(today.getTime() + (letterType === 'past' ? -86400000 : 86400000))));
+        deliveryDateStr = getLocalDateTimeString(d);
+        universalDeliveryISO = d.toISOString();
       } else {
         const adYears = parseInt(deliveryYear, 10);
         if (letterType === 'future') {
           const futureDate = new Date(today.getFullYear() + adYears, today.getMonth(), today.getDate(), today.getHours(), today.getMinutes());
           deliveryDateStr = getLocalDateTimeString(futureDate);
+          universalDeliveryISO = futureDate.toISOString();
         } else {
           const pastDate = new Date(today.getFullYear() - adYears, today.getMonth(), today.getDate(), today.getHours(), today.getMinutes());
           deliveryDateStr = getLocalDateTimeString(pastDate);
+          universalDeliveryISO = pastDate.toISOString();
         }
       }
 
@@ -223,7 +230,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                to: (emailForDelivery || '').trim(),
                subject: title,
                content: content,
-               scheduleTime: deliveryDateStr,
+               scheduleTime: universalDeliveryISO,
                type: letterType,
                images: attachedImages,
                files: attachedFiles,
@@ -250,6 +257,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           images: attachedImages,
           files: attachedFiles,
           bgImage: bgImage,
+          bgSize: bgSize,
+          bgPosition: bgPosition,
           letterType: letterType,
           recipientEmail: emailForDelivery
         } : l));
@@ -267,6 +276,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           images: attachedImages,
           files: attachedFiles,
           bgImage: bgImage,
+          bgSize: bgSize,
+          bgPosition: bgPosition,
           letterType: letterType,
           recipientEmail: emailForDelivery
         };
@@ -302,6 +313,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     setAttachedImages(letter.images || []);
     setAttachedFiles(letter.files || []);
     setBgImage(letter.bgImage || '');
+    setBgSize(letter.bgSize || 'cover');
+    setBgPosition(letter.bgPosition || 'center');
     setAnimationStep('idle');
     setShowCompose(true);
   };
@@ -352,6 +365,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
        recipient,
        images: attachedImages,
        bgImage: bgImage,
+       bgSize: bgSize,
+       bgPosition: bgPosition,
        timestamp: Date.now()
      };
      let existingDrafts = [];
@@ -360,9 +375,12 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
        if (Array.isArray(parsed)) existingDrafts = parsed;
      } catch {}
      existingDrafts.push(draftData);
-     localStorage.setItem('shared_drafts_pool', JSON.stringify(existingDrafts));
-     
-     localStorage.setItem('future_letter_draft', JSON.stringify(draftData));
+     try {
+       localStorage.setItem('shared_drafts_pool', JSON.stringify(existingDrafts));
+       localStorage.setItem('future_letter_draft', JSON.stringify(draftData));
+     } catch (e) {
+       console.warn('Draft save failed due to quota', e);
+     }
      resetCompose();
   };
 
@@ -387,6 +405,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
      setRecipient(savedDraft.recipient || '未来的我');
      setAttachedImages(savedDraft.images || []);
      setBgImage(savedDraft.bgImage || '');
+     setBgSize(savedDraft.bgSize || 'cover');
+     setBgPosition(savedDraft.bgPosition || 'center');
      setShowResumePrompt(false);
      setShowCompose(true);
   };
@@ -827,8 +847,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   className="flex-1 p-5 md:p-8 overflow-auto flex flex-col transition-all duration-500 relative"
                   style={bgImage ? {
                     backgroundImage: `linear-gradient(rgba(255,253,249,0.85), rgba(255,253,249,0.85)), url('${bgImage}')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    backgroundSize: bgSize || 'cover',
+                    backgroundPosition: bgPosition || 'center'
                   } : { backgroundColor: '#fffdf9' }}
                 >
                   
@@ -1083,6 +1103,30 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                               className="hidden" 
                             />
                           </label>
+                          {bgImage && (
+                            <div className="mt-2 pt-2 border-t border-[#dfd6c6] flex gap-2">
+                              <select 
+                                value={bgSize} 
+                                onChange={(e) => setBgSize(e.target.value)}
+                                className="flex-1 bg-white border border-[#dfd6c6] text-[#8c7456] text-[10px] p-1 rounded outline-none"
+                              >
+                                <option value="cover">覆盖填充 (Cover)</option>
+                                <option value="contain">完整自适应 (Contain)</option>
+                                <option value="auto">100% (Auto)</option>
+                              </select>
+                              <select 
+                                value={bgPosition} 
+                                onChange={(e) => setBgPosition(e.target.value)}
+                                className="flex-1 bg-white border border-[#dfd6c6] text-[#8c7456] text-[10px] p-1 rounded outline-none"
+                              >
+                                <option value="center">居中对齐</option>
+                                <option value="top">顶部对齐</option>
+                                <option value="bottom">底部对齐</option>
+                                <option value="left">左对齐</option>
+                                <option value="right">右对齐</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1126,14 +1170,43 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
               </div>
 
               {/* Stationery details */}
-              <div className="flex-1 overflow-auto py-6 flex flex-col bg-[linear-gradient(#f0ebe1_1px,transparent_1px)] bg-[size:100%_2.2rem] pl-4 border-l-2 border-orange-200/50 mt-4 leading-loose">
-                <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3">TO: {selectedReadingLetter.recipient}</span>
-                <h4 className="text-base font-black text-[#352a1a] mb-2">{selectedReadingLetter.title}</h4>
-                <p className="text-xs text-[#a88252] font-bold font-mono mb-4">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
+              <div 
+                className="flex-1 overflow-auto py-6 flex flex-col pl-4 border-l-2 border-orange-200/50 mt-4 leading-loose rounded-2xl relative p-4 transition-all"
+                style={selectedReadingLetter.bgImage ? {
+                  backgroundImage: `linear-gradient(rgba(255,253,249,0.85), rgba(255,253,249,0.85)), url('${selectedReadingLetter.bgImage}')`,
+                  backgroundSize: selectedReadingLetter.bgSize || 'cover',
+                  backgroundPosition: selectedReadingLetter.bgPosition || 'center'
+                } : {
+                  background: 'linear-gradient(#f0ebe1 1px, transparent 1px) 0 0 / 100% 2.2rem'
+                }}
+              >
+                <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3 relative z-10">TO: {selectedReadingLetter.recipient}</span>
+                <h4 className="text-base font-black text-[#352a1a] mb-2 relative z-10">{selectedReadingLetter.title}</h4>
+                <p className="text-xs text-[#a88252] font-bold font-mono mb-4 relative z-10">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
                 <div 
-                  className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic editor-content-html [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
+                  className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic editor-content-html [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm relative z-10"
                   dangerouslySetInnerHTML={{ __html: selectedReadingLetter.content }}
                 />
+
+                {/* Attached Files & Images when reading */}
+                {((selectedReadingLetter.images && selectedReadingLetter.images.length > 0) || (selectedReadingLetter.files && selectedReadingLetter.files.length > 0)) && (
+                  <div className="mt-5 border-t border-dashed border-[#dfd6c6] pt-4 shrink-0 relative z-10">
+                    <span className="text-[10px] font-black text-[#8c7456] block mb-2">📎 附件包裹：</span>
+                    <div className="flex gap-2.5 overflow-x-auto pb-1.5 min-h-[4rem] items-center">
+                      {selectedReadingLetter.images?.map((img, idx) => (
+                        <div key={idx} className="relative w-14 h-14 rounded-xl border border-[#dfd6c6] overflow-hidden shrink-0 group shadow-3xs cursor-pointer">
+                          <img src={img} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                      {selectedReadingLetter.files?.map((file, idx) => (
+                        <div key={idx} className="relative w-20 h-14 bg-white/70 rounded-xl border border-[#dfd6c6] shrink-0 shadow-3xs flex flex-col items-center justify-center p-1 px-2 cursor-pointer">
+                          <span className="text-[10px] font-bold text-gray-700 truncate w-full text-center" title={file.name}>{file.name}</span>
+                          <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-5 border-t border-[#dfd6c6]/50 pt-4 flex gap-4 items-center justify-center">
