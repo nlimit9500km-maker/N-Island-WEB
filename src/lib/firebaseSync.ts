@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "./firebase";
 
 // Keys we want to sync
@@ -25,6 +25,9 @@ let isInitialized = false;
 // In-memory storage to bypass 5MB browser quota
 const memoryStorage = new Map<string, string>();
 
+// Track which keys are currently stored as chunked documents to clean them up properly
+const knownChunkedKeys = new Set<string>();
+
 // Maximum characters per chunk (~900KB to stay safely under 1MB Firestore limit)
 const CHUNK_SIZE = 900000;
 
@@ -35,8 +38,13 @@ export async function initFirebaseSync() {
   try {
     console.log("Fetching data from Firebase...");
 
-    // Fetch data from island_state
-    const stateSnap = await getDocs(collection(db, "island_state"));
+    // Race the fetch call against a 2.5-second timeout to avoid locking the screen if connection is blocked
+    const fetchPromise = getDocs(collection(db, "island_state"));
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore connection timeout")), 2500)
+    );
+
+    const stateSnap = await Promise.race([fetchPromise, timeoutPromise]);
     
     // Process chunks and standard documents
     const groupedChunks: Record<string, string[]> = {};
@@ -52,7 +60,7 @@ export async function initFirebaseSync() {
         groupedChunks[baseKey][parseInt(chunkIndex)] = data.value;
       } else {
         if (data.isChunked) {
-          // It's a header doc for chunked data, wait to assemble
+          knownChunkedKeys.add(id);
         } else if (data.value !== undefined) {
           standardDocs[id] = data.value;
         }
@@ -75,7 +83,7 @@ export async function initFirebaseSync() {
     console.log("Firebase sync initialization complete.");
 
   } catch (err) {
-    console.error("Firebase fetch failed", err);
+    console.warn("Firebase fetch timed out or failed. Running in offline/local fallback mode.", err);
   }
 
   // Intercept localStorage methods
@@ -133,18 +141,19 @@ function syncToFirebase(key: string, value: string) {
         }
         
         await batch.commit();
+        knownChunkedKeys.add(key);
         console.log(`Synced ${key} in ${totalChunks} chunks.`);
       } else {
          // Cleanup any potential old chunks if resizing down
-         const headerDoc = await getDoc(doc(db, "island_state", key));
-         if (headerDoc.exists() && headerDoc.data().isChunked) {
-             const oldChunks = headerDoc.data().chunks;
+         if (knownChunkedKeys.has(key)) {
              const batch = writeBatch(db);
-             for(let i=0; i < oldChunks; i++) {
+             // Safely delete up to 20 potential chunk indices to be absolutely clean
+             for(let i=0; i < 20; i++) {
                  batch.delete(doc(db, "island_state", `${key}_chunk_${i}`));
              }
              batch.set(doc(db, "island_state", key), { value, updatedAt: new Date().toISOString() });
              await batch.commit();
+             knownChunkedKeys.delete(key);
          } else {
              const docRef = doc(db, "island_state", key);
              await setDoc(docRef, { value, updatedAt: new Date().toISOString() });
@@ -160,15 +169,14 @@ function deleteFromFirebase(key: string) {
   if (timeouts[key]) clearTimeout(timeouts[key]);
   timeouts[key] = setTimeout(async () => {
     try {
-      const headerDoc = await getDoc(doc(db, "island_state", key));
-      if (headerDoc.exists() && headerDoc.data().isChunked) {
-          const oldChunks = headerDoc.data().chunks;
+      if (knownChunkedKeys.has(key)) {
           const batch = writeBatch(db);
-          for(let i=0; i < oldChunks; i++) {
+          for(let i=0; i < 20; i++) {
               batch.delete(doc(db, "island_state", `${key}_chunk_${i}`));
           }
           batch.delete(doc(db, "island_state", key));
           await batch.commit();
+          knownChunkedKeys.delete(key);
       } else {
           const docRef = doc(db, "island_state", key);
           await deleteDoc(docRef);
