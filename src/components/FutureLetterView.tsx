@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mail, Clock, Lock, ShieldAlert, Sparkles, Check, CheckCircle, 
   Trash2, X, Plus, Calendar, ArrowRight, BookOpen, Send, Gift,
-  Inbox, Archive
+  Inbox, Archive, Unlock, MoveDiagonal
 } from 'lucide-react';
 import { 
   FutureLetter, STAMP_PRESETS, SEAL_COLORS 
@@ -39,6 +39,49 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Synchronize letters with server-side Firestore scheduler
+  useEffect(() => {
+    const syncLetters = async () => {
+      const unsent = letters.filter(l => l.recipientEmail && l.recipientEmail.includes('@') && !l.isDelivered);
+      if (unsent.length === 0) return;
+      
+      console.log(`[Auto Sync] Syncing ${unsent.length} unsent scheduled letters to server...`);
+      for (const letter of unsent) {
+        try {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: letter.recipientEmail.trim(),
+              subject: letter.title,
+              content: letter.content,
+              scheduleTime: letter.deliverAt.replace(' ', 'T'),
+              type: letter.letterType,
+              images: letter.images,
+              bodyImages: letter.bodyImages,
+              files: letter.files,
+              bgImage: letter.bgImage,
+              recipient: letter.recipient,
+              createdAt: (letter.createdAt || '').split(' ')[0],
+              id: letter.id
+            })
+          });
+        } catch (e) {
+          console.error("Failed to sync letter to server:", e);
+        }
+      }
+    };
+    if (letters && letters.length > 0) {
+      syncLetters();
+    }
+  }, [letters]);
+
+  const getIsDelivered = (letter: FutureLetter) => {
+    const deliverStr = letter.deliverAt.replace(' ', 'T');
+    const isReady = new Date(deliverStr).getTime() <= nowTime;
+    return letter.isDelivered || isReady;
+  };
 
   // Time utilities
   const formatCountdown = (deliverStr: string) => {
@@ -79,6 +122,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   // Images, Files and Background Image State
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<{name: string; url: string; size?: string; type?: string}[]>([]);
+  const [bodyImages, setBodyImages] = useState<{ id: string; src: string; x: number; y: number; width: number; height: number; locked: boolean; }[]>([]);
   const [bgImage, setBgImage] = useState<string>('');
   const [bgSize, setBgSize] = useState<string>('cover');
   const [bgPosition, setBgPosition] = useState<string>('center');
@@ -100,18 +144,19 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (typeof reader.result === 'string' && editorRef.current) {
-          editorRef.current.focus();
-          // Use a resizable span wrapper to ensure reliable resize handles in chrome/safari and allow block formatting
-          const imgHtml = `
-            <div contenteditable="false" style="display: inline-block; vertical-align: top; max-width: 100%; width: 50%; border: 1px dotted transparent; resize: both; overflow: hidden; margin: 4px;">
-              <img src="${reader.result}" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
-            </div>
-            &nbsp;
-          `;
-          document.execCommand('insertHTML', false, imgHtml);
-          isEditingRef.current = true;
-          setContent(editorRef.current.innerHTML);
+        if (typeof reader.result === 'string') {
+          setBodyImages(prev => [
+            ...prev,
+            {
+              id: 'img-' + Date.now(),
+              src: reader.result as string,
+              x: 50,
+              y: 50,
+              width: 150,
+              height: 150,
+              locked: false
+            }
+          ]);
         }
       };
       reader.readAsDataURL(file);
@@ -222,6 +267,34 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
   const [deleteConfirmLetterId, setDeleteConfirmLetterId] = useState<string | null>(null);
 
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+
+  const handleTestEmail = async () => {
+    if (!emailForDelivery || !emailForDelivery.includes('@')) {
+      alert("请先填写有效的邮箱地址");
+      return;
+    }
+    setIsTestingEmail(true);
+    try {
+      const res = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: emailForDelivery.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("邮件发送成功，请查收信箱！(这可能需要几分钟，请留意垃圾邮件箱)");
+      } else {
+        alert("发送失败: " + (data.error || "未知错误，请检查邮箱配置"));
+        console.error("Test email error", data);
+      }
+    } catch (e: any) {
+      alert("发送请求失败，网络异常: " + String(e));
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
   const getStamp = (id: string) => STAMP_PRESETS.find(item => item.id === id) || STAMP_PRESETS[0];
 
   // Wax sealing trigger
@@ -275,6 +348,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                scheduleTime: deliveryDateStr,
                type: letterType,
                images: attachedImages,
+               bodyImages: bodyImages,
                files: attachedFiles,
                bgImage: bgImage,
                recipient: recipient,
@@ -297,6 +371,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           stampId: selectedStamp,
           sealColor: selectedSeal,
           images: attachedImages,
+          bodyImages: bodyImages,
           files: attachedFiles,
           bgImage: bgImage,
           bgSize: bgSize,
@@ -316,6 +391,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           sealColor: selectedSeal,
           isDelivered: false,
           images: attachedImages,
+          bodyImages: bodyImages,
           files: attachedFiles,
           bgImage: bgImage,
           bgSize: bgSize,
@@ -353,6 +429,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     setLetterType(letter.letterType || 'future');
     setEmailForDelivery(letter.recipientEmail || '');
     setAttachedImages(letter.images || []);
+    setBodyImages(letter.bodyImages || []);
     setAttachedFiles(letter.files || []);
     setBgImage(letter.bgImage || '');
     setBgSize(letter.bgSize || 'cover');
@@ -362,8 +439,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   };
 
   const handleOpenLetter = (letter: FutureLetter) => {
-    const isReady = new Date(letter.deliverAt.replace(' ', 'T')).getTime() <= nowTime;
-    if (!isReady && !letter.isDelivered) {
+    const isReady = getIsDelivered(letter);
+    if (!isReady) {
       alert(`锁印完好！此处信章正悬停在时间的信道中。\n距离送达还有: ${formatCountdown(letter.deliverAt)}\n别着急，时间的邮差会绝对安全地守护它的。`);
       return;
     }
@@ -383,6 +460,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     setLetterType('future');
     setEmailForDelivery('');
     setAttachedImages([]);
+    setBodyImages([]);
     setAttachedFiles([]);
     setBgImage('');
     setShowCompose(false);
@@ -406,6 +484,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
        emailForDelivery,
        recipient,
        images: attachedImages,
+       bodyImages: bodyImages,
        bgImage: bgImage,
        bgSize: bgSize,
        bgPosition: bgPosition,
@@ -446,6 +525,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
      setEmailForDelivery(savedDraft.emailForDelivery || '');
      setRecipient(savedDraft.recipient || '未来的我');
      setAttachedImages(savedDraft.images || []);
+     setBodyImages(savedDraft.bodyImages || []);
      setBgImage(savedDraft.bgImage || '');
      setBgSize(savedDraft.bgSize || 'cover');
      setBgPosition(savedDraft.bgPosition || 'center');
@@ -473,7 +553,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
               <Mail className="w-5.5 h-5.5 text-[#a88252]" />
               时光邮局 (未来寄架)
             </h3>
-            <p className="text-xs text-[#a88252] mt-1 font-bold">今天你投递了 {letters.filter(l => !l.isDelivered).length} 封前往未来的漂流信笺</p>
+            <p className="text-xs text-[#a88252] mt-1 font-bold">今天你投递了 {letters.filter(l => !getIsDelivered(l)).length} 封前往未来的漂流信笺</p>
           </div>
           <div className="flex bg-[#e9e3d9] rounded-2xl p-1 shadow-inner border border-[#dfd6c6]/50 items-center justify-between w-28 gap-1">
             {/* Left standard Inbox icon button: triggers compose or draft choice dialog */}
@@ -521,9 +601,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {letters.map((letter) => {
-                const isReady = new Date(letter.deliverAt).getTime() <= nowTime;
                 const stamp = getStamp(letter.stampId);
-                const isDelivered = letter.isDelivered || isReady;
+                const isDelivered = getIsDelivered(letter);
 
                 return (
                   <motion.div
@@ -671,12 +750,12 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                     </button>
                  </div>
                  <div className="flex-1 overflow-auto space-y-3">
-                    {letters.filter(l => !l.isDelivered).length === 0 ? (
+                    {letters.filter(l => !getIsDelivered(l)).length === 0 ? (
                        <div className="text-center py-8 text-[#a88252] opacity-70 font-bold text-sm">
                          没有在传送途中的信件
                        </div>
                     ) : (
-                       letters.filter(l => !l.isDelivered).map(letter => (
+                       letters.filter(l => !getIsDelivered(l)).map(letter => (
                          <div key={letter.id} className="p-4 bg-white rounded-xl border border-[#dfd6c6]/40 flex justify-between items-center hover:bg-[#fffdf9] transition-colors">
                            <div className="flex flex-col">
                              <span className="font-bold text-[#352a1a] text-sm max-w-[200px] truncate">{letter.title}</span>
@@ -915,6 +994,15 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                              onChange={(e) => setEmailForDelivery(e.target.value)}
                              className="bg-black/5 hover:bg-black/10 border-none outline-none px-2 py-1 rounded text-[#352a1a] w-40 placeholder:font-normal placeholder:opacity-50"
                            />
+                           {emailForDelivery.includes('@') && (
+                            <button
+                              onClick={handleTestEmail}
+                              disabled={isTestingEmail}
+                              className="text-[9px] px-2 py-1 bg-black/5 hover:bg-black/10 rounded-md text-[#a88252] transition-colors whitespace-nowrap cursor-pointer z-50 relative disabled:opacity-50"
+                            >
+                              {isTestingEmail ? '发送中...' : '测试发送'}
+                            </button>
+                           )}
                          </div>
                        </div>
                     </div>
@@ -935,24 +1023,104 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                       className="bg-transparent text-lg font-black outline-none w-full text-[#352a1a] placeholder-[#352a1a]/20 border-none h-11"
                     />
 
-                    <div 
-                      ref={editorRef}
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onInput={(e) => {
-                        isEditingRef.current = true;
-                        setContent(e.currentTarget.innerHTML);
-                      }}
-                      onBlur={(e) => {
-                        isEditingRef.current = false;
-                        setContent(e.currentTarget.innerHTML);
-                      }}
-                      data-placeholder={letterType === 'future' 
-                        ? "亲爱的我，当你在这行文字中醒来时，你是否正站在理想小岛的海岸线上？曾经困扰我们的那些沮丧，在你现在看来，是不是都已经化成了漫漫浪花？\n\n快写下你对未来的期待与承诺..."
-                        : "曾经的我，如果你能在这个瞬间听见我的声音。请原谅那个时候我们的笨拙与怯弱。不要害怕，你所经历的所有挣扎与阴霾，我都在未来平安为你趟过了，你很勇敢...\n\n把那些想对过去的自己诉说的话写下来..."
-                      }
-                      className="w-full flex-1 bg-transparent resize-none outline-none text-sm leading-[2.2rem] text-[#4d4030] font-serif min-h-[14rem] pb-4 editor-content-editable empty:before:content-[attr(data-placeholder)] empty:before:text-[#4d4030]/20 empty:before:whitespace-pre-wrap empty:before:pointer-events-none [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
-                    />
+                    <div className="relative flex-1">
+                      <div 
+                        ref={editorRef}
+                        contentEditable
+                        suppressContentEditableWarning={true}
+                        onInput={(e) => {
+                          isEditingRef.current = true;
+                          setContent(e.currentTarget.innerHTML);
+                        }}
+                        onBlur={(e) => {
+                          isEditingRef.current = false;
+                          setContent(e.currentTarget.innerHTML);
+                        }}
+                        data-placeholder={letterType === 'future' 
+                          ? "亲爱的我，当你在这行文字中醒来时，你是否正站在理想小岛的海岸线上？曾经困扰我们的那些沮丧，在你现在看来，是不是都已经化成了漫漫浪花？\n\n快写下你对未来的期待与承诺..."
+                          : "曾经的我，如果你能在这个瞬间听见我的声音。请原谅那个时候我们的笨拙与怯弱。不要害怕，你所经历的所有挣扎与阴霾，我都在未来平安为你趟过了，你很勇敢...\n\n把那些想对过去的自己诉说的话写下来..."
+                        }
+                        className="w-full h-full bg-transparent resize-none outline-none text-sm leading-[2.2rem] text-[#4d4030] font-serif min-h-[14rem] pb-4 editor-content-editable empty:before:content-[attr(data-placeholder)] empty:before:text-[#4d4030]/20 empty:before:whitespace-pre-wrap empty:before:pointer-events-none [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
+                      />
+                      {bodyImages.map((img) => (
+                        <motion.div
+                          key={img.id}
+                          drag={!img.locked}
+                          dragMomentum={false}
+                          initial={{ x: img.x, y: img.y }}
+                          onDragEnd={(_, info) => {
+                            if (!img.locked) {
+                              setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, x: item.x + info.offset.x, y: item.y + info.offset.y } : item));
+                            }
+                          }}
+                          style={{
+                            position: 'absolute',
+                            width: img.width,
+                            height: img.height,
+                            left: 0,
+                            top: 0,
+                            x: img.x,
+                            y: img.y,
+                            zIndex: 10
+                          }}
+                          className="group"
+                        >
+                          <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
+                          
+                          {/* Locked Button */}
+                          <div 
+                            className={`absolute -bottom-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow-md transition-opacity z-20 ${img.locked ? 'bg-red-500 text-white opacity-100' : 'bg-white text-gray-700 opacity-0 group-hover:opacity-100'}`}
+                            onClick={() => {
+                              setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, locked: !item.locked } : item));
+                            }}
+                          >
+                            {img.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                          </div>
+
+                          {/* Resize Handle */}
+                          {!img.locked && (
+                            <div 
+                              className="absolute -bottom-3 -right-3 w-6 h-6 rounded-full bg-white text-gray-700 flex items-center justify-center cursor-se-resize shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startW = img.width;
+                                const startH = img.height;
+                                const onMove = (moveEvent: PointerEvent) => {
+                                  const deltaX = moveEvent.clientX - startX;
+                                  const deltaY = moveEvent.clientY - startY;
+                                  const newW = Math.max(50, startW + deltaX);
+                                  const newH = Math.max(50, startH + deltaY);
+                                  setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, width: newW, height: newH } : item));
+                                };
+                                const onUp = () => {
+                                  window.removeEventListener('pointermove', onMove);
+                                  window.removeEventListener('pointerup', onUp);
+                                };
+                                window.addEventListener('pointermove', onMove);
+                                window.addEventListener('pointerup', onUp);
+                              }}
+                            >
+                              <MoveDiagonal className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+
+                          {/* Delete Button */}
+                          {!img.locked && (
+                            <div 
+                              className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center cursor-pointer shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                              onClick={() => {
+                                setBodyImages(prev => prev.filter(item => item.id !== img.id));
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Attached images visualization container */}
@@ -1222,13 +1390,33 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   background: 'linear-gradient(#f0ebe1 1px, transparent 1px) 0 0 / 100% 2.2rem'
                 }}
               >
-                <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3 relative z-10">TO: {selectedReadingLetter.recipient}</span>
-                <h4 className="text-base font-black text-[#352a1a] mb-2 relative z-10">{selectedReadingLetter.title}</h4>
-                <p className="text-xs text-[#a88252] font-bold font-mono mb-4 relative z-10">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
-                <div 
-                  className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic editor-content-html [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm relative z-10"
-                  dangerouslySetInnerHTML={{ __html: selectedReadingLetter.content }}
-                />
+                <div className="relative z-10 w-full h-full min-h-[300px]">
+                  <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3 block">TO: {selectedReadingLetter.recipient}</span>
+                  <h4 className="text-base font-black text-[#352a1a] mb-2">{selectedReadingLetter.title}</h4>
+                  <p className="text-xs text-[#a88252] font-bold font-mono mb-4">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
+                  
+                  <div 
+                    className="text-sm font-sans text-gray-800 leading-[2.2rem] whitespace-pre-wrap leading-relaxed italic editor-content-html [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
+                    dangerouslySetInnerHTML={{ __html: selectedReadingLetter.content }}
+                  />
+
+                  {selectedReadingLetter.bodyImages?.map((img) => (
+                    <div
+                      key={img.id}
+                      style={{
+                        position: 'absolute',
+                        width: img.width,
+                        height: img.height,
+                        left: 0,
+                        top: 0,
+                        transform: `translate(${img.x}px, ${img.y}px)`,
+                        zIndex: 10
+                      }}
+                    >
+                      <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
+                    </div>
+                  ))}
+                </div>
 
                 {/* Attached Files & Images when reading */}
                 {((selectedReadingLetter.images && selectedReadingLetter.images.length > 0) || (selectedReadingLetter.files && selectedReadingLetter.files.length > 0)) && (

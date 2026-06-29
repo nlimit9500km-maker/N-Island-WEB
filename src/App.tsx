@@ -2830,6 +2830,7 @@ const NansPlaylistWidget = () => {
       <audio 
         ref={audioRef} 
         src={currentSong.src || null} 
+        autoPlay
         onTimeUpdate={handleTimeUpdate} 
         onLoadedMetadata={handleLoadedMetadata}
         onError={handleAudioError}
@@ -3614,6 +3615,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       onMouseMove={handleMouseMove}
       onClick={onComplete}
     >
+      <img src="https://dlink.host/1drv/aHR0cHM6Ly8xZHJ2Lm1zL2kvYy84M2MxZTEzYzA5OGQxODU2L0lRRFRzZk14SzBTMVJZMnZkZ2VyQThJZUFTdXJabFduWnpnMS1zblJFbExWM2FJP2U9ZG1ia3pD.png" style={{display: 'none'}} alt="" />
       {/* Background Image with Distorted Animation */}
       <motion.div 
         initial={{ scale: 1.2, opacity: 0, filter: 'blur(10px) brightness(0.3)' }}
@@ -3726,6 +3728,14 @@ export default function App() {
   const [windows, setWindows] = useState<any[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Keep backend alive and trigger scheduled emails in serverless environment
+    const interval = setInterval(() => {
+      fetch('/api/check-scheduled-letters').catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const openApp = (appId: string) => {
     const existing = windows.find(w => w.id === appId);

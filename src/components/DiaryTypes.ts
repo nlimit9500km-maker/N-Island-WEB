@@ -31,7 +31,8 @@ export interface FutureLetter {
   stampId: string;
   sealColor: string;
   isDelivered: boolean;
-  images?: string[];
+  images?: any[];
+  bodyImages?: { id: string; src: string; x: number; y: number; width: number; height: number; locked: boolean; }[];
   files?: { name: string; url: string; size?: string; type?: string; }[];
   bgImage?: string;
   bgSize?: string;

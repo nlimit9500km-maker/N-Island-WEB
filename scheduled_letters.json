@@ -1,0 +1,16 @@
+[
+  {
+    "id": "test-hybrid-12345",
+    "to": "1760537268@qq.com",
+    "subject": "【时光信笺】混合存储端对端自动投递测试",
+    "content": "您好！这是一封测试信。当您收到这封邮件，说明混合备份存储（Survive Quota Limits）和自动投递服务已经完全修复并工作正常！",
+    "deliverAt": "2026-06-29T16:00:00.000Z",
+    "createdAt": "2026-06-29T16:00:00.000Z",
+    "letterType": "future",
+    "status": "pending",
+    "images": [],
+    "bodyImages": [],
+    "files": [],
+    "bgImage": ""
+  }
+]

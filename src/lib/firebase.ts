@@ -1,5 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, setLogLevel } from "firebase/firestore";
+
+// Disable internal Firebase logs to prevent them from showing as errors when running in offline/preview environments
+setLogLevel('silent');
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0881204837",

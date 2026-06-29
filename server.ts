@@ -6,6 +6,23 @@ import fs from "fs/promises";
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
+import { initializeApp } from "firebase/app";
+import { initializeFirestore, collection, getDocs, doc, setDoc } from "firebase/firestore";
+
+const firebaseConfig = {
+  projectId: "gen-lang-client-0881204837",
+  appId: "1:977113091505:web:1bb33efbb02fdb389ac190",
+  apiKey: "AIzaSyALlXifBvWJLAHA1NEDu499z0HvhAn0XLM",
+  authDomain: "gen-lang-client-0881204837.firebaseapp.com",
+  storageBucket: "gen-lang-client-0881204837.firebasestorage.app",
+  messagingSenderId: "977113091505",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestoreDb = initializeFirestore(firebaseApp, {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
+}, "ai-studio-611cfb5e-7db4-434e-bb94-bb1a0df7c5b3");
 
 const DATA_FILE = path.join(process.cwd(), "data.json");
 
@@ -124,19 +141,76 @@ async function startServer() {
 
   const SCHEDULE_FILE = path.join(process.cwd(), "scheduled_letters.json");
 
-  // Helper to load letters
-  async function getScheduledLetters() {
-    try {
-      const raw = await fs.readFile(SCHEDULE_FILE, "utf-8");
-      return JSON.parse(raw);
-    } catch (e) {
-      return [];
-    }
+  // Helper to run a promise with a timeout
+  function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore operation timed out")), timeoutMs)
+      )
+    ]);
   }
 
-  // Helper to save letters
+  // Helper to load letters from Firestore & Local backup hybrid
+  async function getScheduledLetters() {
+    let firestoreList: any[] = [];
+    let localList: any[] = [];
+
+    try {
+      const querySnapshot = await withTimeout(
+        getDocs(collection(firestoreDb, "scheduled_letters")),
+        3000
+      );
+      querySnapshot.forEach((doc) => {
+        firestoreList.push({ id: doc.id, ...doc.data() });
+      });
+    } catch (e) {
+      console.error("Failed to fetch scheduled letters from firestore (timed out or error):", e);
+    }
+
+    try {
+      const fileContent = await fs.readFile(SCHEDULE_FILE, 'utf8');
+      localList = JSON.parse(fileContent);
+    } catch (fileErr) {
+      // file might not exist yet, that is fine
+    }
+
+    // Merge both lists, deduplicating by ID (prioritizing Firestore data)
+    const mergedMap = new Map();
+    for (const letter of localList) {
+      if (letter && letter.id) {
+        mergedMap.set(letter.id, letter);
+      }
+    }
+    for (const letter of firestoreList) {
+      if (letter && letter.id) {
+        mergedMap.set(letter.id, letter);
+      }
+    }
+
+    return Array.from(mergedMap.values());
+  }
+
+  // Helper to save letters to Firestore & Local backup
   async function saveScheduledLetters(letters: any[]) {
-    await fs.writeFile(SCHEDULE_FILE, JSON.stringify(letters, null, 2), "utf-8");
+    // 1. Always save to local backup file first
+    try {
+      await fs.writeFile(SCHEDULE_FILE, JSON.stringify(letters, null, 2), 'utf8');
+    } catch (fileErr) {
+      console.error("Failed to save scheduled letters locally:", fileErr);
+    }
+
+    // 2. Try to save to Firestore in the background
+    try {
+      for (const letter of letters) {
+        if (!letter.id) continue;
+        const docRef = doc(firestoreDb, "scheduled_letters", letter.id);
+        const cleanLetter = JSON.parse(JSON.stringify(letter));
+        await withTimeout(setDoc(docRef, cleanLetter, { merge: true }), 3000);
+      }
+    } catch (e) {
+      console.error("Failed to save scheduled letters to Firestore (timed out or quota limit):", e);
+    }
   }
 
   async function sendScheduledLetterEmail(letter: any) {
@@ -147,12 +221,15 @@ async function startServer() {
       if (process.env.SMTP_HOST) {
          transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            secure: process.env.SMTP_SECURE === 'true',
+            port: parseInt(process.env.SMTP_PORT || (process.env.SMTP_SECURE === 'true' ? '465' : '587'), 10),
+            secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
             auth: {
                user: process.env.SMTP_USER,
                pass: process.env.SMTP_PASS
-            }
+            },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
          });
       } else {
          console.log("No custom SMTP configured. Using JSON transport logs fallback.");
@@ -212,6 +289,11 @@ async function startServer() {
 
               <div class="letter-content" style="font-size: 14px; line-height: 2.2; color: #4d4030; white-space: pre-wrap; font-family: Georgia, serif; min-height: 200px; border-left: 2px solid rgba(223, 214, 198, 0.5); padding-left: 15px; margin-bottom: 30px;">
                 ${letter.content}
+                ${(letter.bodyImages || []).map((img: any) => `
+                  <div style="margin-top: 15px; border: 1px solid #dfd6c6; border-radius: 12px; overflow: hidden; display: inline-block;">
+                    <img src="${img.src}" style="max-width: 100%; display: block;" />
+                  </div>
+                `).join('')}
               </div>
 
               ${imagesMarkup}
@@ -268,6 +350,46 @@ async function startServer() {
     }
   }
 
+  app.get('/api/check-scheduled-letters', async (req, res) => {
+    try {
+      const letters = await getScheduledLetters();
+      const now = Date.now();
+      let updated = false;
+      let sentCount = 0;
+      for (const letter of letters) {
+        const isEligible = letter.status === "pending" || 
+                           (letter.status === "failed" && (letter.failedAttempts || 0) < 3);
+        if (isEligible) {
+          let deliveryTime = 0;
+          let deliverStr = letter.deliverAt;
+          if (!deliverStr.includes('Z') && !deliverStr.match(/[+-]\d{2}:\d{2}$/)) {
+            deliverStr = deliverStr.replace(' ', 'T') + '+08:00';
+          }
+          deliveryTime = new Date(deliverStr).getTime();
+
+          if (deliveryTime <= now) {
+            const ok = await sendScheduledLetterEmail(letter);
+            if (ok) {
+              letter.status = "submitted";
+              letter.sentTimestamp = new Date().toISOString();
+              sentCount++;
+            } else {
+              letter.failedAttempts = (letter.failedAttempts || 0) + 1;
+              letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+            }
+            updated = true;
+          }
+        }
+      }
+      if (updated) {
+        await saveScheduledLetters(letters);
+      }
+      res.json({ success: true, checked: true, sentCount });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Active loop checker (runs every 15 seconds)
   setInterval(async () => {
     try {
@@ -275,7 +397,9 @@ async function startServer() {
       const now = Date.now();
       let updated = false;
       for (const letter of letters) {
-        if (letter.status === "pending") {
+        const isEligible = letter.status === "pending" || 
+                           (letter.status === "failed" && (letter.failedAttempts || 0) < 3);
+        if (isEligible) {
           let deliveryTime = 0;
           let deliverStr = letter.deliverAt;
           // If the date string doesn't include timezone information, assume Beijing Time (UTC+8)
@@ -286,8 +410,13 @@ async function startServer() {
 
           if (deliveryTime <= now) {
             const ok = await sendScheduledLetterEmail(letter);
-            letter.status = ok ? "submitted" : "failed";
-            letter.sentTimestamp = new Date().toISOString();
+            if (ok) {
+              letter.status = "submitted";
+              letter.sentTimestamp = new Date().toISOString();
+            } else {
+              letter.failedAttempts = (letter.failedAttempts || 0) + 1;
+              letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+            }
             updated = true;
           }
         }
@@ -300,9 +429,41 @@ async function startServer() {
     }
   }, 15000);
 
+  app.post('/api/test-email', async (req, res) => {
+    try {
+      const { to } = req.body;
+      if (!process.env.SMTP_HOST) {
+        return res.json({ success: false, error: 'No SMTP_HOST configured in secrets.' });
+      }
+       const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || '465', 10),
+          secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+          auth: {
+             user: process.env.SMTP_USER,
+             pass: process.env.SMTP_PASS
+          },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000
+       });
+      const mailOptions = {
+         from: process.env.SMTP_FROM || process.env.SMTP_USER,
+         to: to || process.env.SMTP_USER,
+         subject: 'Test Email from AI Studio',
+         text: 'If you receive this, your email configuration is working.'
+      };
+      const info = await transporter.sendMail(mailOptions);
+      res.json({ success: true, messageId: info.messageId });
+    } catch (err: any) {
+      console.error("Test email error:", err);
+      res.json({ success: false, error: err.message, stack: err.stack, config: { host: process.env.SMTP_HOST, user: process.env.SMTP_USER, port: process.env.SMTP_PORT } });
+    }
+  });
+
   app.post('/api/send-email', async (req, res) => {
     try {
-      const { to, subject, content, scheduleTime, type, images, bgImage, createdAt, recipient, files } = req.body;
+      const { to, subject, content, scheduleTime, type, images, bodyImages, bgImage, createdAt, recipient, files } = req.body;
       
       if (!to || !to.includes('@')) {
          return res.status(400).json({ error: 'Invalid email address' });
@@ -318,6 +479,7 @@ async function startServer() {
         createdAt: createdAt || new Date().toISOString().split('T')[0],
         letterType: type || 'future',
         images: images || [],
+        bodyImages: bodyImages || [],
         bgImage: bgImage || '',
         recipient: recipient || '收件人',
         files: files || [],
@@ -326,6 +488,37 @@ async function startServer() {
 
       letters.push(newEntry);
       await saveScheduledLetters(letters);
+
+      // Send an immediate confirmation email so the user knows SMTP is working
+      if (process.env.SMTP_HOST) {
+         try {
+           const transporter = nodemailer.createTransport({
+              host: process.env.SMTP_HOST,
+              port: parseInt(process.env.SMTP_PORT || (process.env.SMTP_SECURE === 'true' ? '465' : '587'), 10),
+              secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+              auth: {
+                 user: process.env.SMTP_USER,
+                 pass: process.env.SMTP_PASS
+              },
+               connectionTimeout: 8000,
+               greetingTimeout: 8000,
+               socketTimeout: 10000
+            });
+           const confirmOptions = {
+              from: process.env.SMTP_FROM || `"屿·记 时光邮差" <${process.env.SMTP_USER}>`,
+              to: to,
+              subject: `[屿·记] 信笺封存确认: ${subject}`,
+              html: `<div style="padding: 30px; font-family: sans-serif; background-color: #f5f0e6; text-align: center; border-radius: 12px; border: 1px solid #dfd6c6;">
+                       <h2 style="color: #352a1a;">信笺已成功封存 📬</h2>
+                       <p style="color: #4d4030; font-size: 14px;">您的信笺 <b>${subject}</b> 已妥善交由时光邮差保管。</p>
+                       <p style="color: #a88252; font-size: 12px; margin-top: 20px;">这封信将于 <b>${scheduleTime}</b> 准确送达您的邮箱。</p>
+                     </div>`
+           };
+           transporter.sendMail(confirmOptions).catch(e => console.error('Confirmation email failed:', e));
+         } catch (e) {
+           console.error('Failed to init transporter for confirmation:', e);
+         }
+      }
 
       return res.json({ success: true, message: "Email scheduled & stored successfully", letterId: newEntry.id });
     } catch (e) {
