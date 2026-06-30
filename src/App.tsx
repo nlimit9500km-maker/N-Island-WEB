@@ -10,6 +10,7 @@ import { LifeDiaryView } from './components/LifeDiaryView';
 import { MediaView } from './components/MediaView';
 import { PhotoesView } from './components/PhotoesView';
 import DesktopPet from './components/DesktopPet';
+import DidadidiApp from './components/DidadidiApp';
 
 const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -1791,6 +1792,15 @@ const APPS = [
     content: <DiaryView mode="island" />,
     defaultWidth: 950,
     defaultHeight: 700
+  },
+  {
+    id: 'didadidi',
+    title: '滴答滴',
+    icon: <Clock className="w-8 h-8 text-white" strokeWidth={1.5} />,
+    color: 'bg-gradient-to-br from-[#4d5d53] to-[#7b8e82]',
+    content: <DidadidiApp />,
+    defaultWidth: 800,
+    defaultHeight: 620
   }
 ];
 

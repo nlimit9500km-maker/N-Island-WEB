@@ -9,7 +9,9 @@ import nodemailer from 'nodemailer';
 import imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { initializeFirestore, collection, getDocs, doc, setDoc, setLogLevel } from "firebase/firestore";
+
+setLogLevel('error');
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0881204837",

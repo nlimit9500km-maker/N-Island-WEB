@@ -12,6 +12,34 @@
     50% { opacity: 1; }
     100% { transform: translateY(100vh); opacity: 0; }
   }
+
+  @keyframes ddd-bounce-bar {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1.0); }
+  }
+  @keyframes ddd-steam-rise {
+    0% { transform: translateY(0) scaleX(1); opacity: 0; }
+    30% { opacity: 0.6; }
+    100% { transform: translateY(-12px) scaleX(1.5); opacity: 0; }
+  }
+  @keyframes ddd-cat-breathe {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.05); }
+  }
+  @keyframes ddd-train-scenery {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes ddd-rain-fall {
+    0% { transform: translateY(0); opacity: 0; }
+    15% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(600px); opacity: 0; }
+  }
+  @keyframes ddd-float-particle {
+    0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+    50% { transform: translate(10px, -15px); opacity: 0.8; }
+  }
 }
 
 .bg-paper {
