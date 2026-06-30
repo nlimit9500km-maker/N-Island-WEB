@@ -6,6 +6,8 @@ import fs from "fs/promises";
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
+import imaps from 'imap-simple';
+import { simpleParser } from 'mailparser';
 import { initializeApp } from "firebase/app";
 import { initializeFirestore, collection, getDocs, doc, setDoc } from "firebase/firestore";
 
@@ -165,7 +167,7 @@ async function startServer() {
         firestoreList.push({ id: doc.id, ...doc.data() });
       });
     } catch (e) {
-      console.error("Failed to fetch scheduled letters from firestore (timed out or error):", e);
+      console.warn("Firestore fetch temporarily unavailable (timed out or quota limit). Falling back to local cache.");
     }
 
     try {
@@ -191,25 +193,189 @@ async function startServer() {
     return Array.from(mergedMap.values());
   }
 
-  // Helper to save letters to Firestore & Local backup
+  // Memory-based lock to prevent concurrent duplicate sending of the same letter
+  const sendingLetterIds = new Set<string>();
+
+  // Helper to save letters to Firestore & Local backup (optimized, non-blocking parallel saves)
   async function saveScheduledLetters(letters: any[]) {
-    // 1. Always save to local backup file first
+    // 1. Always save to local backup file first (which is very fast)
     try {
       await fs.writeFile(SCHEDULE_FILE, JSON.stringify(letters, null, 2), 'utf8');
     } catch (fileErr) {
       console.error("Failed to save scheduled letters locally:", fileErr);
     }
 
-    // 2. Try to save to Firestore in the background
-    try {
-      for (const letter of letters) {
-        if (!letter.id) continue;
+    // 2. Try to save to Firestore in the background (parallel and non-blocking)
+    Promise.all(
+      letters.map(async (letter) => {
+        if (!letter.id) return;
         const docRef = doc(firestoreDb, "scheduled_letters", letter.id);
         const cleanLetter = JSON.parse(JSON.stringify(letter));
-        await withTimeout(setDoc(docRef, cleanLetter, { merge: true }), 3000);
+        try {
+          await withTimeout(setDoc(docRef, cleanLetter, { merge: true }), 3000);
+        } catch (err) {
+          // Ignore individual timeouts/quota limits so others can still succeed
+        }
+      })
+    ).catch(e => {
+      console.warn("Firestore parallel backup warnings:", e);
+    });
+  }
+
+  // Helper to forward received reply emails back to the original sender
+  async function forwardEmailToSender(senderEmail: string, originalSubject: string, replyContent: string, replierInfo: string) {
+    try {
+      let transporter;
+      if (process.env.SMTP_HOST) {
+         transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || (process.env.SMTP_SECURE === 'true' ? '465' : '587'), 10),
+            secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+            auth: {
+               user: process.env.SMTP_USER,
+               pass: process.env.SMTP_PASS
+            },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
+         });
+      } else {
+         return false;
       }
-    } catch (e) {
-      console.error("Failed to save scheduled letters to Firestore (timed out or quota limit):", e);
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            .reply-box {
+              background-color: #FAF6F0;
+              border: 1px solid #dfd6c6;
+              border-radius: 16px;
+              padding: 25px;
+              margin: 20px 0;
+              font-family: Georgia, serif;
+              color: #4d4030;
+              line-height: 1.8;
+              white-space: pre-wrap;
+            }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f5f0e6; font-family: sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 30px 20px;">
+            <div style="background-color: white; border-radius: 24px; border: 1px solid #dfd6c6; padding: 35px; box-shadow: 0 10px 30px rgba(0,0,0,0.04);">
+              
+              <div style="border-bottom: 1px dashed #dfd6c6; padding-bottom: 15px; margin-bottom: 25px;">
+                <span style="font-size: 11px; font-weight: 800; color: #a78358; background: rgba(167, 131, 88, 0.1); padding: 4px 12px; border-radius: 12px; text-transform: uppercase;">
+                  📬 屿·记 · 收到新回信转寄
+                </span>
+              </div>
+
+              <p style="font-size: 14px; color: #665c4e; margin: 0 0 10px 0;">亲爱的岛民：</p>
+              <p style="font-size: 14px; color: #4d4030; line-height: 1.6; margin: 0 0 25px 0;">
+                您寄出的时光信笺《<b>${originalSubject}</b>》已收到来自 <b>${replierInfo}</b> 的回复！为了保护您的邮箱隐私，系统邮箱已为您完成匿名代理，并将回复内容安全转寄至您的绑定邮箱。
+              </p>
+
+              <div class="reply-box">${replyContent}</div>
+
+              <p style="font-size: 11px; color: #a88252; text-align: center; margin-top: 30px; border-top: 1px dashed #dfd6c6; padding-top: 20px;">
+                让记忆漫游，时间会给出最好的回信。<br/>
+                屿·记 时光邮递中介系统
+              </p>
+
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const mailOptions = {
+         from: process.env.SMTP_FROM || `"屿·记 时光邮差" <${process.env.SMTP_USER}>`,
+         to: senderEmail,
+         subject: `[屿·记回信代转]《${originalSubject}》收到新回复！`,
+         html: htmlContent
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Forward Success] Sent forwarded reply mail to sender ${senderEmail}. MessageID: ${info.messageId}`);
+      return true;
+    } catch (err) {
+      console.error(`[Forward Failed] Error forwarding reply mail to ${senderEmail}:`, err);
+      return false;
+    }
+  }
+
+  // Active IMAP checker to pull unread email replies, decode them, and forward to the correct senders
+  async function checkAndForwardReplies() {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return;
+    }
+    
+    const imapHost = process.env.IMAP_HOST || process.env.SMTP_HOST.replace('smtp.', 'imap.').replace('smtp', 'imap');
+    const imapPort = parseInt(process.env.IMAP_PORT || '993', 10);
+    
+    const config = {
+      imap: {
+        user: process.env.SMTP_USER,
+        password: process.env.SMTP_PASS,
+        host: imapHost,
+        port: imapPort,
+        tls: true,
+        authTimeout: 5000,
+        connTimeout: 8000,
+        tlsOptions: { rejectUnauthorized: false }
+      }
+    };
+
+    try {
+      const connection = await imaps.connect(config);
+      await connection.openBox('INBOX');
+      
+      const searchCriteria = ['UNSEEN'];
+      const fetchOptions = {
+        bodies: ['HEADER', 'TEXT', ''],
+        markSeen: false
+      };
+      
+      const messages = await connection.search(searchCriteria, fetchOptions);
+      if (messages.length > 0) {
+        console.log(`[IMAP Check] Found ${messages.length} unseen emails in INBOX.`);
+      }
+      
+      for (const message of messages) {
+        let part = message.parts.find(p => p.which === '');
+        if (!part) continue;
+        
+        const parsed = await simpleParser(part.body);
+        const subject = parsed.subject || '';
+        const text = parsed.text || parsed.html || '';
+        
+        // Match letter reference ID: [Ref: letter-xxxxx] or [Ref: sk-letter-xxxxx]
+        const match = subject.match(/\[Ref:\s*([a-zA-Z0-9_-]+)\]/);
+        if (match) {
+          const letterId = match[1];
+          console.log(`[IMAP Match] Found reply for letter ID: ${letterId}`);
+          
+          const letters = await getScheduledLetters();
+          const letter = letters.find(l => l.id === letterId);
+          if (letter && letter.replyTo && letter.replyTo.includes('@')) {
+            console.log(`[IMAP Forward] Forwarding reply to sender: ${letter.replyTo}`);
+            const ok = await forwardEmailToSender(letter.replyTo, letter.subject, text, parsed.from?.text || '收件人');
+            if (ok) {
+              await connection.addFlags(message.attributes.uid, 'SEEN');
+              console.log(`[IMAP Success] Message ${message.attributes.uid} marked as SEEN and forwarded.`);
+            }
+          } else {
+            console.warn(`[IMAP Skip] Letter ${letterId} not found or no replyTo email address configured.`);
+            await connection.addFlags(message.attributes.uid, 'SEEN');
+          }
+        }
+      }
+      
+      connection.end();
+    } catch (err) {
+      // Quiet fail to avoid polluting the terminal console during standard intervals if credentials aren't perfect
+      console.warn(`[IMAP Check Warning] IMAP check temporarily inactive:`, err instanceof Error ? err.message : err);
     }
   }
 
@@ -317,13 +483,17 @@ async function startServer() {
       const mailOptions: any = {
          from: process.env.SMTP_FROM || `"屿·记 时光邮差" <${process.env.SMTP_USER}>`,
          to: letter.to,
-         subject: `[屿·记时光信笺] ${letter.subject}`,
+         subject: `[屿·记时光信笺] ${letter.subject} [Ref: ${letter.id}]`,
          html: htmlContent,
          headers: {
            'Priority': 'normal',
            'X-Mailer': 'Nodemailer'
          }
       };
+
+      if (letter.replyTo && letter.replyTo.includes('@')) {
+        mailOptions.replyTo = letter.replyTo;
+      }
 
       const attachments: any[] = [];
       
@@ -360,6 +530,10 @@ async function startServer() {
         const isEligible = letter.status === "pending" || 
                            (letter.status === "failed" && (letter.failedAttempts || 0) < 3);
         if (isEligible) {
+          if (sendingLetterIds.has(letter.id)) {
+            continue; // Skip if already currently sending
+          }
+
           let deliveryTime = 0;
           let deliverStr = letter.deliverAt;
           if (!deliverStr.includes('Z') && !deliverStr.match(/[+-]\d{2}:\d{2}$/)) {
@@ -368,16 +542,21 @@ async function startServer() {
           deliveryTime = new Date(deliverStr).getTime();
 
           if (deliveryTime <= now) {
-            const ok = await sendScheduledLetterEmail(letter);
-            if (ok) {
-              letter.status = "submitted";
-              letter.sentTimestamp = new Date().toISOString();
-              sentCount++;
-            } else {
-              letter.failedAttempts = (letter.failedAttempts || 0) + 1;
-              letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+            sendingLetterIds.add(letter.id);
+            try {
+              const ok = await sendScheduledLetterEmail(letter);
+              if (ok) {
+                letter.status = "submitted";
+                letter.sentTimestamp = new Date().toISOString();
+                sentCount++;
+              } else {
+                letter.failedAttempts = (letter.failedAttempts || 0) + 1;
+                letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+              }
+              updated = true;
+            } finally {
+              sendingLetterIds.delete(letter.id);
             }
-            updated = true;
           }
         }
       }
@@ -391,7 +570,9 @@ async function startServer() {
   });
 
   // Active loop checker (runs every 15 seconds)
+  let imapCycleCounter = 0;
   setInterval(async () => {
+    // 1. Send scheduled letters
     try {
       const letters = await getScheduledLetters();
       const now = Date.now();
@@ -400,6 +581,10 @@ async function startServer() {
         const isEligible = letter.status === "pending" || 
                            (letter.status === "failed" && (letter.failedAttempts || 0) < 3);
         if (isEligible) {
+          if (sendingLetterIds.has(letter.id)) {
+            continue; // Skip if already currently sending
+          }
+
           let deliveryTime = 0;
           let deliverStr = letter.deliverAt;
           // If the date string doesn't include timezone information, assume Beijing Time (UTC+8)
@@ -409,15 +594,20 @@ async function startServer() {
           deliveryTime = new Date(deliverStr).getTime();
 
           if (deliveryTime <= now) {
-            const ok = await sendScheduledLetterEmail(letter);
-            if (ok) {
-              letter.status = "submitted";
-              letter.sentTimestamp = new Date().toISOString();
-            } else {
-              letter.failedAttempts = (letter.failedAttempts || 0) + 1;
-              letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+            sendingLetterIds.add(letter.id);
+            try {
+              const ok = await sendScheduledLetterEmail(letter);
+              if (ok) {
+                letter.status = "submitted";
+                letter.sentTimestamp = new Date().toISOString();
+              } else {
+                letter.failedAttempts = (letter.failedAttempts || 0) + 1;
+                letter.status = letter.failedAttempts >= 3 ? "failed_permanent" : "failed";
+              }
+              updated = true;
+            } finally {
+              sendingLetterIds.delete(letter.id);
             }
-            updated = true;
           }
         }
       }
@@ -426,6 +616,16 @@ async function startServer() {
       }
     } catch (e) {
       console.error('Scheduler task iteration failed:', e);
+    }
+
+    // 2. Poll IMAP inbox for unread email replies every 30 seconds (every 2 cycles)
+    imapCycleCounter++;
+    if (imapCycleCounter % 2 === 0) {
+      try {
+        await checkAndForwardReplies();
+      } catch (e) {
+        console.error('IMAP reply forwarding failed:', e);
+      }
     }
   }, 15000);
 
@@ -463,15 +663,41 @@ async function startServer() {
 
   app.post('/api/send-email', async (req, res) => {
     try {
-      const { to, subject, content, scheduleTime, type, images, bodyImages, bgImage, createdAt, recipient, files } = req.body;
+      const { id, to, subject, content, scheduleTime, type, images, bodyImages, bgImage, createdAt, recipient, files, replyTo } = req.body;
       
       if (!to || !to.includes('@')) {
          return res.status(400).json({ error: 'Invalid email address' });
       }
 
       const letters = await getScheduledLetters();
-      const newEntry = {
-        id: 'sk-letter-' + Date.now(),
+      const existingIdx = id ? letters.findIndex(l => l.id === id) : -1;
+      const existingLetter = existingIdx >= 0 ? letters[existingIdx] : null;
+
+      const deliveryTime = new Date(scheduleTime).getTime();
+      const now = Date.now();
+
+      let status = 'pending';
+      if (existingLetter) {
+        if (existingLetter.status === 'submitted' || existingLetter.status === 'failed_permanent') {
+          const oldDeliveryTime = new Date(existingLetter.deliverAt).getTime();
+          if (deliveryTime > now && deliveryTime !== oldDeliveryTime) {
+            status = 'pending';
+          } else {
+            status = existingLetter.status;
+          }
+        } else {
+          status = existingLetter.status || 'pending';
+        }
+      } else {
+        if (deliveryTime <= now) {
+          status = 'submitted';
+        } else {
+          status = 'pending';
+        }
+      }
+
+      const entry = {
+        id: id || ('sk-letter-' + Date.now()),
         to,
         subject,
         content,
@@ -483,44 +709,19 @@ async function startServer() {
         bgImage: bgImage || '',
         recipient: recipient || '收件人',
         files: files || [],
-        status: 'pending'
+        replyTo: replyTo || '',
+        status
       };
 
-      letters.push(newEntry);
+      if (existingIdx >= 0) {
+        letters[existingIdx] = entry;
+      } else {
+        letters.push(entry);
+      }
+      
       await saveScheduledLetters(letters);
 
-      // Send an immediate confirmation email so the user knows SMTP is working
-      if (process.env.SMTP_HOST) {
-         try {
-           const transporter = nodemailer.createTransport({
-              host: process.env.SMTP_HOST,
-              port: parseInt(process.env.SMTP_PORT || (process.env.SMTP_SECURE === 'true' ? '465' : '587'), 10),
-              secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
-              auth: {
-                 user: process.env.SMTP_USER,
-                 pass: process.env.SMTP_PASS
-              },
-               connectionTimeout: 8000,
-               greetingTimeout: 8000,
-               socketTimeout: 10000
-            });
-           const confirmOptions = {
-              from: process.env.SMTP_FROM || `"屿·记 时光邮差" <${process.env.SMTP_USER}>`,
-              to: to,
-              subject: `[屿·记] 信笺封存确认: ${subject}`,
-              html: `<div style="padding: 30px; font-family: sans-serif; background-color: #f5f0e6; text-align: center; border-radius: 12px; border: 1px solid #dfd6c6;">
-                       <h2 style="color: #352a1a;">信笺已成功封存 📬</h2>
-                       <p style="color: #4d4030; font-size: 14px;">您的信笺 <b>${subject}</b> 已妥善交由时光邮差保管。</p>
-                       <p style="color: #a88252; font-size: 12px; margin-top: 20px;">这封信将于 <b>${scheduleTime}</b> 准确送达您的邮箱。</p>
-                     </div>`
-           };
-           transporter.sendMail(confirmOptions).catch(e => console.error('Confirmation email failed:', e));
-         } catch (e) {
-           console.error('Failed to init transporter for confirmation:', e);
-         }
-      }
-
-      return res.json({ success: true, message: "Email scheduled & stored successfully", letterId: newEntry.id });
+      return res.json({ success: true, message: "Email scheduled & stored successfully", letterId: entry.id });
     } catch (e) {
       console.error('Email error:', e);
       res.status(500).json({ error: 'Failed to schedule email' });

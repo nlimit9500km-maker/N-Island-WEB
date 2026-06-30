@@ -9,6 +9,7 @@ import { DiaryView } from './components/DiaryView';
 import { LifeDiaryView } from './components/LifeDiaryView';
 import { MediaView } from './components/MediaView';
 import { PhotoesView } from './components/PhotoesView';
+import DesktopPet from './components/DesktopPet';
 
 const safeGetItem = (k: string) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const safeSetItem = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -3819,6 +3820,9 @@ export default function App() {
         })}
       </AnimatePresence>
       
+      {/* Desktop Pet Widget */}
+      <DesktopPet />
+
       {/* Bottom Bar */}
       <BottomBar />
     </div>

@@ -194,13 +194,15 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
       return saved && saved !== 'null' ? JSON.parse(saved) : {
         nickname: '无棘落莺馆主',
         avatar: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg',
-        signature: '听晨风敲打在石板上，静听时光邮差的碎步。'
+        signature: '听晨风敲打在石板上，静听时光邮差的碎步。',
+        replyEmail: ''
       };
     } catch {
       return {
         nickname: '无棘落莺馆主',
         avatar: 'https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/----_20260322222225_24_569-imagetourl.cloud-1774189629541-pgaabi.jpg',
-        signature: '听晨风敲打在石板上，静听时光邮差的碎步。'
+        signature: '听晨风敲打在石板上，静听时光邮差的碎步。',
+        replyEmail: ''
       };
     }
   });
@@ -869,6 +871,16 @@ export const DiaryView = ({ mode }: { mode?: string }) => {
                         value={profile.signature}
                         onChange={(e) => setProfile({ ...profile, signature: e.target.value })}
                         className="w-full bg-white border border-[#DFE4E1] rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-1 pt-2 border-t border-[#F2F5F4]">
+                      <span className="text-[10px] text-gray-400 block">绑定邮箱 (用于接收回信):</span>
+                      <input 
+                        type="email" 
+                        placeholder="your@email.com"
+                        value={profile.replyEmail || ''}
+                        onChange={(e) => setProfile({ ...profile, replyEmail: e.target.value })}
+                        className="w-full bg-white border border-[#DFE4E1] rounded-lg px-2.5 py-1.5 text-xs font-medium"
                       />
                     </div>
                   </div>

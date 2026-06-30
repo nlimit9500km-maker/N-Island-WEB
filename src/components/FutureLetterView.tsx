@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mail, Clock, Lock, ShieldAlert, Sparkles, Check, CheckCircle, 
@@ -31,6 +31,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   setShowCompose
 }) => {
   const [nowTime, setNowTime] = useState<number>(() => Date.now());
+  const [selectedReadingLetter, setSelectedReadingLetter] = useState<FutureLetter | null>(null);
 
   // Active Clock tick
   useEffect(() => {
@@ -39,43 +40,6 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Synchronize letters with server-side Firestore scheduler
-  useEffect(() => {
-    const syncLetters = async () => {
-      const unsent = letters.filter(l => l.recipientEmail && l.recipientEmail.includes('@') && !l.isDelivered);
-      if (unsent.length === 0) return;
-      
-      console.log(`[Auto Sync] Syncing ${unsent.length} unsent scheduled letters to server...`);
-      for (const letter of unsent) {
-        try {
-          await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: letter.recipientEmail.trim(),
-              subject: letter.title,
-              content: letter.content,
-              scheduleTime: letter.deliverAt.replace(' ', 'T'),
-              type: letter.letterType,
-              images: letter.images,
-              bodyImages: letter.bodyImages,
-              files: letter.files,
-              bgImage: letter.bgImage,
-              recipient: letter.recipient,
-              createdAt: (letter.createdAt || '').split(' ')[0],
-              id: letter.id
-            })
-          });
-        } catch (e) {
-          console.error("Failed to sync letter to server:", e);
-        }
-      }
-    };
-    if (letters && letters.length > 0) {
-      syncLetters();
-    }
-  }, [letters]);
 
   const getIsDelivered = (letter: FutureLetter) => {
     const deliverStr = letter.deliverAt.replace(' ', 'T');
@@ -114,6 +78,26 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   // New States
   const [letterType, setLetterType] = useState<'future' | 'past'>('future');
   const [emailForDelivery, setEmailForDelivery] = useState('');
+  const [senderBindEmail, setSenderBindEmail] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('island_profile');
+      if (saved) {
+        const p = JSON.parse(saved);
+        return p.replyEmail || '';
+      }
+    } catch (e) {}
+    return '';
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('island_profile');
+      if (saved) {
+        const p = JSON.parse(saved);
+        setSenderBindEmail(p.replyEmail || '');
+      }
+    } catch (e) {}
+  }, [showCompose]);
   const [showDraftsModal, setShowDraftsModal] = useState(false);
   const [showOutboxModal, setShowOutboxModal] = useState(false);
   const [showCancelPrompt, setShowCancelPrompt] = useState(false);
@@ -129,11 +113,83 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false);
 
+  // Spacers tracking for anchored body images (locks positions to text lines)
+  const [spacerPositions, setSpacerPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [readingSpacerPositions, setReadingSpacerPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [activeImageId, setActiveImageId] = useState<string | null>(null);
+
+  const updateSpacerPositions = useCallback(() => {
+    if (!editorRef.current) return;
+    const spacers = editorRef.current.querySelectorAll('.img-spacer-container');
+    const positions: Record<string, { x: number; y: number }> = {};
+    const foundIds = new Set<string>();
+    
+    spacers.forEach((el: any) => {
+      const id = el.getAttribute('data-image-id');
+      if (id) {
+        foundIds.add(id);
+        positions[id] = {
+          x: el.offsetLeft - (editorRef.current ? editorRef.current.scrollLeft : 0),
+          y: el.offsetTop - (editorRef.current ? editorRef.current.scrollTop : 0)
+        };
+      }
+    });
+    setSpacerPositions(positions);
+
+    // Auto-cleanup images whose spacers were deleted via editor editing keys (Backspace / Delete)
+    if (isEditingRef.current) {
+      setBodyImages(prev => {
+        const filtered = prev.filter(img => foundIds.has(img.id));
+        if (filtered.length !== prev.length) {
+          return filtered;
+        }
+        return prev;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    updateSpacerPositions();
+    window.addEventListener('resize', updateSpacerPositions);
+    const editor = editorRef.current;
+    if (editor) {
+      editor.addEventListener('scroll', updateSpacerPositions);
+    }
+    return () => {
+      window.removeEventListener('resize', updateSpacerPositions);
+      if (editor) {
+        editor.removeEventListener('scroll', updateSpacerPositions);
+      }
+    };
+  }, [content, updateSpacerPositions]);
+
+  useEffect(() => {
+    if (selectedReadingLetter) {
+      const timer = setTimeout(() => {
+        const container = document.querySelector('.reading-letter-container');
+        if (!container) return;
+        const spacers = container.querySelectorAll('.img-spacer-container');
+        const positions: Record<string, { x: number; y: number }> = {};
+        spacers.forEach((el: any) => {
+          const id = el.getAttribute('data-image-id');
+          if (id) {
+            positions[id] = {
+              x: el.offsetLeft,
+              y: el.offsetTop
+            };
+          }
+        });
+        setReadingSpacerPositions(positions);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedReadingLetter]);
+
   const handleBodyImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
-        alert('为了保证应用稳定性，不可上传音频或视频文件');
+      if (file.type.startsWith('video/')) {
+        alert('为了保证应用稳定性，不可上传视频文件');
         e.target.value = '';
         return;
       }
@@ -145,18 +201,31 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          setBodyImages(prev => [
-            ...prev,
-            {
-              id: 'img-' + Date.now(),
-              src: reader.result as string,
-              x: 50,
-              y: 50,
-              width: 150,
-              height: 150,
+          if (editorRef.current) {
+            editorRef.current.focus();
+            const imgId = 'body-img-' + Date.now();
+            
+            // Insert physical space block in editor that moves with lines of text
+            const spacerHtml = `<div id="spacer-${imgId}" class="img-spacer-container" data-image-id="${imgId}" style="height: 180px; margin: 15px 0; display: block; clear: both; user-select: none;" contenteditable="false"></div><div><br/></div>`;
+            document.execCommand('insertHTML', false, spacerHtml);
+            
+            // Add resizable overlay mapped to this spacer
+            const newImg = {
+              id: imgId,
+              src: reader.result,
+              x: 0,
+              y: 0,
+              width: 240,
+              height: 180,
               locked: false
-            }
-          ]);
+            };
+            setBodyImages(prev => [...prev, newImg]);
+            setContent(editorRef.current.innerHTML);
+            setActiveImageId(imgId);
+            
+            // Recalculate spacer positions
+            setTimeout(updateSpacerPositions, 50);
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -190,24 +259,24 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files) as File[];
       let hasOversized = false;
-      let hasMedia = false;
+      let hasVideo = false;
       const validFiles = filesArray.filter(file => {
-        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
-          hasMedia = true;
+        if (file.type.startsWith('video/')) {
+          hasVideo = true;
           return false;
         }
-        if (file.size > 2 * 1024 * 1024) {
+        if (file.size > 15 * 1024 * 1024) {
           hasOversized = true;
           return false;
         }
         return true;
       });
 
-      if (hasMedia) {
-        alert('为了应用稳定，已自动过滤音视频文件（本信笺暂不支持装载音视频音乐文件）。');
+      if (hasVideo) {
+        alert('为了应用稳定，已自动过滤视频文件（本信笺暂不支持装载视频文件，但完美支持音频文件！）。');
       }
       if (hasOversized) {
-        alert('部分文件过大（超过2MB），已自动取消加载这部分文件以避免应用闪退。');
+        alert('部分文件过大（超过15MB），已自动取消加载这部分文件以避免应用闪退。');
       }
 
       validFiles.forEach(file => {
@@ -263,7 +332,6 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
 
   // Animation Sequence States
   const [animationStep, setAnimationStep] = useState<'idle' | 'folding' | 'melting' | 'stamping' | 'done'>('idle');
-  const [selectedReadingLetter, setSelectedReadingLetter] = useState<FutureLetter | null>(null);
   const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
   const [deleteConfirmLetterId, setDeleteConfirmLetterId] = useState<string | null>(null);
 
@@ -315,6 +383,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
     setTimeout(async () => {
       // Complete letter addition
       const today = new Date();
+      const finalId = editingLetterId || ('letter-' + Date.now());
       let deliveryDateStr = '';
       let universalDeliveryISO = '';
 
@@ -338,6 +407,18 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
       // If email for delivery is configured, call API with rich styling fields
       if ((emailForDelivery || '').trim() && (emailForDelivery || '').includes('@')) {
          try {
+           // Get sender reply email from profile if any
+           let replyToEmail = '';
+           try {
+             const profileData = localStorage.getItem('island_profile');
+             if (profileData) {
+               const p = JSON.parse(profileData);
+               if (p.replyEmail) {
+                 replyToEmail = p.replyEmail.trim();
+               }
+             }
+           } catch(e) {}
+
            await fetch('/api/send-email', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
@@ -345,7 +426,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                to: (emailForDelivery || '').trim(),
                subject: title,
                content: content,
-               scheduleTime: deliveryDateStr,
+               scheduleTime: universalDeliveryISO,
                type: letterType,
                images: attachedImages,
                bodyImages: bodyImages,
@@ -353,7 +434,8 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                bgImage: bgImage,
                recipient: recipient,
                createdAt: today.toISOString().split('T')[0],
-               id: editingLetterId || undefined
+               id: finalId,
+               replyTo: replyToEmail
              })
            });
          } catch(e) {
@@ -381,7 +463,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
         } : l));
       } else {
         const newLtr: FutureLetter = {
-          id: 'letter-' + Date.now(),
+          id: finalId,
           createdAt: today.toISOString().split('T')[0] + ' ' + String(today.getHours()).padStart(2, '0') + ':' + String(today.getMinutes()).padStart(2, '0'),
           deliverAt: deliveryDateStr.replace('T', ' '),
           title: title,
@@ -995,6 +1077,17 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                              className="bg-black/5 hover:bg-black/10 border-none outline-none px-2 py-1 rounded text-[#352a1a] w-40 placeholder:font-normal placeholder:opacity-50"
                            />
                            {emailForDelivery.includes('@') && (
+                              senderBindEmail ? (
+                                <div className="text-[9px] text-[#a88252] font-bold max-w-[160px] leading-tight animate-fadeIn mr-2">
+                                  📪 收到回信将由时光邮差转寄至：{senderBindEmail}
+                                </div>
+                              ) : (
+                                <div className="text-[9px] text-[#8c7456]/80 font-bold max-w-[160px] leading-tight animate-fadeIn mr-2">
+                                  ⚠️ 尚未绑定回信邮箱。可在顶部设置的【角色身份】中绑定！
+                                </div>
+                              )
+                            )}
+                           {emailForDelivery.includes('@') && (
                             <button
                               onClick={handleTestEmail}
                               disabled={isTestingEmail}
@@ -1042,84 +1135,123 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                         }
                         className="w-full h-full bg-transparent resize-none outline-none text-sm leading-[2.2rem] text-[#4d4030] font-serif min-h-[14rem] pb-4 editor-content-editable empty:before:content-[attr(data-placeholder)] empty:before:text-[#4d4030]/20 empty:before:whitespace-pre-wrap empty:before:pointer-events-none [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-4 [&_img]:border [&_img]:border-[#dfd6c6]/50 [&_img]:shadow-sm"
                       />
-                      {bodyImages.map((img) => (
-                        <motion.div
-                          key={img.id}
-                          drag={!img.locked}
-                          dragMomentum={false}
-                          initial={{ x: img.x, y: img.y }}
-                          onDragEnd={(_, info) => {
-                            if (!img.locked) {
-                              setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, x: item.x + info.offset.x, y: item.y + info.offset.y } : item));
-                            }
-                          }}
-                          style={{
-                            position: 'absolute',
-                            width: img.width,
-                            height: img.height,
-                            left: 0,
-                            top: 0,
-                            x: img.x,
-                            y: img.y,
-                            zIndex: 10
-                          }}
-                          className="group"
-                        >
-                          <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
-                          
-                          {/* Locked Button */}
-                          <div 
-                            className={`absolute -bottom-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow-md transition-opacity z-20 ${img.locked ? 'bg-red-500 text-white opacity-100' : 'bg-white text-gray-700 opacity-0 group-hover:opacity-100'}`}
-                            onClick={() => {
-                              setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, locked: !item.locked } : item));
+                      {bodyImages.map((img) => {
+                        const pos = spacerPositions[img.id] || { x: 0, y: 0 };
+                        const isCurrentlyActive = activeImageId === img.id;
+                        return (
+                          <motion.div
+                            key={img.id}
+                            drag={!img.locked}
+                            dragMomentum={false}
+                            onDragEnd={(_, info) => {
+                              if (!img.locked) {
+                                setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, x: item.x + info.offset.x, y: item.y + info.offset.y } : item));
+                              }
                             }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveImageId(prev => prev === img.id ? null : img.id);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              width: img.width,
+                              height: img.height,
+                              left: 0,
+                              top: 0,
+                              x: pos.x + img.x,
+                              y: pos.y + img.y,
+                              zIndex: 10
+                            }}
+                            className={`group cursor-pointer ${isCurrentlyActive ? 'ring-2 ring-amber-500 ring-offset-2 rounded-lg' : ''}`}
                           >
-                            {img.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                          </div>
-
-                          {/* Resize Handle */}
-                          {!img.locked && (
+                            <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
+                            
+                            {/* Locked Button */}
                             <div 
-                              className="absolute -bottom-3 -right-3 w-6 h-6 rounded-full bg-white text-gray-700 flex items-center justify-center cursor-se-resize shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
+                              className={`absolute -bottom-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow-md transition-opacity z-20 ${
+                                img.locked 
+                                  ? 'bg-red-500 text-white opacity-100' 
+                                  : `bg-white text-gray-700 ${isCurrentlyActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`
+                              }`}
+                              onClick={(e) => {
                                 e.stopPropagation();
-                                const startX = e.clientX;
-                                const startY = e.clientY;
-                                const startW = img.width;
-                                const startH = img.height;
-                                const onMove = (moveEvent: PointerEvent) => {
-                                  const deltaX = moveEvent.clientX - startX;
-                                  const deltaY = moveEvent.clientY - startY;
-                                  const newW = Math.max(50, startW + deltaX);
-                                  const newH = Math.max(50, startH + deltaY);
-                                  setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, width: newW, height: newH } : item));
-                                };
-                                const onUp = () => {
-                                  window.removeEventListener('pointermove', onMove);
-                                  window.removeEventListener('pointerup', onUp);
-                                };
-                                window.addEventListener('pointermove', onMove);
-                                window.addEventListener('pointerup', onUp);
+                                setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, locked: !item.locked } : item));
                               }}
                             >
-                              <MoveDiagonal className="w-3.5 h-3.5" />
+                              {img.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                             </div>
-                          )}
 
-                          {/* Delete Button */}
-                          {!img.locked && (
-                            <div 
-                              className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center cursor-pointer shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                              onClick={() => {
-                                setBodyImages(prev => prev.filter(item => item.id !== img.id));
-                              }}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </div>
-                          )}
-                        </motion.div>
-                      ))}
+                            {/* Resize Handle */}
+                            {!img.locked && (
+                              <div 
+                                className={`absolute -bottom-3 -right-3 w-6 h-6 rounded-full bg-white text-gray-700 flex items-center justify-center cursor-se-resize shadow-md transition-opacity z-20 ${
+                                  isCurrentlyActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                }`}
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const startX = e.clientX;
+                                  const startY = e.clientY;
+                                  const startW = img.width;
+                                  const startH = img.height;
+                                  const onMove = (moveEvent: PointerEvent) => {
+                                    const deltaX = moveEvent.clientX - startX;
+                                    const deltaY = moveEvent.clientY - startY;
+                                    const newW = Math.max(50, startW + deltaX);
+                                    const newH = Math.max(50, startH + deltaY);
+                                    
+                                    // Set spacer height in DOM to match resizable image
+                                    const spacerEl = editorRef.current?.querySelector(`#spacer-${img.id}`);
+                                    if (spacerEl) {
+                                      (spacerEl as HTMLElement).style.height = `${newH}px`;
+                                    }
+                                    
+                                    setBodyImages(prev => prev.map(item => item.id === img.id ? { ...item, width: newW, height: newH } : item));
+                                    setTimeout(updateSpacerPositions, 10);
+                                  };
+                                  const onUp = () => {
+                                    window.removeEventListener('pointermove', onMove);
+                                    window.removeEventListener('pointerup', onUp);
+                                    if (editorRef.current) {
+                                      setContent(editorRef.current.innerHTML);
+                                    }
+                                  };
+                                  window.addEventListener('pointermove', onMove);
+                                  window.addEventListener('pointerup', onUp);
+                                }}
+                              >
+                                <MoveDiagonal className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+
+                            {/* Delete Button */}
+                            {!img.locked && (
+                              <div 
+                                className={`absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center cursor-pointer shadow-md transition-opacity z-20 ${
+                                  isCurrentlyActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  
+                                  // Remove spacer element from contentEditable too
+                                  const spacerEl = editorRef.current?.querySelector(`#spacer-${img.id}`);
+                                  if (spacerEl) {
+                                    spacerEl.remove();
+                                  }
+                                  
+                                  setBodyImages(prev => prev.filter(item => item.id !== img.id));
+                                  if (editorRef.current) {
+                                    setContent(editorRef.current.innerHTML);
+                                  }
+                                  setActiveImageId(null);
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1140,9 +1272,13 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                           </div>
                         ))}
                         {attachedFiles.map((file, idx) => (
-                          <div key={idx} className="relative w-20 h-14 bg-white rounded-xl border border-[#dfd6c6] shrink-0 group shadow-3xs flex flex-col items-center justify-center p-1 px-2">
-                            <span className="text-[10px] font-bold text-gray-700 truncate w-full text-center" title={file.name}>{file.name}</span>
-                            <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                          <div key={idx} className="relative w-auto h-14 bg-white rounded-xl border border-[#dfd6c6] shrink-0 group shadow-3xs flex flex-col items-center justify-center p-1 px-2 pr-6">
+                            <span className="text-[10px] font-bold text-gray-700 truncate w-full max-w-[120px] text-center" title={file.name}>{file.name}</span>
+                            {file.type?.startsWith('audio/') ? (
+                              <audio controls src={file.url} className="h-6 w-32 mt-1" />
+                            ) : (
+                              <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                            )}
                             <button 
                               onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
                               className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-xl"
@@ -1390,7 +1526,7 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                   background: 'linear-gradient(#f0ebe1 1px, transparent 1px) 0 0 / 100% 2.2rem'
                 }}
               >
-                <div className="relative z-10 w-full h-full min-h-[300px]">
+                <div className="relative z-10 w-full h-full min-h-[300px] reading-letter-container">
                   <span className="text-xs font-bold text-[#a88252] font-mono tracking-tight pb-3 block">TO: {selectedReadingLetter.recipient}</span>
                   <h4 className="text-base font-black text-[#352a1a] mb-2">{selectedReadingLetter.title}</h4>
                   <p className="text-xs text-[#a88252] font-bold font-mono mb-4">回忆于 {selectedReadingLetter.createdAt} 封存 | 开启于 {selectedReadingLetter.deliverAt}</p>
@@ -1400,22 +1536,25 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                     dangerouslySetInnerHTML={{ __html: selectedReadingLetter.content }}
                   />
 
-                  {selectedReadingLetter.bodyImages?.map((img) => (
-                    <div
-                      key={img.id}
-                      style={{
-                        position: 'absolute',
-                        width: img.width,
-                        height: img.height,
-                        left: 0,
-                        top: 0,
-                        transform: `translate(${img.x}px, ${img.y}px)`,
-                        zIndex: 10
-                      }}
-                    >
-                      <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
-                    </div>
-                  ))}
+                  {selectedReadingLetter.bodyImages?.map((img) => {
+                    const pos = readingSpacerPositions[img.id] || { x: 0, y: 0 };
+                    return (
+                      <div
+                        key={img.id}
+                        style={{
+                          position: 'absolute',
+                          width: img.width,
+                          height: img.height,
+                          left: 0,
+                          top: 0,
+                          transform: `translate(${pos.x + img.x}px, ${pos.y + img.y}px)`,
+                          zIndex: 10
+                        }}
+                      >
+                        <img src={img.src} draggable={false} className="w-full h-full object-cover rounded-lg shadow-sm border border-black/10 pointer-events-none" />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Attached Files & Images when reading */}
@@ -1429,9 +1568,13 @@ export const FutureLetterView: React.FC<FutureLetterProps> = ({
                         </div>
                       ))}
                       {selectedReadingLetter.files?.map((file, idx) => (
-                        <div key={idx} className="relative w-20 h-14 bg-white/70 rounded-xl border border-[#dfd6c6] shrink-0 shadow-3xs flex flex-col items-center justify-center p-1 px-2 cursor-pointer">
-                          <span className="text-[10px] font-bold text-gray-700 truncate w-full text-center" title={file.name}>{file.name}</span>
-                          <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                        <div key={idx} className="relative w-auto h-14 bg-white/70 rounded-xl border border-[#dfd6c6] shrink-0 shadow-3xs flex flex-col items-center justify-center p-1 px-2 cursor-pointer">
+                          <span className="text-[10px] font-bold text-gray-700 truncate w-full max-w-[120px] text-center" title={file.name}>{file.name}</span>
+                          {file.type?.startsWith('audio/') ? (
+                            <audio controls src={file.url} className="h-6 w-32 mt-1" />
+                          ) : (
+                            <span className="text-[8px] text-gray-400 font-mono mt-0.5">{file.size}</span>
+                          )}
                         </div>
                       ))}
                     </div>
