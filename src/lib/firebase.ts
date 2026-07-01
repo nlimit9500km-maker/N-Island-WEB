@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { initializeFirestore, setLogLevel } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeFirestore, setLogLevel, getFirestore } from "firebase/firestore";
 
 // Disable internal Firebase logs to prevent them from showing as errors when running in offline/preview environments
 setLogLevel('silent');
@@ -13,9 +13,12 @@ const firebaseConfig = {
   messagingSenderId: "977113091505",
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  ignoreUndefinedProperties: true,
-}, "ai-studio-611cfb5e-7db4-434e-bb94-bb1a0df7c5b3");
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const db = getApps().length === 0 
+  ? initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
+    }, "ai-studio-611cfb5e-7db4-434e-bb94-bb1a0df7c5b3")
+  : getFirestore(app);
+
 

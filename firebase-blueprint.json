@@ -42,6 +42,19 @@
               { "name": "id", "type": "string" },
               { "name": "data", "type": "string" }
             ]
+          },
+          {
+            "name": "rooms",
+            "description": "Real-time study rooms for Didadidi.",
+            "readAccess": "if true;",
+            "writeAccess": "if true;",
+            "fields": [
+              { "name": "code", "type": "string" },
+              { "name": "seats", "type": "array" },
+              { "name": "hostId", "type": "string" },
+              { "name": "timer", "type": "map" },
+              { "name": "reactions", "type": "array" }
+            ]
           }
         ]
       }
